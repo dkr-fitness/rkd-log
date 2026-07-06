@@ -97,6 +97,8 @@ main{padding:12px 14px}
 .hist-card .sub{color:var(--muted); font-size:13px}
 .pxi-pill{font-family:var(--disp); font-weight:700; font-size:15px; color:var(--z4); white-space:nowrap}
 .medal-pill{display:inline-block; padding:2px 8px; border-radius:999px; font-size:10px; font-weight:800; letter-spacing:.08em; background:var(--surface); border:1px solid var(--line)}
+.note-ic{color:var(--muted); vertical-align:middle; flex-shrink:0}
+.note-full{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-top:8px; font-size:13px; white-space:pre-wrap}
 .pr-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px}
 .pr{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px}
 .pr .l{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em}
@@ -430,8 +432,9 @@ function lastFor(key,day){
 function rpeNoteSaveHtml(){
   let h=`<div class="notecard"><label>Session RPE</label><div class="rpe-row">`;
   for(let i=6;i<=10;i++)h+=`<button class="rpe" id="rpe${i}" onclick="setRPE(${i})">${i}</button>`;
-  h+=`</div><label style="margin-top:10px">Notes (sleep, energy, anything off)</label><textarea id="note" rows="2"></textarea></div>`;
-  h+=`<button class="savebtn" onclick="saveSession()">Save session</button>`;
+  h+=`</div><label style="margin-top:10px">WHOOP strain (optional)</label><input type="number" id="strain" min="0" max="21" step="0.1" inputmode="decimal" placeholder="0.0–21.0">`;
+  h+=`<label style="margin-top:10px">Notes (sleep, energy, anything off)</label><textarea id="note" rows="2"></textarea></div>`;
+  h+=`<button class="savebtn" onclick="saveSession()">Finish</button>`;
   return h;
 }
 function render(){
@@ -525,15 +528,17 @@ function saveSession(){
   s.blocks.forEach((b,bi)=>b.ex.forEach((ex,ei)=>{
     if(ex.sets>0){const sets=[];
       for(let i=0;i<ex.sets;i++){sets.push({w:document.getElementById(`w_${bi}_${ei}_${i}`).value,r:document.getElementById(`r_${bi}_${ei}_${i}`).value});}
-      entries.push({key:ex.key,name:ex.n,sets});}}));
+      entries.push({key:ex.key,name:ex.n,rx:ex.rx||"",sets});}}));
   /* RKD: live wins; else attached manual entry */
   let pxi=null, zoneMins=null, model=curModel(), medal=null;
   if(live.pxi>0){ pxi=Math.round(live.pxi); zoneMins=live.zoneSecs.map(x=>Math.round(x/6)/10); }
   else if(pendingManual){ pxi=pendingManual.pxi; zoneMins=pendingManual.mins; model=pendingManual.model; }
   /* medals only exist on lifting days — Tue/Thu are zone caps, Sat is capped effort */
   if(pxi!=null&&LIFT_DAYS.includes(day)){ const md=medalFor(pxi,pxiSet.target); medal=md?md.t:null; }
+  const strainEl=document.getElementById("strain");
+  const strain=strainEl&&strainEl.value!==""?Math.min(21,Math.max(0,Math.round(+strainEl.value*10)/10)):null;
   const entry={date:new Date().toISOString(),week:w,day,name:s.name,type:s.type,entries,rpe:curRPE,
-    note:document.getElementById("note").value,duration:elapsedSec(),
+    note:document.getElementById("note").value,strain,duration:elapsedSec(),
     pxi,zoneMins,pxiModel:pxi!=null?model:null,medal,target:medal!=null?pxiSet.target:null};
   const actEl=document.getElementById("z2act"); if(actEl)entry.activity=actEl.value;
   const logs=loadLogs(); logs.push(entry); saveLogs(logs);
@@ -624,33 +629,92 @@ function manualScore(){
 
 /* ================= HISTORY / PRS ================= */
 const e1rm=(w,r)=>w*(1+r/30);
+const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec"};
 const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun"};
+const escAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 function renderHistory(m){
   document.getElementById("title").textContent="History & PRs";
   const logs=loadLogs();
-  const prKeys={"Bench Press":"lb","Deadlift":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec"};
   const prs={};
   logs.forEach(l=>(l.entries||[]).forEach(e=>{
-    if(!(e.key in prKeys))return;
+    if(!(e.key in PR_KEYS))return;
     e.sets.forEach(s=>{const w=parseFloat(s.w),r=parseFloat(s.r);
       if(e.key==="Dead Hang"){if(w&&(!prs[e.key]||w>prs[e.key].v))prs[e.key]={v:w};return;}
       if(e.key==="Weighted Pull-Up"){if(!isNaN(w)&&(!prs[e.key]||w>prs[e.key].v))prs[e.key]={v:w};return;}
       if(w&&r){const est=e1rm(w,r);if(!prs[e.key]||est>prs[e.key].v)prs[e.key]={v:est,raw:w+"×"+r};}});
   }));
   let h=`<div class="pr-grid">`;
-  Object.keys(prKeys).forEach(k=>{const p=prs[k];
-    h+=`<div class="pr"><div class="l">${k}${prKeys[k]==="lb"?" · e1RM":""}</div><div class="v">${p?Math.round(p.v)+(prKeys[k]==="sec"?"s":prKeys[k]==="+lb"?" lb":""):"—"}</div>${p&&p.raw?`<div class="sub" style="font-size:12px;color:var(--muted)">${p.raw}</div>`:""}</div>`;});
+  Object.keys(PR_KEYS).forEach(k=>{const p=prs[k];
+    h+=`<div class="pr"><div class="l">${k}${PR_KEYS[k]==="lb"?" · e1RM":""}</div><div class="v">${p?Math.round(p.v)+(PR_KEYS[k]==="sec"?"s":PR_KEYS[k]==="+lb"?" lb":""):"—"}</div>${p&&p.raw?`<div class="sub" style="font-size:12px;color:var(--muted)">${p.raw}</div>`:""}</div>`;});
   h+=`</div>`;
   if(!logs.length)h+=`<div class="meta">No sessions logged yet. Your first save lands here — with PRs and RKD computed automatically.</div>`;
-  logs.slice().reverse().forEach(l=>{
+  logs.map((l,idx)=>({l,idx})).reverse().forEach(({l,idx})=>{
     const dt=new Date(l.date);
     const medalColor=l.medal==="GOLD"?"var(--gold)":l.medal==="SILVER"?"var(--silver)":l.medal==="BRONZE"?"var(--bronze)":"var(--muted)";
     const dl=DAY_LABEL[l.day]||"";
+    const strainPill=l.strain!=null?`<span class="pxi-pill" style="color:var(--z2)">Strain ${l.strain.toFixed(1)}</span>`:"";
+    const noteIcon=l.note?`<svg class="note-ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="${escAttr(l.note)}" style="cursor:pointer" onclick="toggleNote(${idx})"><path d="M4 4h13l3 3v13H4z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>`:"";
     h+=`<div class="hist-card"><div class="h"><span>Wk ${l.week}${dl?" · "+dl:""} · ${l.name}</span>
-      <span style="display:flex;align-items:center;gap:8px">${l.pxi!=null?`<span class="pxi-pill">RKD ${l.pxi}</span>`:""}${l.medal?`<span class="medal-pill" style="color:${medalColor}">${l.medal}</span>`:""}<span style="font-weight:400;color:var(--muted);font-size:13px">${dt.toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span></span></div>
-    <div class="sub">${l.duration?fmt(l.duration)+" · ":""}${l.rpe?"RPE "+l.rpe:""}${l.activity?" · "+l.activity:""}${l.zoneMins?" · "+l.zoneMins.map((z,i)=>i>0&&z>=0.5?"Z"+i+" "+Math.round(z)+"m":null).filter(Boolean).join(" "):""}${l.note?" · "+l.note:""}</div></div>`;});
+      <span style="display:flex;align-items:center;gap:8px">${l.pxi!=null?`<span class="pxi-pill">RKD ${l.pxi}</span>`:""}${l.medal?`<span class="medal-pill" style="color:${medalColor}">${l.medal}</span>`:""}${strainPill}${noteIcon}<span style="font-weight:400;color:var(--muted);font-size:13px">${dt.toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span></span></div>
+    <div class="sub">${l.duration?fmt(l.duration)+" · ":""}${l.rpe?"RPE "+l.rpe:""}${l.activity?" · "+l.activity:""}${l.zoneMins?" · "+l.zoneMins.map((z,i)=>i>0&&z>=0.5?"Z"+i+" "+Math.round(z)+"m":null).filter(Boolean).join(" "):""}</div>
+    ${l.note?`<div class="note-full" id="noteFull${idx}" style="display:none">${escAttr(l.note)}</div>`:""}
+    <div class="row2"><button onclick="copySummary(${idx})">Copy summary</button></div></div>`;});
   h+=`<div class="row2"><button onclick="exportLogs()">Export JSON</button><button onclick="importLogs()">Import JSON</button></div>`;
   m.innerHTML=h;
+}
+function priorBestValue(logs,uptoIdx,key){
+  let best=null;
+  for(let i=0;i<uptoIdx;i++){
+    (logs[i].entries||[]).forEach(e=>{
+      if(e.key!==key)return;
+      e.sets.forEach(s=>{const w=parseFloat(s.w),r=parseFloat(s.r);
+        if(key==="Dead Hang"){if(w&&(best==null||w>best))best=w;return;}
+        if(key==="Weighted Pull-Up"){if(!isNaN(w)&&(best==null||w>best))best=w;return;}
+        if(w&&r){const est=e1rm(w,r);if(best==null||est>best)best=est;}});
+    });
+  }
+  return best;
+}
+function exerciseSummaryLine(logs,idx,e){
+  const sets=e.sets.filter(s=>s.w||s.r);
+  if(!sets.length)return `- ${e.name}: prescribed ${e.rx||"—"}\n  actual: no data`;
+  let best=e.key in PR_KEYS?priorBestValue(logs,idx,e.key):null;
+  const parts=sets.map(s=>{
+    const w=parseFloat(s.w),r=parseFloat(s.r);
+    let val=null;
+    if(e.key==="Dead Hang")val=w||null;
+    else if(e.key==="Weighted Pull-Up")val=!isNaN(w)?w:null;
+    else if(w&&r)val=e1rm(w,r);
+    let pr=false;
+    if(e.key in PR_KEYS&&val!=null&&(best==null||val>best)){pr=true;best=val;}
+    return `${s.w||""}×${s.r||""}`+(pr?" PR":"");
+  });
+  return `- ${e.name}: prescribed ${e.rx||"—"}\n  actual: ${parts.join(", ")}`;
+}
+function buildSummary(logs,idx){
+  const l=logs[idx];
+  const dt=new Date(l.date);
+  const zm=l.zoneMins||[0,0,0,0,0,0];
+  const zoneLine=`Z1 ${(zm[1]||0).toFixed(1)} · Z2 ${(zm[2]||0).toFixed(1)} · Z3 ${(zm[3]||0).toFixed(1)} · Z4 ${(zm[4]||0).toFixed(1)} · Z5 ${(zm[5]||0).toFixed(1)}`;
+  const exLines=(l.entries&&l.entries.length)?l.entries.map(e=>exerciseSummaryLine(logs,idx,e)).join("\n"):"none logged";
+  return `RKD SESSION SUMMARY
+Date: ${dt.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"})}
+Session: ${l.name}
+RKD: ${l.pxi!=null?l.pxi:"not logged"} (${l.medal||"no medal"})
+Zone minutes: ${zoneLine}
+Strain: ${l.strain!=null?l.strain.toFixed(1):"not logged"}
+Exercises:
+${exLines}
+Notes: ${l.note||"none"}`;
+}
+function copySummary(idx){
+  const logs=loadLogs(); if(!logs[idx])return;
+  const text=buildSummary(logs,idx);
+  navigator.clipboard.writeText(text).then(()=>toast("Summary copied")).catch(()=>toast("Copy failed"));
+}
+function toggleNote(idx){
+  const el=document.getElementById("noteFull"+idx);
+  if(el) el.style.display=el.style.display==="none"?"block":"none";
 }
 function exportLogs(){
   const blob=new Blob([JSON.stringify(loadLogs(),null,1)],{type:"application/json"});
