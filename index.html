@@ -314,7 +314,13 @@ function liveSecond(){
   const pct=Math.round(live.lastBpm/pxiSet.maxHr*100);
   const z=zoneOf(pct);
   live.zoneSecs[z]+=1; live.secs+=1;
-  live.pxi+=(PTS[curModel()]||PTS.cardio)[z]/60;
+  if(curDay()==="tue"||curDay()==="thu"){
+    /* Tue/Thu: mirror saveSession()'s exact pipeline — round each zone to 0.1min first, then sum, then floor */
+    const m4=Math.round(live.zoneSecs[4]/6)/10, m5=Math.round(live.zoneSecs[5]/6)/10;
+    live.pxi=-Math.floor(m4+m5);
+  } else {
+    live.pxi+=(PTS[curModel()]||PTS.cardio)[z]/60;
+  }
   setBand(z,ZONE_NAMES[z],live.lastBpm,pct);
   if(view==="pxi") renderLiveScore();
   updateCompliance();
@@ -538,7 +544,7 @@ function saveSession(){
       entries.push({key:ex.key,name:ex.n,rx:ex.rx||"",sets});}}));
   /* RKD: live wins; else attached manual entry */
   let pxi=null, zoneMins=null, model=curModel(), medal=null;
-  if(live.pxi>0){ pxi=Math.round(live.pxi); zoneMins=live.zoneSecs.map(x=>Math.round(x/6)/10); }
+  if(live.secs>0){ pxi=Math.round(live.pxi); zoneMins=live.zoneSecs.map(x=>Math.round(x/6)/10); }
   else if(pendingManual){ pxi=pendingManual.pxi; zoneMins=pendingManual.mins; model=pendingManual.model; }
   /* Tue/Thu: compliance medal + Z4/Z5 penalty score entirely replaces the curve-based pxi above */
   if(s.type==="zone2"){
@@ -584,7 +590,12 @@ function renderLiveScore(){
   const parts=[]; for(let i=1;i<=5;i++){ if(mins[i]>=0.5) parts.push("Z"+i+" "+mins[i].toFixed(0)+"m"); }
   document.getElementById("liveMins").textContent=parts.length?parts.join(" · "):"no zone time yet";
   const me=document.getElementById("liveMedal");
-  if(!LIFT_DAYS.includes(curDay())){ me.textContent=live.pxi>0?"Reference only — no medal on this day":""; me.style.color="var(--muted)"; return; }
+  if(!LIFT_DAYS.includes(curDay())){
+    const zone2Day=curDay()==="tue"||curDay()==="thu";
+    me.textContent=live.secs>0?(zone2Day?"Medal graded on Finish — see zone caps above":"Reference only — no medal on this day"):"";
+    me.style.color="var(--muted)";
+    return;
+  }
   const md=medalFor(live.pxi,pxiSet.target);
   if(md&&live.pxi>0){ me.textContent=md.t+" pace · target "+pxiSet.target; me.style.color=md.c; } else me.textContent="";
 }
