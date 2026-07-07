@@ -247,6 +247,13 @@ function medalFor(pxi,target){
   if(dev<=15) return {t:"BRONZE",c:"var(--bronze)"};
   return {t:"OFF TARGET",c:"var(--muted)"};
 }
+/* Tue/Thu compliance medal tiers — independent of the lifting-day target/curve system */
+function zone2MedalFor(m2,m3,m45){
+  if(m2>=25&&m2<=35&&m3<=3&&m45===0) return {t:"GOLD",c:"var(--gold)"};
+  if(m2>=20&&m2<=40&&m3<=8&&m45<=2) return {t:"SILVER",c:"var(--silver)"};
+  if(m2>=15&&m2<=45&&m3<=10&&m45<=4) return {t:"BRONZE",c:"var(--bronze)"};
+  return null;
+}
 const LIFT_DAYS=["upper","lower","mixed"];
 function curDay(){ return document.getElementById("daySel").value; }
 function curModel(){
@@ -452,7 +459,7 @@ function render(){
   if(s.type==="zone2"){
     h+=`<div class="meta"><b>Rules:</b> Optional 25–35 min in Zone 2 — Peloton class, jog, ski, row, assault runner. ≤5 min Z3, zero Z4/Z5. Conversational pace. Skip freely — it must make the next lift better, not worse.</div>`;
     if(day==="thu") h+=`<div class="meta warn"><b>Thursday rule:</b> if you did Tuesday, strongly consider full rest today — one optional session per week is plenty during heavy weeks (6–8).</div>`;
-    h+=`<div class="meta px"><b>Scoring:</b> No RKD target today — the cardio ramp rewards exactly what we're avoiding. The metric is zone-minute caps below.</div>`;
+    h+=`<div class="meta px"><b>Scoring:</b> Compliance medal on Finish — GOLD: Z2 25–35m, Z3 ≤3m, zero Z4/Z5. SILVER: Z2 20–40m, Z3 ≤8m, Z4/Z5 ≤2m. BRONZE: Z2 15–45m, Z3 ≤10m, Z4/Z5 ≤4m. RKD = 0, minus 1 per full minute in Z4/Z5.</div>`;
     h+=zone2ActivityHtml();
     h+=blockHtml(s,0);
     h+=`<div class="notecard"><label>Zone caps (live from WHOOP)</label><div id="zc" data-type="zone2"></div></div>`;
@@ -533,8 +540,21 @@ function saveSession(){
   let pxi=null, zoneMins=null, model=curModel(), medal=null;
   if(live.pxi>0){ pxi=Math.round(live.pxi); zoneMins=live.zoneSecs.map(x=>Math.round(x/6)/10); }
   else if(pendingManual){ pxi=pendingManual.pxi; zoneMins=pendingManual.mins; model=pendingManual.model; }
-  /* medals only exist on lifting days — Tue/Thu are zone caps, Sat is capped effort */
-  if(pxi!=null&&LIFT_DAYS.includes(day)){ const md=medalFor(pxi,pxiSet.target); medal=md?md.t:null; }
+  /* Tue/Thu: compliance medal + Z4/Z5 penalty score entirely replaces the curve-based pxi above */
+  if(s.type==="zone2"){
+    if(zoneMins){
+      const m45=(zoneMins[4]||0)+(zoneMins[5]||0);
+      pxi=-Math.floor(m45);
+      const md=zone2MedalFor(zoneMins[2]||0,zoneMins[3]||0,m45);
+      medal=md?md.t:null;
+    } else { pxi=null; medal=null; }
+  } else if(s.type==="recovery"){
+    /* Sun: completion badge only, never a score */
+    pxi=null; medal="Done ✓";
+  } else if(pxi!=null&&LIFT_DAYS.includes(day)){
+    /* medals otherwise only exist on lifting days — Sat is capped effort, reference only */
+    const md=medalFor(pxi,pxiSet.target); medal=md?md.t:null;
+  }
   const strainEl=document.getElementById("strain");
   const strain=strainEl&&strainEl.value!==""?Math.min(21,Math.max(0,Math.round(+strainEl.value*10)/10)):null;
   const entry={date:new Date().toISOString(),week:w,day,name:s.name,type:s.type,entries,rpe:curRPE,
@@ -551,7 +571,7 @@ function logRest(){
   const w=+document.getElementById("weekSel").value, day=curDay();
   const logs=loadLogs();
   logs.push({date:new Date().toISOString(),week:w,day,name:"REST",type:"rest",entries:[],rpe:0,
-    note:(document.getElementById("note")||{value:""}).value,duration:0,pxi:null,zoneMins:null,medal:null});
+    note:(document.getElementById("note")||{value:""}).value,duration:0,pxi:0,zoneMins:null,medal:"Rest ✓"});
   saveLogs(logs); toast("Rest day logged — good call");
 }
 function toast(t){const el=document.getElementById("toast");el.textContent=t;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2200);}
@@ -632,6 +652,14 @@ const e1rm=(w,r)=>w*(1+r/30);
 const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec"};
 const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun"};
 const escAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+function weeklyTotals(logs){
+  const totals={};
+  logs.forEach(l=>{
+    if(l.day==="sat"||l.pxi==null)return;
+    totals[l.week]=(totals[l.week]||0)+l.pxi;
+  });
+  return totals;
+}
 function renderHistory(m){
   document.getElementById("title").textContent="History & PRs";
   const logs=loadLogs();
@@ -647,15 +675,25 @@ function renderHistory(m){
   Object.keys(PR_KEYS).forEach(k=>{const p=prs[k];
     h+=`<div class="pr"><div class="l">${k}${PR_KEYS[k]==="lb"?" · e1RM":""}</div><div class="v">${p?Math.round(p.v)+(PR_KEYS[k]==="sec"?"s":PR_KEYS[k]==="+lb"?" lb":""):"—"}</div>${p&&p.raw?`<div class="sub" style="font-size:12px;color:var(--muted)">${p.raw}</div>`:""}</div>`;});
   h+=`</div>`;
+  const totals=weeklyTotals(logs);
+  const weeks=Object.keys(totals).map(Number).sort((a,b)=>b-a);
+  if(weeks.length){
+    h+=`<div class="notecard"><label>Weekly RKD (Mon–Sun · Sat excluded)</label>`;
+    weeks.forEach(wk=>{
+      const t=totals[wk];
+      h+=`<div class="fieldrow"><span>Week ${wk}</span><span style="font-family:var(--disp);font-weight:700;font-size:18px;color:${t<0?"var(--red)":"var(--text)"}">${t}</span></div>`;
+    });
+    h+=`</div>`;
+  }
   if(!logs.length)h+=`<div class="meta">No sessions logged yet. Your first save lands here — with PRs and RKD computed automatically.</div>`;
   logs.map((l,idx)=>({l,idx})).reverse().forEach(({l,idx})=>{
     const dt=new Date(l.date);
-    const medalColor=l.medal==="GOLD"?"var(--gold)":l.medal==="SILVER"?"var(--silver)":l.medal==="BRONZE"?"var(--bronze)":"var(--muted)";
+    const medalColor=l.medal==="GOLD"?"var(--gold)":l.medal==="SILVER"?"var(--silver)":l.medal==="BRONZE"?"var(--bronze)":(l.medal==="Rest ✓"||l.medal==="Done ✓")?"var(--green)":"var(--muted)";
     const dl=DAY_LABEL[l.day]||"";
     const strainPill=l.strain!=null?`<span class="pxi-pill" style="color:var(--z2)">Strain ${l.strain.toFixed(1)}</span>`:"";
     const noteIcon=l.note?`<svg class="note-ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="${escAttr(l.note)}" style="cursor:pointer" onclick="toggleNote(${idx})"><path d="M4 4h13l3 3v13H4z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>`:"";
     h+=`<div class="hist-card"><div class="h"><span>Wk ${l.week}${dl?" · "+dl:""} · ${l.name}</span>
-      <span style="display:flex;align-items:center;gap:8px">${l.pxi!=null?`<span class="pxi-pill">RKD ${l.pxi}</span>`:""}${l.medal?`<span class="medal-pill" style="color:${medalColor}">${l.medal}</span>`:""}${strainPill}${noteIcon}<span style="font-weight:400;color:var(--muted);font-size:13px">${dt.toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span></span></div>
+      <span style="display:flex;align-items:center;gap:8px">${l.pxi!=null?`<span class="pxi-pill"${l.pxi<0?' style="color:var(--red)"':''}>RKD ${l.pxi}</span>`:""}${l.medal?`<span class="medal-pill" style="color:${medalColor}">${l.medal}</span>`:""}${strainPill}${noteIcon}<span style="font-weight:400;color:var(--muted);font-size:13px">${dt.toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span></span></div>
     <div class="sub">${l.duration?fmt(l.duration)+" · ":""}${l.rpe?"RPE "+l.rpe:""}${l.activity?" · "+l.activity:""}${l.zoneMins?" · "+l.zoneMins.map((z,i)=>i>0&&z>=0.5?"Z"+i+" "+Math.round(z)+"m":null).filter(Boolean).join(" "):""}</div>
     ${l.note?`<div class="note-full" id="noteFull${idx}" style="display:none">${escAttr(l.note)}</div>`:""}
     <div class="row2"><button onclick="copySummary(${idx})">Copy summary</button></div></div>`;});
