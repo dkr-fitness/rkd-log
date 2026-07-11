@@ -156,8 +156,8 @@ main{padding:12px 14px}
     <option value="lower">Wed · Lower</option>
     <option value="thu">Thu · Zone 2 / Rest</option>
     <option value="mixed">Fri · Mixed</option>
-    <option value="sat">Sat · BFT/Equinox Class</option>
-    <option value="sun">Sun · CS4 Recovery</option>
+    <option value="sat">Sat · Lower/Core Sub</option>
+    <option value="sun">Sun · Gentle Yoga</option>
   </select>
 </div>
 <div class="tabs">
@@ -182,9 +182,9 @@ const FIN=[
  {n:"Carry complex: 4 rds — 40yd farmer / 20yd suitcase ea side / 10 KB swings",rounds:4,mins:12},
  {n:"Bike sprints: 6 × 20s hard / 100s easy",rounds:6,mins:12}];
 const EQ={
- upper:"Bench + barbell + plates · pull-up bar + dip belt · DBs · adjustable bench · cable or band (face pulls)",
- lower:"Barbell + plates · squat rack · DBs (BSS + SL-RDL) · bench · farmer handles/heavy DBs · cable or band (Pallof)",
- mixed:"Barbell (OHP + row) · landmine · trap bar or box · DBs (step-ups) · finisher gear"};
+ upper:"Bench + barbell + plates · chest-supported row machine · DBs · adjustable bench · cable or band (face pulls)",
+ lower:"Barbell + plates · leg press machine · DBs (BSS + SL-RDL) · bench · farmer handles/heavy DBs · cable or band (Pallof)",
+ mixed:"DBs (neutral-grip press + row + step-ups) · landmine · trap bar or box · bench · finisher gear"};
 function hrText(day,w){
   if(day==="mixed"&&w===8) return "Taper: Z1–Z2 only. Save everything for Monday/Wednesday test days.";
   return {
@@ -196,36 +196,46 @@ const nSets=s=>typeof s==="number"?s:4;
 const q15=s=>Math.max(60,Math.round(s/15)*15);
 
 function getSession(w,day){
-  if(day==="upper"){const b=BENCH[w-1],p=PULL[w-1];return {name:"UPPER — Bench + Pull-Up", type:"lift", blocks:[
-    {letter:"W",t:"Warm-up",mins:7,bells:1,ex:[{n:"Row/bike 5 min → pull-aparts ×20 → scap pull-ups ×8 → push-ups ×10 → bar bench ×10 + ramp sets",rx:"one 7:00 countdown",sets:0}]},
-    {letter:"A",t:"Bench Press",mins:b[3],bells:nSets(b[0]),ex:[{n:"Bench Press",rx:b[0]+" × "+b[1]+" @ "+b[2],sets:nSets(b[0]),key:"Bench Press"}]},
-    {letter:"B",t:"Weighted Pull-Up",mins:9,bells:nSets(p[0]),ex:[{n:"Weighted Pull-Up",rx:p[0]+" × "+p[1]+" @ "+p[2],sets:nSets(p[0]),key:"Weighted Pull-Up"}]},
-    {letter:"C",t:"Superset",mins:9,bells:3,ex:[{n:"Single-Arm DB Row",rx:"3 × 10/side",sets:3,key:"SA DB Row"},{n:"Incline DB Press",rx:"3 × 10 — straight into it after the row",sets:3,key:"Incline DB Press"}]},
-    {letter:"D",t:"Superset",mins:5,bells:2,ex:[{n:"Face Pull",rx:"2 × 15 light",sets:2,key:"Face Pull"},{n:"Dead Hang",rx:"2 × max — log seconds as weight",sets:2,key:"Dead Hang"}]}]};}
-  if(day==="lower"){const d0=DL[w-1],s0=SQ[w-1];return {name:"LOWER — Deadlift + Squat", type:"lift", blocks:[
+  if(day==="upper"){const b=BENCH[w-1],p=PULL[w-1];const early=w<=2;return {name:"UPPER — Bench + Row", type:"lift", blocks:[
+    {letter:"W",t:"Warm-up",mins:7,bells:1,ex:[{n:"Bike 5 min → pull-aparts ×20 (band on right wrist) → push-ups ×10 → bar bench ×10 + ramp sets",rx:"one 7:00 countdown",sets:0}]},
+    {letter:"A",t:"Bench Press",mins:b[3],bells:nSets(b[0]),ex:[{n:"Bench Press — right grip soft, don't crush the bar",rx:b[0]+" × "+b[1]+" @ "+b[2],sets:nSets(b[0]),key:"Bench Press"}]},
+    {letter:"B",t:early?"Row — LEFT only":"Row — reintroduction",mins:9,bells:nSets(p[0]),ex:[early
+      ?{n:"Single-Arm DB Row — LEFT arm only (right rests · rehab phase)",rx:p[0]+" × "+p[1]+" @ RPE 7, right hand posts on fist/forearm — no wrist extension",sets:nSets(p[0]),key:"SA DB Row"}
+      :{n:"Chest-Supported Row — both sides, light reintroduction",rx:p[0]+" × "+p[1]+" @ RPE 6–7, wrist neutral · only if pain-free + grip symmetric, else stay left-only",sets:nSets(p[0]),key:"Chest-Supported Row"}]},
+    {letter:"C",t:"Superset",mins:9,bells:3,ex:[{n:early?"Single-Arm DB Row — LEFT only, right posts on fist/forearm":"Single-Arm DB Row",rx:"3 × 10"+(early?" left side":"/side"),sets:3,key:"SA DB Row"},{n:"Incline DB Press",rx:"3 × 10 — straight into it after the row",sets:3,key:"Incline DB Press"}]},
+    {letter:"D",t:"Superset",mins:5,bells:2,ex:[{n:"Face Pull — band looped around right wrist, no right grip",rx:"2 × 15 light",sets:2,key:"Face Pull"},{n:"Wrist Rehab (per phase)",rx:w<=1?"pain-free ROM only · isometric extension holds if ROM is clean":"light DB wrist extensions + forearm rotations — 2 × 12–15, stop on pain",sets:2,key:"Wrist Rehab"}]}]};}
+  if(day==="lower"){const d0=DL[w-1],s0=SQ[w-1];const early=w<=2;return {name:early?"LOWER — Leg Press + Hinge (rehab)":"LOWER — Deadlift Reintro + Leg Press", type:"lift", blocks:[
     {letter:"W",t:"Warm-up",mins:7,bells:1,ex:[{n:"Bike 5 min → hip rolls ×10 → leg overs ×10 → BW squat ×15 → SL-RDL reach ×8/side + ramp sets",rx:"one 7:00 countdown",sets:0}]},
-    {letter:"A",t:"Deadlift",mins:d0[3],bells:nSets(d0[0]),ex:[{n:"Conventional Deadlift — reset every rep",rx:d0[0]+" × "+d0[1]+" @ "+d0[2],sets:nSets(d0[0]),key:"Deadlift"}]},
-    {letter:"B",t:"Back Squat",mins:s0[3],bells:s0[0],ex:[{n:"Back Squat",rx:s0[0]+" × "+s0[1]+" @ "+s0[2],sets:s0[0],key:"Back Squat"}]},
-    {letter:"C",t:"Superset",mins:10,bells:3,ex:[{n:"Bulgarian Split Squat",rx:"3 × 8/side",sets:3,key:"Bulgarian SS"},{n:"Single-Leg RDL (DB)",rx:"3 × 8/side — straight after BSS",sets:3,key:"SL RDL"}]},
-    {letter:"D",t:"Superset",mins:5,bells:2,ex:[{n:"Farmer Carry",rx:"2 × 40 yd heavy — log load",sets:2,key:"Farmer Carry"},{n:"Pallof / Hanging Knee Raise",rx:"2 × 10–12",sets:2,key:"Pallof"}]}]};}
+    {letter:"A",t:early?"Hinge — SKB RDL":"Deadlift — reintroduction",mins:d0[3],bells:nSets(d0[0]),ex:[early
+      ?{n:"Single-KB RDL — LEFT hand (deadlift returns wk 3+ per rehab timeline)",rx:"4 × 8 @ RPE 7 left hand · proven to 44kg",sets:4,key:"SKB RDL"}
+      :{n:"Conventional Deadlift — reintro: double overhand, crisp reps, stop if grip asymmetric",rx:d0[0]+" × "+Math.max(2,Math.min(3,+d0[1]||3))+" @ 50–60% ("+Math.round(0.55*305)+" lb ballpark) · only if pain-free + strength normalized",sets:nSets(d0[0]),key:"Deadlift"}]},
+    {letter:"B",t:"Leg Press",mins:s0[3],bells:s0[0],ex:[{n:"Leg Press (primary lower load during rehab)",rx:s0[0]+" × "+s0[1]+" @ RPE 7–8",sets:s0[0],key:"Leg Press"}]},
+    {letter:"C",t:"Superset",mins:10,bells:3,ex:[{n:"Bulgarian Split Squat — BW or DB in LEFT hand",rx:"3 × 8/side",sets:3,key:"Bulgarian SS"},{n:"Single-Leg RDL — DB in LEFT hand",rx:"3 × 8/side — straight after BSS",sets:3,key:"SL RDL"}]},
+    {letter:"D",t:"Superset",mins:5,bells:2,ex:[{n:early?"Suitcase Carry — LEFT hand only (farmer carry returns wk 3+)":"Farmer Carry — light, both hands, no max grip on right",rx:"2 × 40 yd",sets:2,key:"Farmer Carry"},{n:"Pallof / Lying Leg Raise",rx:"2 × 10–12",sets:2,key:"Pallof"}]}]};}
   if(day==="mixed"){
-    const o=OHP(w),r=ROW(w),f=FIN[(w-1)%3];
+    const o=OHP(w),r=ROW(w),f=FIN[(w-1)%3];const early=w<=2;
     const blocks=[
-      {letter:"W",t:"Warm-up",mins:6,bells:1,ex:[{n:"Ski/runner easy 4 min → hand walk-outs ×6 → side lunge ×8/side → A-skips",rx:"one 6:00 countdown",sets:0}]},
-      {letter:"A",t:"Superset",mins:12,bells:o[0],ex:[{n:"Overhead Press",rx:o[0]+" × "+o[1]+" @ "+o[2],sets:o[0],key:"OHP"},{n:"Barbell Bent-Over Row",rx:r[0]+" × "+r[1]+" @ "+r[2]+" — straight after OHP",sets:r[0],key:"BB Row"}]},
-      {letter:"B",t:"Power / Unilateral",mins:12,bells:3,ex:[{n:"Trap Bar Jump or Box Jump",rx:"3 × 5 explosive",sets:3,key:"Jump"},{n:"DB Step-Up",rx:"3 × 8/side",sets:3,key:"Step-Up"},{n:"Landmine Rotation",rx:"3 × 8/side",sets:3,key:"Landmine Rot"}]}];
+      {letter:"W",t:"Warm-up",mins:6,bells:1,ex:[{n:"Bike/runner easy 4 min → arm circles ×10 → side lunge ×8/side → A-skips",rx:"one 6:00 countdown",sets:0}]},
+      {letter:"A",t:"Superset",mins:12,bells:o[0],ex:[{n:"Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)",rx:o[0]+" × "+o[1]+" @ RPE 7–8",sets:o[0],key:"DB Shoulder Press"},{n:early?"Neutral-Grip DB Row — LEFT arm only (rehab phase)":"Neutral-Grip DB Row",rx:r[0]+" × "+r[1]+" @ RPE "+(early?"7 left side":"6–7 both sides if pain-free")+" — straight after press",sets:r[0],key:"DB Row"}]},
+      {letter:"B",t:"Power / Unilateral",mins:12,bells:3,ex:[{n:"Box Jump (no trap bar — grip demand until cleared)",rx:"3 × 5 explosive",sets:3,key:"Jump"},{n:"DB Step-Up — LEFT hand or bodyweight",rx:"3 × 8/side",sets:3,key:"Step-Up"},{n:"Landmine Rotation — LEFT-hand-dominant wrap, right assists loosely",rx:"3 × 8/side",sets:3,key:"Landmine Rot"}]}];
     if(w<8) blocks.push({letter:"C",t:"Finisher · RPE cap 8",mins:f.mins,bells:f.rounds,ex:[{n:f.n,rx:"bell = start next round",sets:0}]});
     else blocks.push({letter:"C",t:"No finisher — taper",mins:0,bells:0,ex:[{n:"Leave the gym feeling fresh.",rx:"",sets:0}]});
     return {name:"MIXED — Hybrid Supersets", type:"lift", blocks};
   }
   if(day==="tue"||day==="thu"){
     return {name:"ZONE 2 — Optional", type:"zone2", blocks:[
-      {letter:"Z",t:"Zone 2 · straight",mins:30,bells:1,ex:[{n:"Peloton class, jog, ski, row, or assault runner — conversational pace",rx:"one 30:00 countdown · stop anywhere in the 25–35 min window",sets:0}]}]};
+      {letter:"Z",t:"Zone 2 · straight",mins:30,bells:1,ex:[{n:"Ruck walk (10 lb), Peloton, jog, bike, or assault runner — conversational pace · NO rower/ski erg (grip + pulling)",rx:"one 30:00 countdown · stop anywhere in the 25–35 min window",sets:0}]}]};
   }
   if(day==="sat"){
-    return {name:"BFT / EQUINOX CLASS", type:"class", blocks:[]};
+    return {name:"SAT — Lower/Core Sub · cap 7/10", type:"class", blocks:[
+      {letter:"W",t:"Warm-up",mins:5,bells:1,ex:[{n:"Bike easy spin → leg swings → glute bridges ×10 → BW squats ×15",rx:"one 5:00 countdown",sets:0}]},
+      {letter:"A",t:"Hinge",mins:10,bells:4,ex:[{n:"Single-KB RDL — LEFT hand",rx:"4 × 8 @ RPE 7",sets:4,key:"SKB RDL"}]},
+      {letter:"B",t:"Superset",mins:10,bells:3,ex:[{n:"DB Walking Lunge or RFE Split Squat — LEFT hand or BW",rx:"3 × 10/leg",sets:3,key:"Walking Lunge"},{n:"Hip Thrust / Glute Bridge Machine",rx:"3 × 12",sets:3,key:"Hip Thrust"}]},
+      {letter:"C",t:"Superset",mins:8,bells:3,ex:[{n:"Standing Calf Raise",rx:"3 × 15",sets:3,key:"Calf Raise"},{n:"Lying Leg Raise",rx:"3 × 12",sets:3,key:"Lying Leg Raise"}]},
+      {letter:"D",t:"Core",mins:6,bells:3,ex:[{n:"Side Plank — FOREARM (no hand support on right)",rx:"3 × 30s/side",sets:3,key:"Side Plank"},{n:"Dead Bug",rx:"3 × 10/side",sets:3,key:"Dead Bug"}]},
+      {letter:"E",t:"Finisher — reference only",mins:10,bells:1,ex:[{n:"Bike or incline treadmill — 10 min steady Z2, optional 3–5 × 1:00 Z3 / 1:00 Z2 to finish",rx:"stay under the 7/10 cap",sets:0}]}]};
   }
-  return {name:"CS4 — Active Recovery", type:"recovery", blocks:[]};
+  return {name:"SUN — Gentle Yoga · Active Recovery", type:"recovery", blocks:[]};
 }
 const interval=b=>b.bells>0?q15(b.mins*60/b.bells):0;
 
@@ -236,8 +246,13 @@ const MODEL_DESC={
   cardio:"Straight ramp: 1–5 pts/min from Z1 to Z5.",
   strength:"Inverted-U per your sheet: Z0 1 · Z1 2 · Z2 4 (peak) · Z3 3 · Z4 1.5 · Z5 0.8 pts/min. Score by lifting, not redlining.",
   summit:"Cardio family with a Z4 boost (~4.35 pts/min at 80–89%)."};
-const ZONE_NAMES=["Below zones","Zone 1 · 50–59%","Zone 2 · 60–69%","Zone 3 · 70–79%","Zone 4 · 80–89%","Zone 5 · 90%+"];
-function zoneOf(pct){ if(pct>=90)return 5; if(pct>=80)return 4; if(pct>=70)return 3; if(pct>=60)return 2; if(pct>=50)return 1; return 0; }
+const ZONE_NAMES=["Below zones","Zone 1 · 40–59% HRR","Zone 2 · 60–69% HRR","Zone 3 · 70–79% HRR","Zone 4 · 80–89% HRR","Zone 5 · 90%+ HRR"];
+function zoneOf(pct){ if(pct>=90)return 5; if(pct>=80)return 4; if(pct>=70)return 3; if(pct>=60)return 2; if(pct>=40)return 1; return 0; }
+/* %HRR (Karvonen) — matches WHOOP zone boundaries exactly (RHR 46 / max 185 → Z2 = 130–143 bpm) */
+function hrPct(bpm){ const r=pxiSet.restingHr||46, m=pxiSet.maxHr||185; return Math.round((bpm-r)/Math.max(1,m-r)*100); }
+function zoneOfBpm(bpm){ const r=pxiSet.restingHr||46, H=Math.max(1,(pxiSet.maxHr||185)-r);
+  const b=f=>Math.floor(r+f*H)+1;
+  if(bpm>=b(.9))return 5; if(bpm>=b(.8))return 4; if(bpm>=b(.7))return 3; if(bpm>=b(.6))return 2; if(bpm>=Math.floor(r+.4*H))return 1; return 0; }
 function scoreZones(mins,model){ const p=PTS[model]||PTS.cardio; return mins.reduce((s,m,i)=>s+m*p[i],0); }
 function medalFor(pxi,target){
   if(!target) return null;
@@ -268,7 +283,7 @@ try{localStorage.setItem("_t","1");localStorage.removeItem("_t");}catch(e){stora
 let memLogs=[];
 const loadLogs=()=>{ if(!storageOK) return memLogs; try{return JSON.parse(localStorage.getItem("dtp-logs")||"[]");}catch(e){return [];} };
 const saveLogs=l=>{ if(storageOK) localStorage.setItem("dtp-logs",JSON.stringify(l)); else memLogs=l; };
-let pxiSet=(()=>{ const d={maxHr:185,target:105,model:"auto"};
+let pxiSet=(()=>{ const d={maxHr:185,restingHr:46,target:105,model:"auto"};
   if(!storageOK) return d;
   try{return Object.assign(d,JSON.parse(localStorage.getItem("dtp-pxi")||"{}"));}catch(e){return d;} })();
 const savePxiSet=()=>{ if(storageOK) localStorage.setItem("dtp-pxi",JSON.stringify(pxiSet)); };
@@ -311,8 +326,8 @@ function onHrDisconnect(){
 }
 function liveSecond(){
   if(live.lastBpm==null) return;
-  const pct=Math.round(live.lastBpm/pxiSet.maxHr*100);
-  const z=zoneOf(pct);
+  const pct=hrPct(live.lastBpm);
+  const z=zoneOfBpm(live.lastBpm);
   live.zoneSecs[z]+=1; live.secs+=1;
   if(curDay()==="tue"||curDay()==="thu"){
     /* Tue/Thu: mirror saveSession()'s exact pipeline — round each zone to 0.1min first, then sum, then floor */
@@ -475,6 +490,15 @@ function render(){
   }
   /* ---- Sat: BFT/Equinox class ---- */
   if(s.type==="class"){
+    if(s.blocks.length){
+      h+=`<div class="meta warn"><b>Effort cap ~7/10.</b> Programmed Saturday — no BFT/Equinox classes through Jul 31 (rehab + coaching pause). Conditioning slot, not a fourth lifting day.</div>`;
+      h+=`<div class="meta px"><b>Scoring:</b> RKD counts on the cardio ramp for reference only — no medal, no target. Watch the zone card instead.</div>`;
+      h+=`<div class="notecard"><label>Zone check (live from WHOOP)</label><div id="zc" data-type="class"></div></div>`;
+      s.blocks.forEach((b,bi)=>{ h+=blockHtml(s,bi); });
+      h+=rpeNoteSaveHtml();
+      h+=`<button class="restbtn" onclick="logRest()">Skipped — log rest</button>`;
+      m.innerHTML=h; curRPE=0; updateCompliance(); return;
+    }
     h+=`<div class="meta warn"><b>Effort cap ~7/10.</b> Don't chase RKD or race the class — this fills the conditioning slot, it is NOT a fourth lifting day. If the class runs hot (true HIIT), dial back or skip.</div>`;
     if(w===7) h+=`<div class="meta warn"><b>Week 7:</b> keep this genuinely easy — test week starts Monday.</div>`;
     if(w===8) h+=`<div class="meta warn"><b>Week 8 — test week:</b> skip class, or very easy Z1–Z2 only. A walk or 20 easy minutes on the bike at most.</div>`;
@@ -486,8 +510,8 @@ function render(){
   }
   /* ---- Sun: CS4 recovery ---- */
   if(s.type==="recovery"){
-    h+=`<div class="meta"><b>CS4 — active recovery.</b> Condensed CS4 at reduced pace/volume — coaching practice, not training. If Saturday ran harder than planned, keep this strictly easy. Sauna 10 min after is ideal.</div>`;
-    h+=`<div class="meta eq"><b>Why it matters:</b> Sat (capped) + Sun (light CS4) = your built-in two-day taper into Monday's heavy Upper session.</div>`;
+    h+=`<div class="meta"><b>Gentle yoga — active recovery.</b> Tell the instructor about the right forearm before class. <b>Modify every hands-down pose:</b> forearm plank instead of plank, dolphin instead of down dog, skip chaturanga, fists or wedge if hands must touch the floor. A gentle class can still be 20 min of loaded wrist extension if you don't modify.</div>`;
+    h+=`<div class="meta eq"><b>Why it matters:</b> Sat (capped) + Sun (easy yoga) = your built-in two-day taper into Monday's Upper session.</div>`;
     if(w===8) h+=`<div class="meta warn"><b>Week 8:</b> walk-through pace only. Block complete — log final numbers. New 1RMs from Mon/Wed become the Block 2 baselines.</div>`;
     h+=rpeNoteSaveHtml();
     m.innerHTML=h; curRPE=0; return;
@@ -630,6 +654,7 @@ function renderPxiPage(m){
   <div class="notecard">
     <label>Scoring settings</label>
     <div class="fieldrow"><span>Max heart rate</span><input type="number" id="setMaxHr" min="120" max="220" value="${pxiSet.maxHr}"></div>
+    <div class="fieldrow"><span>Resting heart rate (WHOOP baseline)</span><input type="number" id="setRestHr" min="30" max="90" value="${pxiSet.restingHr}"></div>
     <div class="fieldrow"><span>Target RKD (lifting days)</span><input type="number" id="setTarget" min="10" max="500" value="${pxiSet.target}"></div>
     <div class="fieldrow"><span>Curve</span>
       <select id="setModel" style="flex:0 0 200px">
@@ -641,6 +666,7 @@ function renderPxiPage(m){
     <div class="meta px" style="margin:8px 0 0"><b>${curModel().toUpperCase()}:</b> ${MODEL_DESC[curModel()]} Medals (lifting days only): Gold ±5% · Silver 6–10% · Bronze 11–15%. Tue/Thu score zone caps, not RKD.</div>
   </div>`;
   document.getElementById("setMaxHr").addEventListener("change",e=>{pxiSet.maxHr=+e.target.value||185;savePxiSet();});
+  document.getElementById("setRestHr").addEventListener("change",e=>{pxiSet.restingHr=+e.target.value||46;savePxiSet();});
   document.getElementById("setTarget").addEventListener("change",e=>{pxiSet.target=+e.target.value||105;savePxiSet();renderLiveScore();});
   document.getElementById("setModel").addEventListener("change",e=>{pxiSet.model=e.target.value;savePxiSet();renderPxiPage(m);});
   renderLiveScore();
@@ -660,7 +686,7 @@ function manualScore(){
 
 /* ================= HISTORY / PRS ================= */
 const e1rm=(w,r)=>w*(1+r/30);
-const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec"};
+const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Supported Row":"lb","DB Shoulder Press":"lb","DB Row":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec","SKB RDL":"kg","Hip Thrust":"lb"};
 const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun"};
 const escAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 function weeklyTotals(logs){
@@ -684,7 +710,7 @@ function renderHistory(m){
   }));
   let h=`<div class="pr-grid">`;
   Object.keys(PR_KEYS).forEach(k=>{const p=prs[k];
-    h+=`<div class="pr"><div class="l">${k}${PR_KEYS[k]==="lb"?" · e1RM":""}</div><div class="v">${p?Math.round(p.v)+(PR_KEYS[k]==="sec"?"s":PR_KEYS[k]==="+lb"?" lb":""):"—"}</div>${p&&p.raw?`<div class="sub" style="font-size:12px;color:var(--muted)">${p.raw}</div>`:""}</div>`;});
+    h+=`<div class="pr"><div class="l">${k}${PR_KEYS[k]==="lb"?" · e1RM":""}</div><div class="v">${p?Math.round(p.v)+(PR_KEYS[k]==="sec"?"s":PR_KEYS[k]==="+lb"?" lb":PR_KEYS[k]==="kg"?" kg":""):"—"}</div>${p&&p.raw?`<div class="sub" style="font-size:12px;color:var(--muted)">${p.raw}</div>`:""}</div>`;});
   h+=`</div>`;
   const totals=weeklyTotals(logs);
   const weeks=Object.keys(totals).map(Number).sort((a,b)=>b-a);
