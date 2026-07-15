@@ -171,6 +171,8 @@ main{padding:12px 14px}
 
 <script>
 /* ================= PROGRAM DATA ================= */
+// DORMANT — bench loading progression, retained for post-clearance
+// reintroduction (OT reassessment Aug 11). Do not delete.
 const BENCH=[[3,10,"120 lb",12],[4,8,"130 lb",13],[4,8,"135 lb",13],[4,6,"145 lb",13],[5,5,"150 lb",14],[4,3,"160 lb",15],[5,2,"170 lb",17],["Ramp","1","185–195 test",16]];
 const PULL=[[4,6,"BW"],[4,6,"BW +2s lower"],[4,5,"+10 lb"],[4,5,"+15 lb"],[4,4,"+20 lb"],[4,3,"+25 lb"],[4,3,"+30 lb"],["Ramp","1–3","+35–45 test"]];
 const DL=[[3,8,"220 lb",13],[3,8,"235 lb",13],[4,6,"250 lb",14],[4,5,"260 lb",14],[5,4,"270 lb",15],[4,3,"285 lb",15],[3,2,"305 lb",16],["Ramp","1","335–350 test",16]];
@@ -196,16 +198,16 @@ const nSets=s=>typeof s==="number"?s:4;
 const q15=s=>Math.max(60,Math.round(s/15)*15);
 
 function getSession(w,day){
-  if(day==="upper"){const b=BENCH[w-1],p=PULL[w-1];const early=w<=2;return {name:"UPPER — Bench + Row", type:"lift", blocks:[
-    {letter:"W",t:"Warm-up",mins:7,bells:1,ex:[{n:"Bike 5 min → pull-aparts ×20 (band on right wrist) → push-ups ×10 → bar bench ×10 + ramp sets",rx:"one 7:00 countdown",sets:0}]},
-    {letter:"A",t:"Bench Press",mins:b[3],bells:nSets(b[0]),ex:[{n:"Bench Press — right grip soft, don't crush the bar",rx:b[0]+" × "+b[1]+" @ "+b[2],sets:nSets(b[0]),key:"Bench Press"}]},
+  if(day==="upper"){const p=PULL[w-1];const early=w<=2;return {name:"UPPER — Push Rehab + Row", type:"lift", blocks:[
+    {letter:"W",t:"Warm-up",mins:7,bells:1,ex:[{n:"Bike 5 min → pull-aparts ×20 (band on right wrist) → wall push-ups ×5 easy",rx:"one 7:00 countdown",sets:0},{n:"Scapular Wall Slides x5",sets:0},{n:"Pillowcase Wall Isometric x5",sets:0}]},
+    {letter:"A",t:"Wall Push-Up Progression",mins:8,bells:3,ex:[{n:"Wall Push-Up Progression",rx:"max pain-free reps × 2–3 sets — stop BEFORE pain, never through it. Progress wall → countertop → floor only at 10+ clean reps. Goal: 5 pain-free floor push-ups.",sets:3,key:"Wall Push-Up Progression"}]},
     {letter:"B",t:early?"Row — LEFT only":"Row — reintroduction",mins:9,bells:nSets(p[0]),ex:[early
       ?{n:"Single-Arm DB Row — LEFT arm only (right rests · rehab phase)",rx:p[0]+" × "+p[1]+" @ RPE 7, right hand posts on fist/forearm — no wrist extension",sets:nSets(p[0]),key:"SA DB Row"}
       :{n:"Chest-Supported Row — both sides, light reintroduction",rx:p[0]+" × "+p[1]+" @ RPE 6–7, wrist neutral · only if pain-free + grip symmetric, else stay left-only",sets:nSets(p[0]),key:"Chest-Supported Row"}]},
-    {letter:"C",t:"Superset",mins:9,bells:3,ex:[{n:early?"Single-Arm DB Row — LEFT only, right posts on fist/forearm":"Single-Arm DB Row",rx:"3 × 10"+(early?" left side":"/side"),sets:3,key:"SA DB Row"},{n:"Incline DB Press",rx:"3 × 10 — straight into it after the row",sets:3,key:"Incline DB Press"}]},
+    {letter:"C",t:"Superset",mins:9,bells:3,ex:[{n:early?"Single-Arm DB Row — LEFT only, right posts on fist/forearm":"Single-Arm DB Row",rx:"3 × 10"+(early?" left side":"/side"),sets:3,key:"SA DB Row"},{n:"Rope Triceps Pressdown",rx:"3 × 12 — straight into it after the row",sets:3,key:"Rope Triceps Pressdown"}]},
     {letter:"D",t:"Superset",mins:5,bells:2,ex:[{n:"Face Pull — band looped around right wrist, no right grip",rx:"2 × 15 light",sets:2,key:"Face Pull"},{n:"Wrist Rehab (per phase)",rx:w<=1?"pain-free ROM only · isometric extension holds if ROM is clean":"light DB wrist extensions + forearm rotations — 2 × 12–15, stop on pain",sets:2,key:"Wrist Rehab"}]}]};}
   if(day==="lower"){const d0=DL[w-1],s0=SQ[w-1];const early=w<=2;return {name:early?"LOWER — Leg Press + Hinge (rehab)":"LOWER — Deadlift Reintro + Leg Press", type:"lift", blocks:[
-    {letter:"W",t:"Warm-up",mins:7,bells:1,ex:[{n:"Bike 5 min → hip rolls ×10 → leg overs ×10 → BW squat ×15 → SL-RDL reach ×8/side + ramp sets",rx:"one 7:00 countdown",sets:0}]},
+    {letter:"W",t:"Warm-up",mins:7,bells:1,ex:[{n:"Bike 5 min → hip rolls ×10 → leg overs ×10 → BW squat ×15 → SL-RDL reach ×8/side + ramp sets",rx:"one 7:00 countdown",sets:0},{n:"Scapular Wall Slides x5",sets:0},{n:"Pillowcase Wall Isometric x5",sets:0}]},
     {letter:"A",t:early?"Hinge — SKB RDL":"Deadlift — reintroduction",mins:d0[3],bells:nSets(d0[0]),ex:[early
       ?{n:"Single-KB RDL — LEFT hand (deadlift returns wk 3+ per rehab timeline)",rx:"4 × 8 @ RPE 7 left hand · proven to 44kg",sets:4,key:"SKB RDL"}
       :{n:"Conventional Deadlift — reintro: double overhand, crisp reps, stop if grip asymmetric",rx:d0[0]+" × "+Math.max(2,Math.min(3,+d0[1]||3))+" @ 50–60% ("+Math.round(0.55*305)+" lb ballpark) · only if pain-free + strength normalized",sets:nSets(d0[0]),key:"Deadlift"}]},
@@ -215,8 +217,8 @@ function getSession(w,day){
   if(day==="mixed"){
     const o=OHP(w),r=ROW(w),f=FIN[(w-1)%3];const early=w<=2;
     const blocks=[
-      {letter:"W",t:"Warm-up",mins:6,bells:1,ex:[{n:"Bike/runner easy 4 min → arm circles ×10 → side lunge ×8/side → A-skips",rx:"one 6:00 countdown",sets:0}]},
-      {letter:"A",t:"Superset",mins:12,bells:o[0],ex:[{n:"Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)",rx:o[0]+" × "+o[1]+" @ RPE 7–8",sets:o[0],key:"DB Shoulder Press"},{n:early?"Neutral-Grip DB Row — LEFT arm only (rehab phase)":"Neutral-Grip DB Row",rx:r[0]+" × "+r[1]+" @ RPE "+(early?"7 left side":"6–7 both sides if pain-free")+" — straight after press",sets:r[0],key:"DB Row"}]},
+      {letter:"W",t:"Warm-up",mins:6,bells:1,ex:[{n:"Bike/runner easy 4 min → arm circles ×10 → side lunge ×8/side → A-skips",rx:"one 6:00 countdown",sets:0},{n:"Scapular Wall Slides x5",sets:0},{n:"Pillowcase Wall Isometric x5",sets:0}]},
+      {letter:"A",t:"Superset",mins:12,bells:o[0],ex:[{n:"Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)",rx:o[0]+" × "+o[1]+" @ RPE 5–6 light, pain-free only — reduce ROM or go left-arm-only if the right shoulder or elbow talks back",sets:o[0],key:"DB Shoulder Press"},{n:early?"Neutral-Grip DB Row — LEFT arm only (rehab phase)":"Neutral-Grip DB Row",rx:r[0]+" × "+r[1]+" @ RPE "+(early?"7 left side":"6–7 both sides if pain-free")+" — straight after press",sets:r[0],key:"DB Row"}]},
       {letter:"B",t:"Power / Unilateral",mins:12,bells:3,ex:[{n:"Box Jump (no trap bar — grip demand until cleared)",rx:"3 × 5 explosive",sets:3,key:"Jump"},{n:"DB Step-Up — LEFT hand or bodyweight",rx:"3 × 8/side",sets:3,key:"Step-Up"},{n:"Landmine Rotation — LEFT-hand-dominant wrap, right assists loosely",rx:"3 × 8/side",sets:3,key:"Landmine Rot"}]}];
     if(w<8) blocks.push({letter:"C",t:"Finisher · RPE cap 8",mins:f.mins,bells:f.rounds,ex:[{n:f.n,rx:"bell = start next round",sets:0}]});
     else blocks.push({letter:"C",t:"No finisher — taper",mins:0,bells:0,ex:[{n:"Leave the gym feeling fresh.",rx:"",sets:0}]});
@@ -686,7 +688,7 @@ function manualScore(){
 
 /* ================= HISTORY / PRS ================= */
 const e1rm=(w,r)=>w*(1+r/30);
-const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Supported Row":"lb","DB Shoulder Press":"lb","DB Row":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec","SKB RDL":"kg","Hip Thrust":"lb"};
+const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Supported Row":"lb","DB Shoulder Press":"lb","DB Row":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec","SKB RDL":"kg","Hip Thrust":"lb","Wall Push-Up Progression":"reps","Rope Triceps Pressdown":"lb"};
 const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun"};
 const escAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 function weeklyTotals(logs){
@@ -706,11 +708,12 @@ function renderHistory(m){
     e.sets.forEach(s=>{const w=parseFloat(s.w),r=parseFloat(s.r);
       if(e.key==="Dead Hang"){if(w&&(!prs[e.key]||w>prs[e.key].v))prs[e.key]={v:w};return;}
       if(e.key==="Weighted Pull-Up"){if(!isNaN(w)&&(!prs[e.key]||w>prs[e.key].v))prs[e.key]={v:w};return;}
+      if(e.key==="Wall Push-Up Progression"){if(r&&(!prs[e.key]||r>prs[e.key].v))prs[e.key]={v:r};return;}
       if(w&&r){const est=e1rm(w,r);if(!prs[e.key]||est>prs[e.key].v)prs[e.key]={v:est,raw:w+"×"+r};}});
   }));
   let h=`<div class="pr-grid">`;
   Object.keys(PR_KEYS).forEach(k=>{const p=prs[k];
-    h+=`<div class="pr"><div class="l">${k}${PR_KEYS[k]==="lb"?" · e1RM":""}</div><div class="v">${p?Math.round(p.v)+(PR_KEYS[k]==="sec"?"s":PR_KEYS[k]==="+lb"?" lb":PR_KEYS[k]==="kg"?" kg":""):"—"}</div>${p&&p.raw?`<div class="sub" style="font-size:12px;color:var(--muted)">${p.raw}</div>`:""}</div>`;});
+    h+=`<div class="pr"><div class="l">${k}${PR_KEYS[k]==="lb"?" · e1RM":""}${k==="Wall Push-Up Progression"?" · resets meaning per stage":""}</div><div class="v">${p?Math.round(p.v)+(PR_KEYS[k]==="sec"?"s":PR_KEYS[k]==="+lb"?" lb":PR_KEYS[k]==="kg"?" kg":PR_KEYS[k]==="reps"?" reps":""):"—"}</div>${p&&p.raw?`<div class="sub" style="font-size:12px;color:var(--muted)">${p.raw}</div>`:""}</div>`;});
   h+=`</div>`;
   const totals=weeklyTotals(logs);
   const weeks=Object.keys(totals).map(Number).sort((a,b)=>b-a);
@@ -745,6 +748,7 @@ function priorBestValue(logs,uptoIdx,key){
       e.sets.forEach(s=>{const w=parseFloat(s.w),r=parseFloat(s.r);
         if(key==="Dead Hang"){if(w&&(best==null||w>best))best=w;return;}
         if(key==="Weighted Pull-Up"){if(!isNaN(w)&&(best==null||w>best))best=w;return;}
+        if(key==="Wall Push-Up Progression"){if(r&&(best==null||r>best))best=r;return;}
         if(w&&r){const est=e1rm(w,r);if(best==null||est>best)best=est;}});
     });
   }
@@ -759,6 +763,7 @@ function exerciseSummaryLine(logs,idx,e){
     let val=null;
     if(e.key==="Dead Hang")val=w||null;
     else if(e.key==="Weighted Pull-Up")val=!isNaN(w)?w:null;
+    else if(e.key==="Wall Push-Up Progression")val=r||null;
     else if(w&&r)val=e1rm(w,r);
     let pr=false;
     if(e.key in PR_KEYS&&val!=null&&(best==null||val>best)){pr=true;best=val;}
