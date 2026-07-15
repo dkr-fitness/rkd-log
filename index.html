@@ -292,6 +292,31 @@ const savePxiSet=()=>{ if(storageOK) localStorage.setItem("dtp-pxi",JSON.stringi
 let view="session", curRPE=0, finishedBlocks=new Set();
 let pendingManual=null;
 
+/* ================= HEP TRACKER (compliance only — no RKD scoring) ================= */
+const HEP_LABELS=["B1 Gym","B2 Mid-AM","B3 Lunch","B4 PM","B5 Evening"];
+let hepMem={};
+const todayStr=()=>{ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+const hepKey=()=>"hep_"+todayStr();
+function loadHep(){
+  const k=hepKey();
+  if(!storageOK) return hepMem[k]||[false,false,false,false,false];
+  try{return JSON.parse(localStorage.getItem(k)||"null")||[false,false,false,false,false];}catch(e){return [false,false,false,false,false];}
+}
+function saveHep(arr){ const k=hepKey(); if(storageOK) localStorage.setItem(k,JSON.stringify(arr)); else hepMem[k]=arr; }
+const hepCls=n=>n===5?"ok":n>=3?"warn":"bad";
+const hepRowHtml=n=>`<div class="zc-row ${hepCls(n)}"><span class="zl">HEP</span><span class="zr">home exercise program — today</span><span class="zv">${n}/5</span></div>`;
+function hepPanelHtml(){
+  const arr=loadHep(); const n=arr.filter(Boolean).length;
+  let h=`<div class="notecard"><label>Daily HEP</label>`;
+  HEP_LABELS.forEach((l,i)=>{ h+=`<div class="fieldrow"><span>${l}</span><input type="checkbox" id="hep${i}" ${arr[i]?"checked":""} onchange="toggleHep(${i})"></div>`; });
+  h+=`<div id="hepStatus">${hepRowHtml(n)}</div></div>`;
+  return h;
+}
+function toggleHep(i){
+  const arr=loadHep(); arr[i]=document.getElementById("hep"+i).checked; saveHep(arr);
+  document.getElementById("hepStatus").innerHTML=hepRowHtml(arr.filter(Boolean).length);
+}
+
 /* ================= LIVE HR (WHOOP broadcast via Web Bluetooth) ================= */
 let hrDevice=null, live={zoneSecs:[0,0,0,0,0,0], pxi:0, lastBpm:null, secs:0, tick:null};
 function hrListener(e){
@@ -477,6 +502,7 @@ function render(){
   document.getElementById("title").textContent="WK "+w+" · "+s.name.split(" — ")[0];
   let h="";
   if(!storageOK) h+=`<div class="warnbar">Preview mode: saving is in-memory only here. Hosted on GitHub Pages (or opened locally / in Bluefy), your log persists on this device.</div>`;
+  h+=hepPanelHtml();
 
   /* ---- Tue / Thu: optional Zone 2 ---- */
   if(s.type==="zone2"){
@@ -796,14 +822,42 @@ function toggleNote(idx){
   const el=document.getElementById("noteFull"+idx);
   if(el) el.style.display=el.style.display==="none"?"block":"none";
 }
+function collectHep(){
+  const out={};
+  if(storageOK){
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.indexOf("hep_")===0){ try{out[k.slice(4)]=JSON.parse(localStorage.getItem(k));}catch(e){} }
+    }
+  } else {
+    Object.keys(hepMem).forEach(k=>out[k.slice(4)]=hepMem[k]);
+  }
+  return out;
+}
 function exportLogs(){
-  const blob=new Blob([JSON.stringify(loadLogs(),null,1)],{type:"application/json"});
+  const blob=new Blob([JSON.stringify({logs:loadLogs(),hep:collectHep()},null,1)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="block-log-"+new Date().toISOString().slice(0,10)+".json";a.click();
 }
 function importLogs(){
   const inp=document.createElement("input");inp.type="file";inp.accept=".json";
   inp.onchange=e=>{const f=e.target.files[0];const r=new FileReader();
-    r.onload=()=>{try{const d=JSON.parse(r.result);if(Array.isArray(d)){saveLogs(d);toast("Imported "+d.length+" sessions");render();}}catch(err){toast("Import failed");}};
+    r.onload=()=>{try{const d=JSON.parse(r.result);
+      // Intentional asymmetry: logs are REPLACED wholesale (pre-existing behavior),
+      // hep_* keys are MERGED per-date — imported dates overwrite, existing dates
+      // not present in the file survive. Do not "fix" hep to replace.
+      if(Array.isArray(d)){saveLogs(d);toast("Imported "+d.length+" sessions");render();}
+      else if(d&&Array.isArray(d.logs)){
+        saveLogs(d.logs);
+        if(d.hep) Object.keys(d.hep).forEach(date=>{
+          const v=d.hep[date];
+          if(!Array.isArray(v)) return;
+          const arr=v.slice(0,5).map(Boolean);
+          while(arr.length<5)arr.push(false);
+          const k="hep_"+date; if(storageOK) localStorage.setItem(k,JSON.stringify(arr)); else hepMem[k]=arr;
+        });
+        toast("Imported "+d.logs.length+" sessions"); render();
+      }
+    }catch(err){toast("Import failed");}};
     r.readAsText(f);};
   inp.click();
 }
