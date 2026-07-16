@@ -318,8 +318,15 @@ function toggleHep(i){
   document.getElementById("hepStatus").innerHTML=hepRowHtml(arr.filter(Boolean).length);
 }
 
-/* ================= HEP DETAIL TAB (Blocks 2–5, logging only — no scoring) ================= */
+/* ================= HEP DETAIL TAB (Blocks 1–5, logging only — no scoring) ================= */
 const HEP_BLOCKS=[
+ {label:"Block 1", hepIdx:0, ex:[
+   {key:"b1_rom",n:"ROM",rx:"5 reps",type:"reps"},
+   {key:"b1_levator",n:"Levator scap stretch",rx:"(timed)",type:"timed"},
+   {key:"b1_wristflex",n:"Wrist flexion stretch",rx:"(timed)",type:"timed"},
+   {key:"b1_bicep",n:"Bicep stretch at wall",rx:"(timed)",type:"timed"},
+   {key:"b1_scapwallslides",n:"Scap wall slides",rx:"(reps)",type:"reps"},
+   {key:"b1_pronechest",n:"Prone chest stretch",rx:"(timed)",type:"timed"}]},
  {label:"Block 2", hepIdx:1, ex:[
    {key:"b2_rom",n:"ROM",rx:"5 reps",type:"reps"},
    {key:"b2_levator",n:"Levator scap stretch",rx:"(timed)",type:"timed"},
