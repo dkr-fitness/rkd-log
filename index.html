@@ -164,6 +164,7 @@ main{padding:12px 14px}
   <button class="tab active" id="tabS" onclick="setView('session')">Session</button>
   <button class="tab" id="tabP" onclick="setView('pxi')">RKD</button>
   <button class="tab" id="tabH" onclick="setView('history')">History</button>
+  <button class="tab" id="tabHep" onclick="setView('hep')">HEP</button>
 </div>
 <main id="main"></main>
 <div class="dock" id="dock"><div class="dock-idle">Reach your equipment → press ▶ on that block. Bell = start your set. Rest until the next bell.</div></div>
@@ -315,6 +316,110 @@ function hepPanelHtml(){
 function toggleHep(i){
   const arr=loadHep(); arr[i]=document.getElementById("hep"+i).checked; saveHep(arr);
   document.getElementById("hepStatus").innerHTML=hepRowHtml(arr.filter(Boolean).length);
+}
+
+/* ================= HEP DETAIL TAB (Blocks 2–5, logging only — no scoring) ================= */
+const HEP_BLOCKS=[
+ {label:"Block 2", hepIdx:1, ex:[
+   {key:"b2_rom",n:"ROM",rx:"5 reps",type:"reps"},
+   {key:"b2_levator",n:"Levator scap stretch",rx:"(timed)",type:"timed"},
+   {key:"b2_wristfinger",n:"Wrist/finger differential stretch",rx:"(timed)",type:"timed"},
+   {key:"b2_decompression",n:"Decompression massage/cupping",rx:"(timed)",type:"timed"}]},
+ {label:"Block 3", hepIdx:2, ex:[
+   {key:"b3_rom",n:"ROM",rx:"5 reps",type:"reps"},
+   {key:"b3_bicep",n:"Bicep stretch at wall",rx:"(timed)",type:"timed"},
+   {key:"b3_doorway",n:"Doorway stretch",rx:"(timed)",type:"timed"},
+   {key:"b3_finkelstein",n:"Finkelstein",rx:"(timed)",type:"timed"}]},
+ {label:"Block 4", hepIdx:3, ex:[
+   {key:"b4_rom",n:"ROM",rx:"5 reps",type:"reps"},
+   {key:"b4_lat",n:"Lat stretch",rx:"(timed)",type:"timed"},
+   {key:"b4_pillowcase",n:"Pillowcase scap isometric",rx:"(timed holds)",type:"timed"},
+   {key:"b4_toothbrush",n:"Toothbrush desensitization",rx:"(timed)",type:"timed"}]},
+ {label:"Block 5", hepIdx:4, ex:[
+   {key:"b5_rom",n:"ROM",rx:"5 reps",type:"reps"},
+   {key:"b5_circuit",n:"Full stretch circuit",rx:"(timed)",type:"timed"},
+   {key:"b5_pushups",n:"Wall push-ups",rx:"(reps)",type:"reps"}]}
+];
+let hepDetailMem={};
+const hepDetailKey=()=>"hepDetail_"+todayStr();
+function loadHepDetail(){
+  const k=hepDetailKey();
+  if(!storageOK) return hepDetailMem[k]||{};
+  try{return JSON.parse(localStorage.getItem(k)||"null")||{};}catch(e){return {};}
+}
+function saveHepDetail(obj){ const k=hepDetailKey(); if(storageOK) localStorage.setItem(k,JSON.stringify(obj)); else hepDetailMem[k]=obj; }
+function autoCheckHepBlocks(detail){
+  const arr=loadHep(); let changed=false;
+  HEP_BLOCKS.forEach(b=>{
+    if(arr[b.hepIdx]) return;
+    if(b.ex.every(ex=>(detail[ex.key]||[]).length>0)){ arr[b.hepIdx]=true; changed=true; }
+  });
+  if(changed){ saveHep(arr); const el=document.getElementById("hepStatus"); if(el) el.innerHTML=hepRowHtml(arr.filter(Boolean).length); }
+}
+/* ---- shared stopwatch: Date.now()-diff based, start-only reset (no separate reset control) ---- */
+let hepClockRunning=false, hepClockStart=null, hepClockAcc=0, hepClockInt=null;
+function hepElapsedSec(){ return Math.floor((hepClockAcc+(hepClockRunning?Date.now()-hepClockStart:0))/1000); }
+function toggleHepClock(){
+  if(hepClockRunning){
+    hepClockAcc+=Date.now()-hepClockStart; hepClockRunning=false; clearInterval(hepClockInt); hepClockInt=null;
+  } else {
+    hepClockAcc=0; hepClockStart=Date.now(); hepClockRunning=true;
+    hepClockInt=setInterval(()=>{const el=document.getElementById("hepClockEl"); if(el)el.textContent=fmt(hepElapsedSec());},500);
+  }
+  syncHepClockUI();
+}
+function stopHepClock(){
+  if(!hepClockRunning) return;
+  hepClockAcc+=Date.now()-hepClockStart; hepClockRunning=false; clearInterval(hepClockInt); hepClockInt=null;
+}
+function syncHepClockUI(){
+  const el=document.getElementById("hepClockEl"), btn=document.getElementById("hepClockBtn");
+  if(!el||!btn) return;
+  el.textContent=fmt(hepElapsedSec());
+  el.classList.toggle("paused",!hepClockRunning);
+  btn.textContent=hepClockRunning?"Stop":"Start";
+}
+function logHepEntry(key){
+  const inp=document.getElementById("hepIn_"+key); if(!inp) return;
+  if(inp.value==="") return;
+  const v=Number(inp.value);
+  if(!Number.isFinite(v)||v<=0) return;
+  const detail=loadHepDetail();
+  const arr=(detail[key]||[]).slice(0,3);
+  if(arr.length>=3) return;
+  arr.push(v); detail[key]=arr;
+  saveHepDetail(detail);
+  autoCheckHepBlocks(detail);
+  renderHepTab(document.getElementById("main"));
+}
+function renderHepTab(m){
+  document.getElementById("title").textContent="HEP";
+  const detail=loadHepDetail();
+  let h=`<div class="notecard"><label>Stopwatch (reference only — does not log)</label>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div class="clock paused" id="hepClockEl">0:00</div>
+      <button class="btn2 acc" id="hepClockBtn" onclick="toggleHepClock()">Start</button>
+    </div></div>`;
+  HEP_BLOCKS.forEach(b=>{
+    h+=`<div class="notecard"><label>${b.label}</label>`;
+    b.ex.forEach(ex=>{
+      const entries=detail[ex.key]||[];
+      const unit=ex.type==="timed"?"s":" reps";
+      h+=`<div class="ex"><div class="ex-name">${ex.n}</div><div class="ex-rx">${ex.rx}</div><div class="sets">`;
+      entries.forEach((v,i)=>{ h+=`<div class="set"><span class="n">${i+1}</span><span style="font-family:var(--mono)">${v}${unit}</span></div>`; });
+      if(entries.length<3){
+        h+=`<div class="set"><span class="n">${entries.length+1}</span>
+          <input inputmode="decimal" placeholder="${ex.type==="timed"?"sec":"reps"}" id="hepIn_${ex.key}">
+          <button class="btn2" onclick="logHepEntry('${ex.key}')">Log</button></div>`;
+      } else {
+        h+=`<div class="ex-rx">3/3 logged</div>`;
+      }
+      h+=`</div></div>`;
+    });
+    h+=`</div>`;
+  });
+  m.innerHTML=h;
+  syncHepClockUI();
 }
 
 /* ================= LIVE HR (WHOOP broadcast via Web Bluetooth) ================= */
@@ -474,10 +579,13 @@ function bell(){ac(); if(!AC)return; tone(880,0,.35,.5); if(navigator.vibrate)na
 function chime(){ac(); if(!AC)return; tone(660,0,.2,.45); tone(880,.2,.2,.45); tone(1100,.4,.4,.5);}
 
 /* ================= RENDER ================= */
-function setView(v){view=v;
+function setView(v){
+  if(view==="hep"&&v!=="hep") stopHepClock();
+  view=v;
   document.getElementById("tabS").className="tab"+(v==="session"?" active":"");
   document.getElementById("tabP").className="tab"+(v==="pxi"?" active":"");
-  document.getElementById("tabH").className="tab"+(v==="history"?" active":"");render();}
+  document.getElementById("tabH").className="tab"+(v==="history"?" active":"");
+  document.getElementById("tabHep").className="tab"+(v==="hep"?" active":"");render();}
 function lastFor(key,day){
   const logs=loadLogs().filter(l=>l.day===day);
   for(let i=logs.length-1;i>=0;i--){const e=(logs[i].entries||[]).find(x=>x.key===key);
@@ -497,6 +605,7 @@ function render(){
   const m=document.getElementById("main");
   if(view==="history"){renderHistory(m);return;}
   if(view==="pxi"){renderPxiPage(m);return;}
+  if(view==="hep"){renderHepTab(m);return;}
   finishedBlocks=new Set();
   const s=getSession(w,day);
   document.getElementById("title").textContent="WK "+w+" · "+s.name.split(" — ")[0];
@@ -823,19 +932,22 @@ function toggleNote(idx){
   if(el) el.style.display=el.style.display==="none"?"block":"none";
 }
 function collectHep(){
-  const out={};
+  const hep={}, hepDetail={};
   if(storageOK){
     for(let i=0;i<localStorage.length;i++){
       const k=localStorage.key(i);
-      if(k&&k.indexOf("hep_")===0){ try{out[k.slice(4)]=JSON.parse(localStorage.getItem(k));}catch(e){} }
+      if(!k) continue;
+      if(k.indexOf("hep_")===0){ try{hep[k.slice(4)]=JSON.parse(localStorage.getItem(k));}catch(e){} }
+      else if(k.indexOf("hepDetail_")===0){ try{hepDetail[k.slice(10)]=JSON.parse(localStorage.getItem(k));}catch(e){} }
     }
   } else {
-    Object.keys(hepMem).forEach(k=>out[k.slice(4)]=hepMem[k]);
+    Object.keys(hepMem).forEach(k=>hep[k.slice(4)]=hepMem[k]);
+    Object.keys(hepDetailMem).forEach(k=>hepDetail[k.slice(10)]=hepDetailMem[k]);
   }
-  return out;
+  return {hep,hepDetail};
 }
 function exportLogs(){
-  const blob=new Blob([JSON.stringify({logs:loadLogs(),hep:collectHep()},null,1)],{type:"application/json"});
+  const blob=new Blob([JSON.stringify({logs:loadLogs(),...collectHep()},null,1)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="block-log-"+new Date().toISOString().slice(0,10)+".json";a.click();
 }
 function importLogs(){
@@ -843,8 +955,8 @@ function importLogs(){
   inp.onchange=e=>{const f=e.target.files[0];const r=new FileReader();
     r.onload=()=>{try{const d=JSON.parse(r.result);
       // Intentional asymmetry: logs are REPLACED wholesale (pre-existing behavior),
-      // hep_* keys are MERGED per-date — imported dates overwrite, existing dates
-      // not present in the file survive. Do not "fix" hep to replace.
+      // hep_*/hepDetail_* keys are MERGED per-date — imported dates overwrite,
+      // existing dates not present in the file survive. Do not "fix" to replace.
       if(Array.isArray(d)){saveLogs(d);toast("Imported "+d.length+" sessions");render();}
       else if(d&&Array.isArray(d.logs)){
         saveLogs(d.logs);
@@ -854,6 +966,18 @@ function importLogs(){
           const arr=v.slice(0,5).map(Boolean);
           while(arr.length<5)arr.push(false);
           const k="hep_"+date; if(storageOK) localStorage.setItem(k,JSON.stringify(arr)); else hepMem[k]=arr;
+        });
+        if(d.hepDetail) Object.keys(d.hepDetail).forEach(date=>{
+          const v=d.hepDetail[date];
+          if(!v||typeof v!=="object"||Array.isArray(v)) return;
+          const clean={};
+          Object.keys(v).forEach(exKey=>{
+            const a=v[exKey];
+            if(!Array.isArray(a)) return;
+            const nums=a.slice(0,3).map(Number).filter(n=>Number.isFinite(n)&&n>0);
+            if(nums.length) clean[exKey]=nums;
+          });
+          const k="hepDetail_"+date; if(storageOK) localStorage.setItem(k,JSON.stringify(clean)); else hepDetailMem[k]=clean;
         });
         toast("Imported "+d.logs.length+" sessions"); render();
       }
