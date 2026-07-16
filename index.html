@@ -411,11 +411,7 @@ function logHepEntry(key){
 function renderHepTab(m){
   document.getElementById("title").textContent="HEP";
   const detail=loadHepDetail();
-  let h=`<div class="notecard"><label>Stopwatch (reference only — does not log)</label>
-    <div style="display:flex;align-items:center;gap:14px">
-      <div class="clock paused" id="hepClockEl">0:00</div>
-      <button class="btn2 acc" id="hepClockBtn" onclick="toggleHepClock()">Start</button>
-    </div></div>`;
+  let h="";
   HEP_BLOCKS.forEach((b,bi)=>{
     h+=`<div class="notecard" id="hepBlk${bi}"><label class="hep-blk-label" onclick="toggleHepBlockCollapse(${bi})">${b.label}<span class="hep-blk-ind">▾</span></label><div class="hep-blk-body">`;
     b.ex.forEach(ex=>{
@@ -435,7 +431,6 @@ function renderHepTab(m){
     h+=`</div></div>`;
   });
   m.innerHTML=h;
-  syncHepClockUI();
 }
 function toggleHepBlockCollapse(bi){
   const el=document.getElementById("hepBlk"+bi); if(el) el.classList.toggle("collapsed");
@@ -557,7 +552,7 @@ function playBlock(bi){
   highlightSet(bi,1);
 }
 function stopBlock(){ if(!run)return; clearInterval(run.int); markLive(run.bi,false); run=null;
-  document.getElementById("dock").innerHTML=`<div class="dock-idle">Reach your equipment → press ▶ on that block. Bell = start your set. Rest until the next bell.</div>`;}
+  if(view==="session") document.getElementById("dock").innerHTML=`<div class="dock-idle">Reach your equipment → press ▶ on that block. Bell = start your set. Rest until the next bell.</div>`;}
 function tickBlock(){
   const left=Math.ceil((run.end-Date.now())/1000);
   if(left<=0){
@@ -573,10 +568,10 @@ function finishBlock(){
   if(card){card.classList.remove("live");card.classList.add("finished");
     const pb=card.querySelector(".playb"); if(pb){pb.classList.remove("live");pb.classList.add("done");pb.textContent="✓";}}
   clearInterval(run.int); const done=run.letter; run=null;
-  document.getElementById("dock").innerHTML=`<div class="dock-idle"><b style="color:var(--green)">Block ${done} done.</b> Log your numbers, move to the next station, press ▶.</div>`;
+  if(view==="session") document.getElementById("dock").innerHTML=`<div class="dock-idle"><b style="color:var(--green)">Block ${done} done.</b> Log your numbers, move to the next station, press ▶.</div>`;
 }
 function updateDock(left){
-  if(!run)return;
+  if(!run||view!=="session")return;
   left=left??Math.ceil((run.end-Date.now())/1000);
   document.getElementById("dock").innerHTML=`<div class="dock-run">
     <div class="d-block">${run.letter}</div>
@@ -621,7 +616,23 @@ function rpeNoteSaveHtml(){
   h+=`<button class="savebtn" onclick="saveSession()">Finish</button>`;
   return h;
 }
+function renderDock(){
+  const dock=document.getElementById("dock");
+  if(view==="pxi"||view==="history"){ dock.style.display="none"; return; }
+  dock.style.display="";
+  if(view==="hep"){
+    dock.innerHTML=`<div class="dock-run" style="justify-content:center">
+      <div class="clock paused" id="hepClockEl">0:00</div>
+      <button class="btn2 acc" id="hepClockBtn" onclick="toggleHepClock()">Start</button>
+    </div>`;
+    syncHepClockUI();
+    return;
+  }
+  /* session: leave untouched while a block timer is live — it self-heals via the next tickBlock(); otherwise restore the idle prompt */
+  if(!run) dock.innerHTML=`<div class="dock-idle">Reach your equipment → press ▶ on that block. Bell = start your set. Rest until the next bell.</div>`;
+}
 function render(){
+  renderDock();
   const w=+document.getElementById("weekSel").value, day=curDay();
   const m=document.getElementById("main");
   if(view==="history"){renderHistory(m);return;}
