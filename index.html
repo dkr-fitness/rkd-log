@@ -81,6 +81,10 @@ main{padding:12px 14px}
 .notecard textarea{width:100%; background:var(--surface); border:1px solid var(--line); border-radius:8px; color:var(--text); padding:9px; font-size:15px; font-family:var(--body)}
 .notecard input[type=number]{background:var(--surface); border:1px solid var(--line); border-radius:8px; color:var(--text); padding:9px; font-size:15px; width:90px; text-align:center; font-family:var(--mono)}
 .notecard select{padding:9px 10px}
+.hep-blk-label{cursor:pointer; display:flex; align-items:center; justify-content:space-between}
+.hep-blk-ind{display:inline-block; transition:transform .15s ease}
+.notecard.collapsed .hep-blk-ind{transform:rotate(-90deg)}
+.notecard.collapsed .hep-blk-body{display:none}
 .rpe-row{display:flex; gap:6px; margin-top:6px}
 .rpe{flex:1; padding:9px 0; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--muted); font-weight:700}
 .rpe.on{background:var(--amber); color:#0E1526; border-color:var(--amber)}
@@ -412,8 +416,8 @@ function renderHepTab(m){
       <div class="clock paused" id="hepClockEl">0:00</div>
       <button class="btn2 acc" id="hepClockBtn" onclick="toggleHepClock()">Start</button>
     </div></div>`;
-  HEP_BLOCKS.forEach(b=>{
-    h+=`<div class="notecard"><label>${b.label}</label>`;
+  HEP_BLOCKS.forEach((b,bi)=>{
+    h+=`<div class="notecard" id="hepBlk${bi}"><label class="hep-blk-label" onclick="toggleHepBlockCollapse(${bi})">${b.label}<span class="hep-blk-ind">▾</span></label><div class="hep-blk-body">`;
     b.ex.forEach(ex=>{
       const entries=detail[ex.key]||[];
       const unit=ex.type==="timed"?"s":" reps";
@@ -428,10 +432,13 @@ function renderHepTab(m){
       }
       h+=`</div></div>`;
     });
-    h+=`</div>`;
+    h+=`</div></div>`;
   });
   m.innerHTML=h;
   syncHepClockUI();
+}
+function toggleHepBlockCollapse(bi){
+  const el=document.getElementById("hepBlk"+bi); if(el) el.classList.toggle("collapsed");
 }
 
 /* ================= LIVE HR (WHOOP broadcast via Web Bluetooth) ================= */
