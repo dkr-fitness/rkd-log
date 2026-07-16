@@ -37,9 +37,14 @@ body{background:var(--bg); color:var(--text); font-family:var(--body); font-size
 .hb-zone{flex:1; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:rgba(255,255,255,.85)}
 #btnConnect{background:var(--blue); color:#fff; border:none; border-radius:999px; padding:7px 14px; font-weight:700; font-size:12px}
 #btnConnect.linked{background:rgba(255,255,255,.14); font-size:11px}
-#zoneTicks{display:flex; gap:3px; margin-top:6px; height:4px}
-#zoneTicks span{flex:1; background:rgba(255,255,255,.14); border-radius:2px}
-#zoneTicks span.on{background:rgba(255,255,255,.9)}
+/* continuous 40–100% HRR bar: fixed-range fill + zone-width segments doubling as boundary ticks */
+#hrBar{position:relative; margin-top:6px; height:8px; border-radius:4px; overflow:hidden; background:rgba(255,255,255,.08)}
+#hrBarSegs{display:flex; height:100%; position:relative; z-index:1}
+#hrBarSegs span{flex:0 0 16.6667%; height:100%; border-right:1px solid rgba(255,255,255,.35); background:rgba(255,255,255,.06)}
+#hrBarSegs span:first-child{flex-basis:33.3333%}
+#hrBarSegs span:last-child{border-right:none}
+#hrBarSegs span.cur{background:rgba(255,255,255,.18)}
+#hrBarFill{position:absolute; top:0; left:0; height:100%; width:0%; background:rgba(255,255,255,.85); border-radius:4px; transition:width .3s ease; z-index:2}
 
 .selects{display:flex; gap:8px; padding:10px 14px; background:var(--surface)}
 select{flex:1; background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:9px 10px; font-size:15px}
@@ -145,7 +150,7 @@ main{padding:12px 14px}
     <div class="hb-zone" id="zoneName">HR not connected</div>
     <button id="btnConnect" onclick="connectWhoop()">Link WHOOP</button>
   </div>
-  <div id="zoneTicks"><span></span><span></span><span></span><span></span><span></span></div>
+  <div id="hrBar"><div id="hrBarSegs"><span></span><span></span><span></span><span></span><span></span></div><div id="hrBarFill"></div></div>
 </div>
 
 <div class="selects">
@@ -486,7 +491,9 @@ function setBand(z,label,bpm,pct){
   document.getElementById("bpmV").textContent=bpm!=null?bpm:"--";
   document.getElementById("pctV").textContent=pct!=null?pct:"--";
   document.getElementById("pxiV").textContent=Math.round(live.pxi);
-  document.querySelectorAll("#zoneTicks span").forEach((s,i)=>s.classList.toggle("on",bpm!=null&&(i+1)<=z));
+  const fillPct=pct!=null?Math.max(0,Math.min(100,(pct-40)/60*100)):0;
+  document.getElementById("hrBarFill").style.width=fillPct+"%";
+  document.querySelectorAll("#hrBarSegs span").forEach((s,i)=>s.classList.toggle("cur",z>0&&(i+1)===z));
 }
 
 /* Zone-minute compliance (Tue/Thu Z2 + Sat class) — sheet: 25–35 min Z2, ≤5 min Z3, 0 min Z4/Z5 */
