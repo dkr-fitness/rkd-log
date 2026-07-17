@@ -595,7 +595,26 @@ function bell(){ac(); if(!AC)return; tone(880,0,.35,.5); if(navigator.vibrate)na
 function chime(){ac(); if(!AC)return; tone(660,0,.2,.45); tone(880,.2,.2,.45); tone(1100,.4,.4,.5);}
 
 /* ================= RENDER ================= */
+/* ---- session draft: typed-but-unsaved inputs survive tab switches (DOM is rebuilt wholesale on every render) ---- */
+let sessionDraft=null;
+const draftKey=()=>document.getElementById("weekSel").value+"|"+curDay();
+function captureSessionDraft(){
+  const fields={};
+  document.querySelectorAll('#main input[id^="w_"], #main input[id^="r_"]').forEach(el=>{ if(el.value!=="") fields[el.id]=el.value; });
+  const strainEl=document.getElementById("strain"), noteEl=document.getElementById("note"), actEl=document.getElementById("z2act");
+  sessionDraft={key:draftKey(), fields, rpe:curRPE,
+    strain:strainEl?strainEl.value:"", note:noteEl?noteEl.value:"", activity:actEl?actEl.value:null};
+}
+function restoreSessionDraft(){
+  if(!sessionDraft||sessionDraft.key!==draftKey()) return;
+  Object.keys(sessionDraft.fields).forEach(id=>{ const el=document.getElementById(id); if(el) el.value=sessionDraft.fields[id]; });
+  const strainEl=document.getElementById("strain"); if(strainEl&&sessionDraft.strain!=="") strainEl.value=sessionDraft.strain;
+  const noteEl=document.getElementById("note"); if(noteEl&&sessionDraft.note) noteEl.value=sessionDraft.note;
+  const actEl=document.getElementById("z2act"); if(actEl&&sessionDraft.activity!=null) actEl.value=sessionDraft.activity;
+  if(sessionDraft.rpe) setRPE(sessionDraft.rpe); /* setRPE re-applies the .on button highlight, not just curRPE */
+}
 function setView(v){
+  if(view==="session"&&v!=="session") captureSessionDraft();
   if(view==="hep"&&v!=="hep") stopHepClock();
   view=v;
   document.getElementById("tabS").className="tab"+(v==="session"?" active":"");
@@ -655,7 +674,7 @@ function render(){
     h+=`<div class="notecard"><label>Zone caps (live from WHOOP)</label><div id="zc" data-type="zone2"></div></div>`;
     h+=rpeNoteSaveHtml();
     h+=`<button class="restbtn" onclick="logRest()">Log full rest day instead</button>`;
-    m.innerHTML=h; curRPE=0; updateCompliance(); return;
+    m.innerHTML=h; curRPE=0; restoreSessionDraft(); updateCompliance(); return;
   }
   /* ---- Sat: BFT/Equinox class ---- */
   if(s.type==="class"){
@@ -666,7 +685,7 @@ function render(){
       s.blocks.forEach((b,bi)=>{ h+=blockHtml(s,bi); });
       h+=rpeNoteSaveHtml();
       h+=`<button class="restbtn" onclick="logRest()">Skipped — log rest</button>`;
-      m.innerHTML=h; curRPE=0; updateCompliance(); return;
+      m.innerHTML=h; curRPE=0; restoreSessionDraft(); updateCompliance(); return;
     }
     h+=`<div class="meta warn"><b>Effort cap ~7/10.</b> Don't chase RKD or race the class — this fills the conditioning slot, it is NOT a fourth lifting day. If the class runs hot (true HIIT), dial back or skip.</div>`;
     if(w===7) h+=`<div class="meta warn"><b>Week 7:</b> keep this genuinely easy — test week starts Monday.</div>`;
@@ -675,7 +694,7 @@ function render(){
     h+=`<div class="notecard"><label>Zone check (live from WHOOP)</label><div id="zc" data-type="class"></div></div>`;
     h+=rpeNoteSaveHtml();
     h+=`<button class="restbtn" onclick="logRest()">Skipped class — log rest</button>`;
-    m.innerHTML=h; curRPE=0; updateCompliance(); return;
+    m.innerHTML=h; curRPE=0; restoreSessionDraft(); updateCompliance(); return;
   }
   /* ---- Sun: CS4 recovery ---- */
   if(s.type==="recovery"){
@@ -683,7 +702,7 @@ function render(){
     h+=`<div class="meta eq"><b>Why it matters:</b> Sat (capped) + Sun (easy yoga) = your built-in two-day taper into Monday's Upper session.</div>`;
     if(w===8) h+=`<div class="meta warn"><b>Week 8:</b> walk-through pace only. Block complete — log final numbers. New 1RMs from Mon/Wed become the Block 2 baselines.</div>`;
     h+=rpeNoteSaveHtml();
-    m.innerHTML=h; curRPE=0; return;
+    m.innerHTML=h; curRPE=0; restoreSessionDraft(); return;
   }
 
   /* ---- Lifting days ---- */
@@ -693,7 +712,7 @@ function render(){
   h+=`<div class="meta eq"><b>Equipment:</b> ${EQ[day]}</div>`;
   s.blocks.forEach((b,bi)=>{ h+=blockHtml(s,bi); });
   h+=rpeNoteSaveHtml();
-  m.innerHTML=h; curRPE=0;
+  m.innerHTML=h; curRPE=0; restoreSessionDraft();
 }
 function blockHtml(s,bi){
   const day=curDay(), b=s.blocks[bi], ivl=interval(b);
@@ -761,7 +780,7 @@ function saveSession(){
     pxi,zoneMins,pxiModel:pxi!=null?model:null,medal,target:medal!=null?pxiSet.target:null};
   const actEl=document.getElementById("z2act"); if(actEl)entry.activity=actEl.value;
   const logs=loadLogs(); logs.push(entry); saveLogs(logs);
-  live.zoneSecs=[0,0,0,0,0,0]; live.pxi=0; live.secs=0; pendingManual=null;
+  live.zoneSecs=[0,0,0,0,0,0]; live.pxi=0; live.secs=0; pendingManual=null; sessionDraft=null;
   setBand(0,live.tick?"Tracking reset — new session":"HR not connected",live.lastBpm,null);
   releaseAwake();
   toast("Saved"+(pxi!=null?" · RKD "+pxi+(medal?" · "+medal:""):"")+(storageOK?"":" (in-memory)"));
@@ -771,7 +790,7 @@ function logRest(){
   const logs=loadLogs();
   logs.push({date:new Date().toISOString(),week:w,day,name:"REST",type:"rest",entries:[],rpe:0,
     note:(document.getElementById("note")||{value:""}).value,duration:0,pxi:0,zoneMins:null,medal:"Rest ✓"});
-  saveLogs(logs); toast("Rest day logged — good call");
+  saveLogs(logs); sessionDraft=null; toast("Rest day logged — good call");
 }
 function toast(t){const el=document.getElementById("toast");el.textContent=t;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2200);}
 
