@@ -306,6 +306,7 @@ let pendingManual=null;
 const HEP_LABELS=["B1 Gym","B2 Mid-AM","B3 Lunch","B4 PM","B5 Evening"];
 let hepMem={};
 const todayStr=()=>{ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+const todayLabel=()=>new Date().toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
 const hepKey=()=>"hep_"+todayStr();
 function loadHep(){
   const k=hepKey();
@@ -317,7 +318,7 @@ const hepCls=n=>n===5?"ok":n>=3?"warn":"bad";
 const hepRowHtml=n=>`<div class="zc-row ${hepCls(n)}"><span class="zl">HEP</span><span class="zr">home exercise program — today</span><span class="zv">${n}/5</span></div>`;
 function hepPanelHtml(){
   const arr=loadHep(); const n=arr.filter(Boolean).length;
-  let h=`<div class="notecard"><label>Daily HEP</label>`;
+  let h=`<div class="notecard"><label>Daily HEP · ${todayLabel()} — always today, not the selected Week/Day</label>`;
   HEP_LABELS.forEach((l,i)=>{ h+=`<div class="fieldrow"><span>${l}</span><input type="checkbox" id="hep${i}" ${arr[i]?"checked":""} onchange="toggleHep(${i})"></div>`; });
   h+=`<div id="hepStatus">${hepRowHtml(n)}</div></div>`;
   return h;
@@ -409,7 +410,7 @@ function logHepEntry(key){
   renderHepTab(document.getElementById("main"));
 }
 function renderHepTab(m){
-  document.getElementById("title").textContent="HEP";
+  document.getElementById("title").textContent="HEP · "+todayLabel();
   const detail=loadHepDetail();
   let h="";
   HEP_BLOCKS.forEach((b,bi)=>{
