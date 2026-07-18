@@ -332,30 +332,30 @@ function toggleHep(i){
 const HEP_BLOCKS=[
  {label:"Block 1", hepIdx:0, ex:[
    {key:"b1_rom",n:"ROM",rx:"5 reps",type:"reps"},
-   {key:"b1_levator",n:"Levator scap stretch",rx:"(timed)",type:"timed"},
-   {key:"b1_wristflex",n:"Wrist flexion stretch",rx:"(timed)",type:"timed"},
-   {key:"b1_bicep",n:"Bicep stretch at wall",rx:"(timed)",type:"timed"},
-   {key:"b1_scapwallslides",n:"Scap wall slides",rx:"(reps)",type:"reps"},
-   {key:"b1_pronechest",n:"Prone chest stretch",rx:"(timed)",type:"timed"}]},
+   {key:"b1_levator",n:"Levator scap stretch",rx:"2–5 × 10–15s hold",type:"timed"},
+   {key:"b1_wristflex",n:"Wrist flexion stretch",rx:"10–30s holds · progressive",type:"timed"},
+   {key:"b1_bicep",n:"Bicep stretch at wall",rx:"2–5 reps · progressive hold · palm UP",type:"timed"},
+   {key:"b1_scapwallslides",n:"Scap wall slides",rx:"5 reps · slow, elbows on wall",type:"reps"},
+   {key:"b1_pronechest",n:"Prone chest stretch",rx:"2–3 reps · 10–30s · no aggravation",type:"timed"}]},
  {label:"Block 2", hepIdx:1, ex:[
    {key:"b2_rom",n:"ROM",rx:"5 reps",type:"reps"},
-   {key:"b2_levator",n:"Levator scap stretch",rx:"(timed)",type:"timed"},
-   {key:"b2_wristfinger",n:"Wrist/finger differential stretch",rx:"(timed)",type:"timed"},
-   {key:"b2_decompression",n:"Decompression massage/cupping",rx:"(timed)",type:"timed"}]},
+   {key:"b2_levator",n:"Levator scap stretch",rx:"2–5 × 10–15s hold",type:"timed"},
+   {key:"b2_wristfinger",n:"Wrist/finger differential stretch",rx:"10–30s · finger-guided",type:"timed"},
+   {key:"b2_decompression",n:"Decompression massage/cupping",rx:"5–10 min · gentle",type:"timed"}]},
  {label:"Block 3", hepIdx:2, ex:[
    {key:"b3_rom",n:"ROM",rx:"5 reps",type:"reps"},
-   {key:"b3_bicep",n:"Bicep stretch at wall",rx:"(timed)",type:"timed"},
-   {key:"b3_doorway",n:"Doorway stretch",rx:"(timed)",type:"timed"},
-   {key:"b3_finkelstein",n:"Finkelstein",rx:"(timed)",type:"timed"}]},
+   {key:"b3_bicep",n:"Bicep stretch at wall",rx:"2–5 reps · progressive hold · palm UP",type:"timed"},
+   {key:"b3_doorway",n:"Doorway stretch",rx:"progressive · no forward head",type:"timed"},
+   {key:"b3_finkelstein",n:"Finkelstein",rx:"3–5 reps · progressive hold",type:"timed"}]},
  {label:"Block 4", hepIdx:3, ex:[
    {key:"b4_rom",n:"ROM",rx:"5 reps",type:"reps"},
-   {key:"b4_lat",n:"Lat stretch",rx:"(timed)",type:"timed"},
-   {key:"b4_pillowcase",n:"Pillowcase scap isometric",rx:"(timed holds)",type:"timed"},
-   {key:"b4_toothbrush",n:"Toothbrush desensitization",rx:"(timed)",type:"timed"}]},
+   {key:"b4_lat",n:"Lat stretch",rx:"2–3 reps · 10–30s+ progressive",type:"timed"},
+   {key:"b4_pillowcase",n:"Pillowcase scap isometric",rx:"5 reps · may space out",type:"timed"},
+   {key:"b4_toothbrush",n:"Toothbrush desensitization",rx:"along radial distribution",type:"timed"}]},
  {label:"Block 5", hepIdx:4, ex:[
    {key:"b5_rom",n:"ROM",rx:"5 reps",type:"reps"},
-   {key:"b5_circuit",n:"Full stretch circuit",rx:"(timed)",type:"timed"},
-   {key:"b5_pushups",n:"Wall push-ups",rx:"(reps)",type:"reps"}]}
+   {key:"b5_circuit",n:"All stretches · 1 round each",rx:"(timed)",type:"timed"},
+   {key:"b5_pushups",n:"Wall push-ups",rx:"max pain-free reps",type:"reps"}]}
 ];
 let hepDetailMem={};
 const hepDetailKey=()=>"hepDetail_"+todayStr();
