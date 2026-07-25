@@ -638,8 +638,8 @@ function setView(v){
   document.getElementById("tabP").className="tab"+(v==="pxi"?" active":"");
   document.getElementById("tabH").className="tab"+(v==="history"?" active":"");
   document.getElementById("tabHep").className="tab"+(v==="hep"?" active":"");render();}
-function lastFor(key,day){
-  const logs=loadLogs().filter(l=>l.day===day);
+function lastFor(key){
+  const logs=loadLogs();
   for(let i=logs.length-1;i>=0;i--){const e=(logs[i].entries||[]).find(x=>x.key===key);
     if(e&&e.sets.some(s=>s.w||s.r))return e.sets;}
   return null;
@@ -732,7 +732,7 @@ function render(){
   m.innerHTML=h; curRPE=0; restoreSessionDraft();
 }
 function blockHtml(s,bi){
-  const day=curDay(), b=s.blocks[bi], ivl=interval(b);
+  const b=s.blocks[bi], ivl=interval(b);
   let h=`<div class="block" id="blk${bi}"><div class="block-h"><div class="t">${b.letter} · ${b.t}</div>
     <div class="bells">${b.bells?(b.bells===1?fmt(b.mins*60)+" straight":b.bells+" × "+fmt(ivl)):""} · ${b.mins} min</div>
     ${b.bells?`<button class="playb" onclick="playBlock(${bi})">▶</button>`:""}</div>`;
@@ -740,7 +740,7 @@ function blockHtml(s,bi){
     h+=`<div class="ex"><div class="ex-name">${ex.n}</div>`;
     if(ex.rx)h+=`<div class="ex-rx">${ex.rx}</div>`;
     if(ex.sets>0){
-      const last=lastFor(ex.key,day);
+      const last=lastFor(ex.key);
       h+=`<div class="sets">`;
       for(let i=0;i<ex.sets;i++){
         const pw=last&&last[i]?last[i].w:"", pr=last&&last[i]?last[i].r:"";
