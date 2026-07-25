@@ -1001,9 +1001,44 @@ function collectHep(){
   }
   return {hep,hepDetail};
 }
-function exportLogs(){
-  const blob=new Blob([JSON.stringify({logs:loadLogs(),...collectHep()},null,1)],{type:"application/json"});
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="block-log-"+new Date().toISOString().slice(0,10)+".json";a.click();
+async function exportLogs(){
+  const payload=JSON.stringify({logs:loadLogs(),...collectHep()},null,1);
+  const filename="block-log-"+new Date().toISOString().slice(0,10)+".json";
+  const blob=new Blob([payload],{type:"application/json"});
+
+  if(navigator.share){
+    try{
+      const file=new File([blob],filename,{type:"application/json"});
+      if(!navigator.canShare||navigator.canShare({files:[file]})){
+        await navigator.share({files:[file],title:filename});
+        return;
+      }
+    }catch(e){
+      if(e&&e.name==="AbortError") return;
+    }
+  }
+
+  try{
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download=filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    return;
+  }catch(e){}
+
+  try{
+    const win=window.open("","_blank");
+    if(win){
+      const esc=payload.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+      win.document.write("<pre>"+esc+"</pre>");
+      win.document.title=filename;
+      return;
+    }
+  }catch(e){}
+  toast("Export failed — please try a different browser");
 }
 function importLogs(){
   const inp=document.createElement("input");inp.type="file";inp.accept=".json";
