@@ -319,19 +319,19 @@ let view="session", curRPE=0, finishedBlocks=new Set();
 let pendingManual=null;
 
 /* ================= HEP TRACKER (compliance only — no RKD scoring) ================= */
-const HEP_LABELS=["B1 Gym","B2 Mid-AM","B3 Lunch","B4 PM","B5 Evening"];
+const HEP_LABELS=["B1 Gym","B2 Work AM","B3 Work Lunch","B4 Home PM"];
 let hepMem={};
 const todayStr=()=>{ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
 const todayLabel=()=>new Date().toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
 const hepKey=()=>"hep_"+todayStr();
 function loadHep(){
   const k=hepKey();
-  if(!storageOK) return hepMem[k]||[false,false,false,false,false];
-  try{return JSON.parse(localStorage.getItem(k)||"null")||[false,false,false,false,false];}catch(e){return [false,false,false,false,false];}
+  if(!storageOK) return hepMem[k]||[false,false,false,false];
+  try{return JSON.parse(localStorage.getItem(k)||"null")||[false,false,false,false];}catch(e){return [false,false,false,false];}
 }
 function saveHep(arr){ const k=hepKey(); if(storageOK) localStorage.setItem(k,JSON.stringify(arr)); else hepMem[k]=arr; }
-const hepCls=n=>n===5?"ok":n>=3?"warn":"bad";
-const hepRowHtml=n=>`<div class="zc-row ${hepCls(n)}"><span class="zl">HEP</span><span class="zr">home exercise program — today</span><span class="zv">${n}/5</span></div>`;
+const hepCls=n=>n===4?"ok":n>=2?"warn":"bad";
+const hepRowHtml=n=>`<div class="zc-row ${hepCls(n)}"><span class="zl">HEP</span><span class="zr">home exercise program — today</span><span class="zv">${n}/4</span></div>`;
 function hepPanelHtml(){
   const arr=loadHep(); const n=arr.filter(Boolean).length;
   let h=`<div class="notecard"><label>Daily HEP · ${todayLabel()} — always today, not the selected Week/Day</label>`;
@@ -344,34 +344,57 @@ function toggleHep(i){
   document.getElementById("hepStatus").innerHTML=hepRowHtml(arr.filter(Boolean).length);
 }
 
-/* ================= HEP DETAIL TAB (Blocks 1–5, logging only — no scoring) ================= */
+/* ================= HEP DETAIL TAB (Blocks 1–4 + Float, logging only — no scoring) ================= */
+// Source: Kaiser OT notes 07/14/2026 (Bhupinder Kaur, OT) — see HEP_Schedule_Final.md.
+// Next OT follow-up Aug 11: open questions live in that file, not here.
 const HEP_BLOCKS=[
- {label:"Block 1", hepIdx:0, ex:[
-   {key:"b1_rom",n:"ROM",rx:"5 reps",type:"reps"},
-   {key:"b1_levator",n:"Levator scap stretch",rx:"2–5 × 10–15s hold",type:"timed"},
-   {key:"b1_wristflex",n:"Wrist flexion stretch",rx:"10–30s holds · progressive",type:"timed"},
-   {key:"b1_bicep",n:"Bicep stretch at wall",rx:"2–5 reps · progressive hold · palm UP",type:"timed"},
-   {key:"b1_scapwallslides",n:"Scap wall slides",rx:"5 reps · slow, elbows on wall",type:"reps"},
-   {key:"b1_pronechest",n:"Prone chest stretch",rx:"2–3 reps · 10–30s · no aggravation",type:"timed"}]},
- {label:"Block 2", hepIdx:1, ex:[
-   {key:"b2_rom",n:"ROM",rx:"5 reps",type:"reps"},
-   {key:"b2_levator",n:"Levator scap stretch",rx:"2–5 × 10–15s hold",type:"timed"},
-   {key:"b2_wristfinger",n:"Wrist/finger differential stretch",rx:"10–30s · finger-guided",type:"timed"},
-   {key:"b2_decompression",n:"Decompression massage/cupping",rx:"5–10 min · gentle",type:"timed"}]},
- {label:"Block 3", hepIdx:2, ex:[
-   {key:"b3_rom",n:"ROM",rx:"5 reps",type:"reps"},
-   {key:"b3_bicep",n:"Bicep stretch at wall",rx:"2–5 reps · progressive hold · palm UP",type:"timed"},
-   {key:"b3_doorway",n:"Doorway stretch",rx:"progressive · no forward head",type:"timed"},
-   {key:"b3_finkelstein",n:"Finkelstein",rx:"3–5 reps · progressive hold",type:"timed"}]},
- {label:"Block 4", hepIdx:3, ex:[
-   {key:"b4_rom",n:"ROM",rx:"5 reps",type:"reps"},
-   {key:"b4_lat",n:"Lat stretch",rx:"2–3 reps · 10–30s+ progressive",type:"timed"},
-   {key:"b4_pillowcase",n:"Pillowcase scap isometric",rx:"5 reps · may space out",type:"timed"},
-   {key:"b4_toothbrush",n:"Toothbrush desensitization",rx:"along radial distribution",type:"timed"}]},
- {label:"Block 5", hepIdx:4, ex:[
-   {key:"b5_rom",n:"ROM",rx:"5 reps",type:"reps"},
-   {key:"b5_circuit",n:"All stretches · 1 round each",rx:"(timed)",type:"timed"},
-   {key:"b5_pushups",n:"Wall push-ups",rx:"max pain-free reps",type:"reps"}]}
+ {label:"Block 1 · 6:00 AM (Gym)", hepIdx:0, ex:[
+   {key:"b1_rom_elbow",n:"AROM/PROM: elbow flex–ext",rx:"5 reps",type:"reps"},
+   {key:"b1_rom_pron",n:"AROM/PROM: pronation–supination",rx:"5 reps",type:"reps"},
+   {key:"b1_levator",n:"Levator scap stretch (seated, on wall)",rx:"3–4×/day · ⚠️ if warming into fingertips, back off + note for Aug 11",type:"timed"},
+   {key:"b1_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
+   {key:"b1_bicep",n:"Standing bicep stretch at wall",rx:"3–4×/day · palm UP",type:"timed"},
+   {key:"b1_pronechest",n:"Prone chest stretch on chair",rx:"3×/day · no aggravation",type:"timed"},
+   {key:"b1_lat",n:"Lat stretch",rx:"loose grip right side, don't load hand/wrist",type:"timed"},
+   {key:"b1_scapwallslides",n:"Scapular wall slides",rx:"1×/day — only here",type:"reps"},
+   {key:"b1_pillowcase",n:"Scapular stability isometric (pillowcase)",rx:"5 reps/day — only here",type:"reps"},
+   {key:"b1_isometricIR",n:"Isometric internal rotation",rx:"paired with wall push-ups",type:"reps"},
+   {key:"b1_pushups",n:"Wall push-ups",rx:"max pain-free reps · progress toward 5-pushup goal",type:"reps"}]},
+ {label:"Block 2 · 9:00 AM (Work)", hepIdx:1, ex:[
+   {key:"b2_rom_elbow",n:"AROM/PROM: elbow flex–ext",rx:"5 reps",type:"reps"},
+   {key:"b2_rom_pron",n:"AROM/PROM: pronation–supination",rx:"5 reps",type:"reps"},
+   {key:"b2_levator",n:"Levator scap stretch (seated, on wall)",rx:"3–4×/day · ⚠️ if warming into fingertips, back off + note for Aug 11",type:"timed"},
+   {key:"b2_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
+   {key:"b2_bicep",n:"Standing bicep stretch at wall",rx:"3–4×/day · palm UP",type:"timed"},
+   {key:"b2_finkelstein",n:"Finkelstein stretch",rx:"3–5 reps · progressive hold",type:"timed"},
+   {key:"b2_cupping",n:"Tennis elbow self massage (silicone cupping)",rx:"5–10 min gentle · shared 2–3×/day radial-nerve dose w/ Block 4 toothbrush",type:"timed"},
+   {key:"b2_pronechest",n:"Prone chest stretch on chair",rx:"3×/day · no aggravation",type:"timed"},
+   {key:"b2_doorway",n:"Doorway stretch",rx:"progressive · no forward head",type:"timed"}]},
+ {label:"Block 3 · 1:00 PM (Work)", hepIdx:2, ex:[
+   {key:"b3_rom_elbow",n:"AROM/PROM: elbow flex–ext",rx:"5 reps",type:"reps"},
+   {key:"b3_rom_pron",n:"AROM/PROM: pronation–supination",rx:"5 reps",type:"reps"},
+   {key:"b3_levator",n:"Levator scap stretch (seated, on wall)",rx:"3–4×/day · ⚠️ if warming into fingertips, back off + note for Aug 11",type:"timed"},
+   {key:"b3_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
+   {key:"b3_bicep",n:"Standing bicep stretch at wall",rx:"3–4×/day · palm UP",type:"timed"},
+   {key:"b3_finkelstein",n:"Finkelstein stretch",rx:"3–5 reps · progressive hold",type:"timed"},
+   {key:"b3_lat",n:"Lat stretch",rx:"loose grip right side, don't load hand/wrist",type:"timed"}]},
+ {label:"Block 4 · 5:30 PM (Home)", hepIdx:3, ex:[
+   {key:"b4_rom_elbow",n:"AROM/PROM: elbow flex–ext",rx:"5 reps",type:"reps"},
+   {key:"b4_rom_pron",n:"AROM/PROM: pronation–supination",rx:"5 reps",type:"reps"},
+   {key:"b4_levator",n:"Levator scap stretch (seated, on wall)",rx:"3–4×/day · ⚠️ if warming into fingertips, back off + note for Aug 11",type:"timed"},
+   {key:"b4_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
+   {key:"b4_bicep",n:"Standing bicep stretch at wall",rx:"3–4×/day · palm UP",type:"timed"},
+   {key:"b4_finkelstein",n:"Finkelstein stretch",rx:"3–5 reps · progressive hold",type:"timed"},
+   {key:"b4_toothbrush",n:"Vibration desensitization (electric toothbrush)",rx:"along radial distribution · shared 2–3×/day dose w/ Block 2 self-massage",type:"timed"},
+   {key:"b4_pronechest",n:"Prone chest stretch on chair",rx:"3×/day · no aggravation",type:"timed"},
+   {key:"b4_doorway",n:"Doorway stretch",rx:"progressive · no forward head",type:"timed"}]},
+ // Float has no hepIdx — anytime bouts, not counted toward the 4-block daily compliance score.
+ {label:"Float · anytime", ex:[
+   {key:"float_rom_elbow",n:"AROM/PROM: elbow flex–ext (extra bout)",rx:"5 reps · 2 extra bouts/day",type:"reps"},
+   {key:"float_rom_pron",n:"AROM/PROM: pronation–supination (extra bout)",rx:"5 reps · 2 extra bouts/day",type:"reps"},
+   {key:"float_nightsplint",n:"Night splint",rx:"worn overnight — log 1 when done",type:"reps",unit:" done"},
+   {key:"float_calfkt",n:"Calf stretch + KT taping",rx:"ongoing · plantar fasciitis",type:"reps",unit:" done"},
+   {key:"float_diagonal",n:"Diagonal / fascial line stretch",rx:"as instructed · plantar fasciitis",type:"reps",unit:" done"}]}
 ];
 let hepDetailMem={};
 const hepDetailKey=()=>"hepDetail_"+todayStr();
@@ -384,6 +407,7 @@ function saveHepDetail(obj){ const k=hepDetailKey(); if(storageOK) localStorage.
 function autoCheckHepBlocks(detail){
   const arr=loadHep(); let changed=false;
   HEP_BLOCKS.forEach(b=>{
+    if(b.hepIdx==null) return;
     if(arr[b.hepIdx]) return;
     if(b.ex.every(ex=>(detail[ex.key]||[]).length>0)){ arr[b.hepIdx]=true; changed=true; }
   });
@@ -433,7 +457,7 @@ function renderHepTab(m){
     h+=`<div class="notecard" id="hepBlk${bi}"><label class="hep-blk-label" onclick="toggleHepBlockCollapse(${bi})">${b.label}<span class="hep-blk-ind">▾</span></label><div class="hep-blk-body">`;
     b.ex.forEach(ex=>{
       const entries=detail[ex.key]||[];
-      const unit=ex.type==="timed"?"s":" reps";
+      const unit=ex.unit!=null?ex.unit:(ex.type==="timed"?"s":" reps");
       h+=`<div class="ex"><div class="ex-name">${ex.n}</div><div class="ex-rx">${ex.rx}</div><div class="sets">`;
       entries.forEach((v,i)=>{ h+=`<div class="set"><span class="n">${i+1}</span><span style="font-family:var(--mono)">${v}${unit}</span></div>`; });
       if(entries.length<3){
