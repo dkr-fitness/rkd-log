@@ -209,6 +209,9 @@ function hrText(day,w){
    lower:"Strength curve — Z1–Z2 base, DL spikes to Z3 OK. Target RKD ≈ 105. HR won't drop before the bell = note it, don't rush.",
    mixed:"Hybrid — strength curve applies through Block B. Finisher may touch Z3–low Z4 for ≤4 min total. Seasoning, not a HIIT class."}[day];
 }
+// Shared pre-activation cue — surfaces on every exercise where the right lat
+// coordination gap shows up (confirmed 8/11 across Deadlift + DB Shoulder Press).
+const RIGHT_LAT_CUE="Engage right lat actively — protect your armpit, pull slack before working sets. Known coordination gap, same cue across Deadlift + DB Shoulder Press.";
 const nSets=s=>typeof s==="number"?s:4;
 const q15=s=>Math.max(60,Math.round(s/15)*15);
 
@@ -217,7 +220,7 @@ function getSession(w,day){
     const o=OHP(w),r=ROW(w);const early=w<=2;
     const blocks=[
       {letter:"W",t:"Warm-up",mins:6,bells:1,ex:[{n:"Bike/runner easy 4 min → arm circles ×10 → side lunge ×8/side → A-skips",rx:"one 6:00 countdown",sets:0},{n:"Scapular Wall Slides x5",sets:0},{n:"Pillowcase Wall Isometric x5",sets:0}]},
-      {letter:"A",t:"Superset",mins:12,bells:o[0],ex:[{n:"Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)",rx:o[0]+" × "+o[1]+" @ RPE 5–6 light, pain-free only — reduce ROM or go left-arm-only if the right shoulder or elbow talks back",sets:o[0],key:"DB Shoulder Press"},{n:early?"Neutral-Grip DB Row — LEFT arm only (rehab phase)":"Neutral-Grip DB Row",rx:r[0]+" × "+r[1]+" @ RPE "+(early?"7 left side":"6–7 both sides if pain-free")+" — straight after press",sets:r[0],key:"DB Row"}]},
+      {letter:"A",t:"Superset",mins:12,bells:o[0],ex:[{n:"Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)",rx:o[0]+" × "+o[1]+" @ RPE 5–6 light, pain-free only — reduce ROM or go left-arm-only if the right shoulder or elbow talks back",sets:o[0],key:"DB Shoulder Press",note:RIGHT_LAT_CUE},{n:early?"Neutral-Grip DB Row — LEFT arm only (rehab phase)":"Neutral-Grip DB Row",rx:r[0]+" × "+r[1]+" @ RPE "+(early?"7 left side":"6–7 both sides if pain-free")+" — straight after press",sets:r[0],key:"DB Row"}]},
       {letter:"B",t:"Power / Unilateral",mins:12,bells:3,ex:[{n:"Box Jump (no trap bar — grip demand until cleared)",rx:"3 × 5 explosive",sets:3,key:"Jump"},{n:"DB Step-Up — LEFT hand or bodyweight",rx:"3 × 8/side",sets:3,key:"Step-Up"},
         // DORMANT — Landmine Rotation, excluded for forearm ROM limitation on
         // full pronation/supination; retained for post-clearance
@@ -239,16 +242,16 @@ function getSession(w,day){
     {letter:"W",t:"Warm-up",mins:7,bells:1,ex:[{n:"Bike 5 min → hip rolls ×10 → leg overs ×10 → BW squat ×15 → SL-RDL reach ×8/side + ramp sets",rx:"one 7:00 countdown",sets:0},{n:"Scapular Wall Slides x5",sets:0},{n:"Pillowcase Wall Isometric x5",sets:0}]},
     {letter:"A",t:early?"Hinge — SKB RDL":"Deadlift — reintroduction",mins:d0[3],bells:nSets(d0[0]),ex:[early
       ?{n:"Single-KB RDL — LEFT hand (deadlift returns wk 3+ per rehab timeline)",rx:"4 × 8 @ RPE 7 left hand · proven to 44kg",sets:4,key:"SKB RDL"}
-      :{n:"Conventional Deadlift — reintro: double overhand, crisp reps, stop if grip asymmetric",rx:d0[0]+" × "+Math.max(2,Math.min(3,+d0[1]||3))+" @ 50–60% ("+Math.round(0.55*305)+" lb ballpark) · only if pain-free + strength normalized",sets:nSets(d0[0]),key:"Deadlift"}]},
+      :{n:"Conventional Deadlift — reintro: double overhand, crisp reps, stop if grip asymmetric",rx:d0[0]+" × "+Math.max(2,Math.min(3,+d0[1]||3))+" @ 50–60% ("+Math.round(0.55*305)+" lb ballpark) · only if pain-free + strength normalized",sets:nSets(d0[0]),key:"Deadlift",note:RIGHT_LAT_CUE}]},
     {letter:"B",t:"Superset",mins:9,bells:3,ex:[{n:"Goblet Squat",rx:"3 × 8 @ RPE 5–6",sets:3,key:"Goblet Squat"},{n:"Single-Leg RDL — DB in LEFT hand",rx:"3 × 8/side — straight after Goblet Squat",sets:3,key:"SL RDL"}]},
-    {letter:"C",t:"Wall Push-Up Progression",mins:8,bells:3,ex:[{n:"Wall Push-Up Progression",rx:"max pain-free reps × 2–3 sets — stop BEFORE pain, never through it. Progress wall → countertop → floor only at 10+ clean reps. Goal: 5 pain-free floor push-ups.",sets:3,key:"Wall Push-Up Progression"}]},
+    {letter:"C",t:"Floor Push-Ups",mins:8,bells:3,ex:[{n:"Floor Push-Ups",rx:"max pain-free reps × 2–3 sets — stop BEFORE pain, never through it. Goal met (5 pain-free floor push-ups) — continue at floor level, no fixed target beyond pain-free max.",sets:3,key:"Wall Push-Up Progression"}]},
     {letter:"D",t:"Superset",mins:8,bells:3,ex:[{n:"Band Row — light",rx:"3 × 10 @ RPE 5, pain-free only",sets:3,key:"Band Row"},{n:"KB Suitcase Carry — LEFT hand (right side stays unloaded per exclusion)",rx:"3 × 30 sec/side @ RPE 5–6",sets:3,key:"Suitcase Carry"}]}]};}
   if(day==="mixed"){
     const blocks=[
       {letter:"W",t:"Warm-up",mins:6,bells:1,ex:[{n:"Bike/runner easy 4 min → arm circles ×10 → side lunge ×8/side → A-skips",rx:"one 6:00 countdown",sets:0},{n:"Scapular Wall Slides x5",sets:0},{n:"Pillowcase Wall Isometric x5",sets:0}]},
       {letter:"A",t:"Bulgarian Split Squat",mins:10,bells:4,ex:[{n:"Bulgarian Split Squat — BW or DB in LEFT hand",rx:"3–4 × 8/side @ RPE 6–7, pain-free only",sets:4,key:"Bulgarian SS"}]},
       {letter:"B",t:"Superset",mins:8,bells:3,ex:[{n:"Band Face Pull — light",rx:"3 × 12 @ RPE 5, pain-free only",sets:3,key:"Face Pull"},{n:"Bird Dog / Dead Bug",rx:"3 × 8/side @ RPE 4–5",sets:3,key:"Bird Dog"}]},
-      {letter:"C",t:"Power / Carry",mins:9,bells:3,ex:[{n:"Broad Jump",rx:"3 × 5 explosive — bodyweight only, not RPE-scored",sets:3,key:"Broad Jump"},{n:"Suitcase Carry — LEFT hand (right side stays unloaded per exclusion)",rx:"3 × 30 sec/side @ RPE 5–6",sets:3,key:"Suitcase Carry"}]}];
+      {letter:"C",t:"Power / Carry",mins:9,bells:3,ex:[{n:"Broad Jump",rx:"3 × 5 explosive — bodyweight only, not RPE-scored",sets:3,key:"Broad Jump"},{n:"Suitcase Carry — LEFT hand (right side stays unloaded per exclusion)",rx:"3 × 30 sec/side @ RPE 5–6",sets:3,key:"Suitcase Carry"},{n:"Cable Pullover — cleared 8/11, general OT clearance for progressive strengthening",rx:"3 × 10 @ RPE 5–6, pain-free only",sets:3,key:"Cable Pullover"}]}];
     if(w<8) blocks.push({letter:"D",t:"Finisher · capped effort",mins:10,bells:1,ex:[{n:"Sled Drag — backward",rx:"10:00 cap, capped effort — move, don't grind (not RPE-scored)",sets:0}]});
     else blocks.push({letter:"D",t:"No finisher — taper",mins:0,bells:0,ex:[{n:"Leave the gym feeling fresh.",rx:"",sets:0}]});
     return {name:"FRIDAY — Split Squat + Power/Carry", type:"lift", blocks};
@@ -774,6 +777,7 @@ function blockHtml(s,bi){
   b.ex.forEach((ex,ei)=>{
     h+=`<div class="ex"><div class="ex-name">${ex.n}</div>`;
     if(ex.rx)h+=`<div class="ex-rx">${ex.rx}</div>`;
+    if(ex.note)h+=`<div class="ex-note">${ex.note}</div>`;
     if(ex.sets>0){
       const last=lastFor(ex.key);
       h+=`<div class="sets">`;
@@ -926,7 +930,7 @@ function manualScore(){
 
 /* ================= HISTORY / PRS ================= */
 const e1rm=(w,r)=>w*(1+r/30);
-const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Supported Row":"lb","DB Shoulder Press":"lb","DB Row":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec","SKB RDL":"kg","Hip Thrust":"lb","Wall Push-Up Progression":"reps","Rope Triceps Pressdown":"lb","Bulgarian SS":"lb"};
+const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Supported Row":"lb","DB Shoulder Press":"lb","DB Row":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec","SKB RDL":"kg","Hip Thrust":"lb","Wall Push-Up Progression":"reps","Rope Triceps Pressdown":"lb","Bulgarian SS":"lb","Cable Pullover":"lb"};
 const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun"};
 const escAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 function weeklyTotals(logs){
