@@ -87,6 +87,21 @@ main{padding:12px 14px}
 .hep-blk-ind{display:inline-block; transition:transform .15s ease}
 .notecard.collapsed .hep-blk-ind{transform:rotate(-90deg)}
 .notecard.collapsed .hep-blk-body{display:none}
+.formref-label{cursor:pointer; display:flex; align-items:center; justify-content:space-between}
+.formref-ind{display:inline-block; transition:transform .15s ease}
+.notecard.collapsed .formref-ind{transform:rotate(-90deg)}
+.notecard.collapsed .formref-body{display:none}
+.formref-ex{border-top:1px solid var(--line); padding:2px 0}
+.formref-ex-name{cursor:pointer; display:flex; align-items:center; justify-content:space-between; font-weight:700; font-size:14px; padding:8px 0}
+.formref-ex-ind{display:inline-block; transition:transform .15s ease}
+.formref-ex.collapsed .formref-ex-ind{transform:rotate(-90deg)}
+.formref-ex.collapsed .formref-ex-body{display:none}
+.formref-ex-body{padding-bottom:8px}
+.formref-status{color:var(--muted); font-size:12px; font-style:italic; margin-bottom:6px}
+.formref-section{margin:8px 0}
+.formref-section-t{font-weight:700; font-size:13px; margin-bottom:2px}
+.formref-section ul,.formref-section ol{margin:0; padding-left:20px; font-size:13px; color:var(--muted)}
+.formref-section li{margin-bottom:3px}
 .rpe-row{display:flex; gap:6px; margin-top:6px}
 .rpe{flex:1; padding:9px 0; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--muted); font-weight:700}
 .rpe.on{background:var(--amber); color:#0E1526; border-color:var(--amber)}
@@ -220,6 +235,196 @@ function hrText(day,w){
 const RIGHT_LAT_CUE="Engage right lat actively — protect your armpit, pull slack before working sets. Known coordination gap, same cue across Deadlift + DB Shoulder Press.";
 const nSets=s=>typeof s==="number"?s:4;
 const q15=s=>Math.max(60,Math.round(s/15)*15);
+
+// ================= FORM REFERENCE (read-only, keyed by INTERNAL exercise key) =================
+// Source: RKD_Exercise_Glossary_v1.md, Section 2 (Training Pool: Strength Days). Hand-transcribed,
+// not fetched/parsed at runtime — the .md stays the human-readable copy of record.
+// KEYED BY ex.key, NOT ex.n/display name — these diverge for at least one exercise: the app
+// displays "Floor Push-Ups" but the internal tracking key stays "Wall Push-Up Progression" for
+// PR-history continuity (see saveSession/PR_KEYS). Only exercises with a real ex.key AND a
+// matching entry here appear in the panel; everything else is silently omitted, by design.
+const FORM_GLOSSARY={
+ "Deadlift":{
+  status:"✅ CLEARED · Monitor grip-side symptoms · Currently moderate loads",
+  setup:[
+   "Bar over midfoot — laces, not toes. Shins nearly vertical before you bend.",
+   "Hip hinge down to the bar, knees bending second. Shins meet the bar; don't push the bar forward.",
+   "Grip: double overhand, just outside the legs. Crush the bar — this is your irradiation source, and on the right side it's also your symptom monitor.",
+   `Set the lats before you pull. Cue: <b>"protect your armpit."</b> Chest up, blades pulled down toward back pockets, not pinched together.`,
+   "Big breath into the belly, brace 360° like you're about to be punched. Hold it.",
+   "<b>Pull the slack out</b> — apply upward tension until the bar clicks into the plates. Dead weight off a loose bar is exactly how the right lat gets skipped."],
+  execution:[
+   "Push the floor away with the legs while the torso angle stays constant. The bar and hips rise together — hips shooting first means it becomes a back lift.",
+   "Bar drags up the legs, stays in contact or close. Any drift forward and the lat has disengaged.",
+   "Lock out by driving hips through, not by leaning back. Glutes finish it; the spine doesn't hyperextend.",
+   "Descent: hips back first, bar past the knees, then bend the knees. Controlled, not a drop.",
+   "Reset fully between reps — re-brace, re-set lats, re-pull slack. Touch-and-go trains through the exact position where your right side lets go."],
+  checkpoints:[
+   "✅ Bar path is vertical; ✅ hips and shoulders rise at the same rate; ✅ you can feel both armpits working under load",
+   "❌ Bar swings out from the shins = lats disengaged",
+   "❌ Hips shoot up first = you set up too low or lost the brace",
+   `❌ Right side "goes quiet" on set one = pre-activation didn't take (see below)`],
+  injuryNotes:[
+   "Right lat under-engagement is a firing/coordination gap, not a red flag — but it's the reason the slack-pull and armpit cue aren't optional here.",
+   "Pre-activate before working sets: Band Pull-Aparts or Prone Y-Raises immediately prior. This isn't a warm-up formality — it's the thing that makes set one behave like set three.",
+   "Grip-side symptoms are the monitor. Aching/fatigue in the forearm is expected under load; tingling, shooting, or numbness is a stop.",
+   "Consider unilateral rowing on other days to build the right side without left-side compensation masking it."]},
+ "Goblet Squat":{
+  status:"✅ CLEARED · Primary back squat substitute",
+  setup:[
+   "DB or KB held vertically at chest, both hands cupping the top. Elbows tucked under the load, not flared.",
+   "<b>Load it kick-up-from-the-knees style</b> — no clean motion on the right side.",
+   "Feet shoulder-width or slightly wider, toes out 15–30°. Screw the feet into the floor to build hip external rotation tension.",
+   "Ribs down, brace before the first inch of movement."],
+  execution:[
+   "Break at hips and knees together, sitting down between the feet rather than back like a hinge.",
+   "Elbows drive down inside the knees at depth — this is the whole reason it's your squat sub. The anterior load lets the torso stay upright without the front-rack position that's excluded for you.",
+   "Depth as far as you can hold a neutral spine and keep both heels planted. Don't chase range you can't own.",
+   "Drive up through the whole foot, hips and chest rising together."],
+  checkpoints:[
+   "✅ Torso stays near-vertical; ✅ knees track over toes; ✅ heels never lift",
+   "❌ Elbows flaring wide = load creeping into a front-rack-ish position, which defeats the substitution",
+   "❌ Chest caving forward = brace lost or load too heavy for current position"],
+  injuryNotes:[
+   "Elbow flexion under load is present here. Watch for medial elbow contact/pressure against the ribs at depth — direct cubital tunnel contact is a new caution since 8/11."]},
+ "Wall Push-Up Progression":{ // displays as "Floor Push-Ups" — key kept for PR history continuity
+  status:`✅ CLEARED · Renamed 8/12 from "Wall Push-Up Progression" — 5-pain-free-rep goal met`,
+  setup:[
+   "Hands slightly wider than shoulders, under the shoulder joint, fingers spread. Screw the hands outward into the floor to build shoulder stability.",
+   "Full plank: glutes and quads on, ribs down, a straight line from ear to ankle.",
+   "Brace before the descent — this is a moving plank, not an arm exercise."],
+  execution:[
+   "Elbows at roughly 45° from the torso — not flared to 90°, not pinned to the ribs.",
+   "Lower under control until chest is a fist's height from the floor (or your current pain-free depth).",
+   "Press away and <b>protract at the top</b> — push the floor away so the shoulder blades wrap forward. That protraction is the serratus work, which is the point for you.",
+   "Body moves as one piece. Hips sagging or piking means the plank broke."],
+  checkpoints:[
+   "✅ Straight line head to heels the whole rep; ✅ full protraction at lockout",
+   "❌ Hips leading up = trunk brace lost, elbow now absorbing compensatory load",
+   "❌ Elbows flaring wide = the shoulder position that historically aggravates you"],
+  injuryNotes:[
+   "Push-ups appear in the 7/14 eval as a <b>symptom-aggravating movement</b>. Reaching the goal doesn't mean the ceiling is gone — depth and volume are still things to progress gradually, not jump.",
+   "Any return of lateral elbow or forearm pain mid-set: stop the set, log it, regress to incline or wall for that session. Don't finish the reps to save the log entry."]},
+ "DB Shoulder Press":{
+  status:"🆕 REINTRODUCED (8/12, under autonomy) · Was pulled from the pool pending 8/11",
+  setup:[
+   "Seated with back support, or standing if you want the trunk demand. Seated first while you rebuild this pattern.",
+   "<b>Kick the DBs up from the knees</b> — no clean motion on the right side. This doesn't change just because the press is back.",
+   "Start position: DBs at shoulder height, elbows slightly forward of the torso (not flared into a wide T), wrists stacked directly over elbows.",
+   "Ribs down, glutes tight, brace. An overhead press with a loose trunk turns into a low-back arch."],
+  execution:[
+   "Press up and slightly in, so the DBs finish over the shoulder joint rather than out in front of it.",
+   "Neutral or semi-pronated grip is easier on the right side than fully pronated — the neutral grip reduces the wrist-extension and shoulder-rotation demand.",
+   "Full lockout without shrugging the shoulders into the ears at the top.",
+   "Control the eccentric back to shoulder height. Don't let the DBs drop into the bottom position — that's where the aggravating shoulder angle lives."],
+  checkpoints:[
+   "✅ Ribs stay down, no low-back arch; ✅ wrists stacked over elbows the whole path; ✅ symmetrical bar path between arms",
+   "❌ Right arm lagging or taking a different path = the coordination gap showing up overhead; stop the set",
+   "❌ Elbows flaring into a wide T at the bottom = the position closest to your confirmed aggravators",
+   "❌ Low back arching to complete the rep = load too heavy for the current position"],
+  injuryNotes:[
+   "<b>This one earns a slower ramp than the rest of the pool.</b> Chest press is a named aggravator in the 7/14 eval, and overhead pressing shares the shoulder mechanism. That's not a reason to avoid it — it's the reason to start well under what you could do and add load across sessions rather than within one.",
+   "Suggested re-entry: light DBs, seated, partial-to-full range as it feels clean, 2–3 sessions before pushing load.",
+   `Watch the <b>bottom third</b> specifically. The 7/14 eval describes chest press aggravating "at a certain point in the motion" — for pressing patterns, that's typically the deep position, not lockout.`,
+   "Neutral grip and a slightly narrower elbow path are the two modifications that make this friendlier to the right side. Use them by default; widen only if it stays clean."]},
+ "Suitcase Carry":{
+  status:"✅ CLEARED · Same grip-loading category as deadlift",
+  setup:[
+   "DBs or KBs on the floor beside you. <b>Deadlift them up</b> with a hinge — don't bend and snatch them off the ground.",
+   "Stand tall: ribs stacked over pelvis, blades down and back, chin level.",
+   "Crush the handles. Grip tension is the point of the exercise, not a byproduct."],
+  execution:[
+   "Walk with short, deliberate, controlled steps. No shuffling, no rushing the distance.",
+   "Shoulders stay packed — don't let the load pull them into a shrug-and-forward-round.",
+   "Breathe behind the brace: short breaths, trunk stays stiff.",
+   "Set the weights down under control with a hinge, same as you picked them up.",
+   "Suitcase (single-side): the load is trying to bend you sideways. Resisting that is the whole exercise.",
+   "Stay perfectly upright — no leaning away from the load to counterbalance, no hiking the free-side hip.",
+   "Free arm hangs relaxed at the side. Don't stick it out for balance."],
+  checkpoints:[
+   "✅ Torso vertical from the front; ✅ shoulders level; ✅ grip holding, not slipping",
+   "❌ Leaning away from the load = you've made it easier and removed the anti-lateral-flexion work",
+   "❌ Shoulder creeping toward the ear = blade position lost"],
+  injuryNotes:[
+   "Grip-side symptoms are the monitor, same as deadlift.",
+   "<b>KB racked carry is a worse swap, not an equivalent one</b> — the rack position puts sustained elbow flexion + medial elbow contact against the forearm, which now runs into the ulnar caution on top of the flexion demand. Straight carries load the grip; racked carries load the elbow."]},
+ "Broad Jump":{
+  status:"✅ CLEARED · Superset Block C with Suitcase Carry and Cable Pullover",
+  setup:[
+   "Feet hip-width, athletic stance, on a forgiving surface if available.",
+   "Arms free — no load, no implements."],
+  execution:[
+   "Countermovement: hips back, knees bend, arms swing back together.",
+   "Explode — triple extension through ankle, knee, hip, arms swinging forward and up.",
+   "<b>Land soft.</b> Hips back, knees bent, absorb through the whole foot. Landing stiff-legged is how a power drill becomes a joint problem.",
+   "<b>Full reset between reps.</b> Stand up, re-set the stance, then jump again. This is a power movement — quality per rep, not reps per minute."],
+  checkpoints:[
+   "✅ Same distance rep to rep (drop-off means fatigue — stop the set); ✅ quiet, absorbed landings",
+   "❌ Loud, stiff landings = not absorbing",
+   "❌ Rushing reps to beat the superset clock = you've turned it into conditioning"],
+  injuryNotes:[
+   "Arm swing is unloaded and self-limiting — this is one of the few movements in the pool with essentially no right-arm constraint. Use it as such; don't self-limit the swing unnecessarily."]},
+ "Cable Pullover":{
+  status:"✅ CLEARED — new, untested, no established load or pace. Held pending 8/11 due to overlap risk with restrictions; cleared and added to Block C on 8/12.",
+  setup:[
+   "High pulley, single handle, neutral grip. Face the stack.",
+   "Step back to create tension at the start position — arm extended overhead-ish, not slack.",
+   "Hips slightly hinged, ribs down, split or staggered stance for a stable base.",
+   "Working arm slightly bent and <b>stays that angle</b> the entire set. This is not a straight-arm lever."],
+  execution:[
+   "Initiate from the <b>shoulder blade and lat</b>, not the hand. The blade depresses and the arm follows.",
+   "Pull the handle down and in toward the hip in an arc. Elbow stays soft.",
+   "Stop when the arm reaches the torso — no need to drag it behind you.",
+   "Control the return all the way back to tension. The eccentric is the lat-lengthening portion and it's the part worth having."],
+  checkpoints:[
+   "✅ Movement originates at the blade; ✅ elbow angle constant; ✅ ribs stay down",
+   "❌ Torso extending backward to move the weight = load too heavy",
+   "❌ Elbow bending progressively through the rep = it's become a pressdown",
+   "❌ Shoulder shrugging up at the start = you've lost the depression that makes this a lat movement"],
+  injuryNotes:[
+   "<b>Start deliberately light.</b> Week one at any load — the first two or three sessions exist to establish a baseline, not to find a working weight.",
+   "This was flagged for overlap risk with your restrictions before clearance. Overhead-ish arm position with load is the reason. Any lateral elbow, forearm, or nerve-distribution symptom is a stop and a log entry.",
+   "Block C timing (mins:9, bells:3) hasn't been adjusted for a third exercise — open training-feel decision after you've actually run it."]}
+};
+function formRefSection(title,items,ordered){
+  if(!items||!items.length) return "";
+  const tag=ordered?"ol":"ul";
+  return `<div class="formref-section"><div class="formref-section-t">${title}</div><${tag}>`+items.map(x=>`<li>${x}</li>`).join("")+`</${tag}></div>`;
+}
+let formRefKeys=[];
+function formReferenceHtml(s){
+  if(!s||!s.blocks) return "";
+  const seen=new Set();
+  formRefKeys=[];
+  s.blocks.forEach(b=>b.ex.forEach(ex=>{
+    if(ex.key&&FORM_GLOSSARY[ex.key]&&!seen.has(ex.key)){ seen.add(ex.key); formRefKeys.push(ex.key); }
+  }));
+  if(!formRefKeys.length) return "";
+  let h=`<div class="notecard collapsed" id="formRefPanel"><label class="formref-label" onclick="toggleFormRefPanel()">Form Reference<span class="formref-ind">▾</span></label><div class="formref-body">`;
+  formRefKeys.forEach((key,i)=>{
+    const g=FORM_GLOSSARY[key];
+    let dispName=key;
+    s.blocks.some(b=>b.ex.some(ex=>{ if(ex.key===key){ dispName=ex.n; return true; } return false; }));
+    h+=`<div class="formref-ex collapsed" id="formRefEx${i}"><div class="formref-ex-name" onclick="toggleFormRefEx(${i})">${dispName}<span class="formref-ex-ind">▾</span></div><div class="formref-ex-body">`
+      +`<div class="formref-status">${g.status}</div>`
+      +formRefSection("Setup",g.setup,true)
+      +formRefSection("Execution",g.execution,false)
+      +formRefSection("Checkpoints",g.checkpoints,false)
+      +formRefSection("Injury notes",g.injuryNotes,false)
+      +`</div></div>`;
+  });
+  h+=`</div></div>`;
+  return h;
+}
+function toggleFormRefPanel(){
+  const el=document.getElementById("formRefPanel"); if(el) el.classList.toggle("collapsed");
+}
+function toggleFormRefEx(i){
+  formRefKeys.forEach((k,j)=>{
+    const el=document.getElementById("formRefEx"+j); if(!el) return;
+    if(j===i) el.classList.toggle("collapsed"); else el.classList.add("collapsed");
+  });
+}
 
 function getSession(w,day){
   if(day==="strengthFree"){
@@ -734,6 +939,7 @@ function render(){
   let h="";
   if(!storageOK) h+=`<div class="warnbar">Preview mode: saving is in-memory only here. Hosted on GitHub Pages (or opened locally / in Bluefy), your log persists on this device.</div>`;
   h+=hepPanelHtml();
+  h+=formReferenceHtml(s);
 
   /* ---- Tue / Thu: optional Zone 2 ---- */
   if(s.type==="zone2"){
