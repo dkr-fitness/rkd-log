@@ -177,11 +177,11 @@ main{padding:12px 14px}
 <div class="selects">
   <select id="weekSel" onchange="stopBlock();render()"></select>
   <select id="daySel" onchange="stopBlock();render()">
-    <option value="upper">Mon · Row/Press</option>
+    <option value="upper" id="optUpper">Mon · Row/Press</option>
     <option value="tue">Tue · Zone 2 / Rest</option>
-    <option value="lower">Wed · Deadlift</option>
+    <option value="lower" id="optLower">Wed · Deadlift</option>
     <option value="thu">Thu · Zone 2 / Rest</option>
-    <option value="mixed">Fri · Split Squat</option>
+    <option value="mixed" id="optMixed">Fri · Split Squat</option>
     <option value="sat">Sat · Conditioning</option>
     <option value="sun">Sun · Gentle Yoga</option>
     <optgroup label="Override (any day)">
@@ -243,6 +243,11 @@ const MESO01_PHASES=[
 function mesoPhase(){
   const days=Math.floor((new Date()-MESO01_START)/864e5);
   return MESO01_PHASES[Math.min(2,Math.max(0,Math.floor(days/7)))];
+}
+const MESO01_END_DAY=20; // Sun 9/6 — last day of the 3-week window (day 0 = Mon 8/17)
+function inMeso01Window(){
+  const days=Math.floor((new Date()-MESO01_START)/864e5);
+  return days>=0&&days<=MESO01_END_DAY;
 }
 function hrText(day,w){
   if(day==="lower"&&w===8) return "Taper: Z1–Z2 only. Save everything for Wednesday's test day.";
@@ -1472,6 +1477,14 @@ for(let i=1;i<=8;i++){const o=document.createElement("option");o.value=i;
 const now=new Date(), diff=Math.floor((now-start)/(7*864e5));
 ws.value=Math.min(8,Math.max(1,diff+1));
 document.getElementById("daySel").value=["sun","upper","tue","lower","thu","mixed","sat"][now.getDay()];
+if(inMeso01Window()){
+  const suffix=" (inactive during Mesocycle 01)";
+  document.getElementById("optUpper").textContent+=suffix;
+  document.getElementById("optLower").textContent+=suffix;
+  document.getElementById("optMixed").textContent+=suffix;
+  const mesoDefaultDay={1:"fullBodyA",3:"fullBodyB",5:"fullBodyC"}[now.getDay()];
+  if(mesoDefaultDay) document.getElementById("daySel").value=mesoDefaultDay;
+}
 render();
 </script>
 </body>
