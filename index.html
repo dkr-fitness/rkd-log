@@ -187,6 +187,11 @@ main{padding:12px 14px}
     <optgroup label="Override (any day)">
       <option value="strengthFree">Strength · Freeform</option>
     </optgroup>
+    <optgroup label="Mesocycle 01 (8/17–9/6)">
+      <option value="fullBodyA">Full Body A · Hinge</option>
+      <option value="fullBodyB">Full Body B · Squat</option>
+      <option value="fullBodyC">Full Body C · Push</option>
+    </optgroup>
   </select>
 </div>
 <div class="tabs">
@@ -221,14 +226,34 @@ const EQ={
  upper:"DBs (neutral-grip press + row + step-ups) · box or bench (jumps) · cable or band (Pallof) · sled",
  lower:"Barbell + plates · DBs (goblet squat + SL-RDL) · bench · light band (row) · KB (suitcase carry)",
  mixed:"DBs (Bulgarian split squat) · light band (face pull) · box or open floor (broad jump) · KB or DB (suitcase carry) · sled (backward drag)",
- strengthFree:"Whatever you actually used this session — note specifics below if it matters."};
+ strengthFree:"Whatever you actually used this session — note specifics below if it matters.",
+ fullBodyA:"Barbell + plates (deadlift) · DBs (chest-supported row, single-arm row, carry) · incline bench (chest-supported row) · light band (prep pull-aparts)",
+ fullBodyB:"Safety bar or DB/KB (squat) · cable stack (row + pullover) · DBs (RDL, shoulder press, carry) · light band (prep pull-aparts)",
+ fullBodyC:"Bodyweight (push-ups, lunges, bridges) · DBs (chest-supported row) · leg press machine · cable + rope (triceps) · light band (prep pull-aparts)"};
+// Mesocycle 01 (rebuild block, Dr. Zak 8/14 functional clearance) — a fixed 3-week structure
+// running 8/17–9/6, ending at the 9/3 ortho appointment. Its own week phase is computed from
+// the real calendar date, deliberately independent of weekSel (which is the OLD 8-week
+// program's numbering and doesn't cover this date range). Exercise lists/set-rep schemes are
+// fixed every week per RKD_Mesocycle_01.md — only the RPE/load guidance below changes by week.
+const MESO01_START=new Date(2026,7,17); // Mon Aug 17, 2026
+const MESO01_PHASES=[
+ {label:"Week 1 — Establish baselines",rpe:"RPE 6–7. Leave reps in reserve everywhere."},
+ {label:"Week 2 — Build",rpe:"RPE 7–8. Add load where week 1 felt easy."},
+ {label:"Week 3 — Consolidate",rpe:"RPE 7–8, hold load, add a rep or two. Not a testing week — ortho appointment Wed 9/3."}];
+function mesoPhase(){
+  const days=Math.floor((new Date()-MESO01_START)/864e5);
+  return MESO01_PHASES[Math.min(2,Math.max(0,Math.floor(days/7)))];
+}
 function hrText(day,w){
   if(day==="lower"&&w===8) return "Taper: Z1–Z2 only. Save everything for Wednesday's test day.";
   return {
    upper:"Strength curve — stay Z0–Z2, brief Z3 fine. Target RKD ≈ 105 (Gold 100–110). Sustained Z4 = the bells are being ignored.",
    lower:"Strength curve — Z1–Z2 base, DL spikes to Z3 OK. Target RKD ≈ 105. HR won't drop before the bell = note it, don't rush.",
    mixed:"Hybrid — strength curve applies through Block B. Finisher may touch Z3–low Z4 for ≤4 min total. Seasoning, not a HIIT class.",
-   strengthFree:"Strength curve — stay Z0–Z2, brief Z3 fine. RKD ≈ 105 is the usual lift-day ballpark. No medal on freeform — nothing prescribed to score against."}[day];
+   strengthFree:"Strength curve — stay Z0–Z2, brief Z3 fine. RKD ≈ 105 is the usual lift-day ballpark. No medal on freeform — nothing prescribed to score against.",
+   fullBodyA:`Hinge lead — strength curve, Z1–Z2 base, DL spikes to Z3 OK. ${mesoPhase().label} · ${mesoPhase().rpe}`,
+   fullBodyB:`Squat lead — strength curve throughout. ${mesoPhase().label} · ${mesoPhase().rpe}`,
+   fullBodyC:`Push lead — strength curve throughout. ${mesoPhase().label} · ${mesoPhase().rpe}`}[day];
 }
 // Shared pre-activation cue — surfaces on every exercise where the right lat
 // coordination gap shows up (confirmed 8/11 across Deadlift + DB Shoulder Press).
@@ -433,6 +458,56 @@ function getSession(w,day){
       ex:freeformNames[si].map((name,ei)=>({n:name,rx:"",sets:3,key:"freeform_"+si+"_"+ei,editableName:true}))}));
     return {name:"STRENGTH — Freeform", type:"lift", blocks};
   }
+  // Mesocycle 01 — fixed exercise lists/set-rep schemes every week (see MESO01_PHASES for the
+  // only thing that varies by week: RPE/load guidance, surfaced via hrText, not branched here).
+  const MESO_PREP={letter:"P",t:"Prep",mins:6,bells:1,ex:[
+   {key:"Scapular Wall Isometric",n:"Scapular Wall Isometric",rx:"one 6:00 countdown · 5 reps — existing pre-lift gate, unchanged",sets:0},
+   {key:"Band Pull-Aparts",n:"Band Pull-Aparts",rx:"2 × 15, light",sets:0},
+   {key:"Prone Y-Raises",n:"Prone Y-Raises",rx:"2 × 10, 30–45° diagonal, bodyweight or very light",sets:0}]};
+  if(day==="fullBodyA"){
+    return {name:"FULL BODY A — Hinge Lead", type:"lift", blocks:[
+     MESO_PREP,
+     {letter:"A",t:"Hinge",mins:12,bells:4,ex:[
+       {key:"Deadlift",n:"Deadlift",rx:"4 × 5 · pre-activation done in prep · slack pull, armpit cue",sets:4,note:RIGHT_LAT_CUE}]},
+     {letter:"B",t:"Superset",mins:10,bells:3,ex:[
+       {key:"Chest-Supported Row",n:"Chest-Supported DB Row",rx:"3 × 10 · neutral grip — chest support removes low-back demand",sets:3},
+       {key:"Goblet Squat",n:"Goblet Squat",rx:"3 × 10",sets:3}]},
+     {letter:"C",t:"Superset",mins:9,bells:3,ex:[
+       {key:"Wall Push-Up Progression",n:"Floor Push-Ups",rx:"3 × max clean reps · stop at form breakdown, not failure",sets:3},
+       {key:"Single-Arm DB Row",n:"Single-Arm DB Row",rx:"3 × 10/side · right side first — this is the lat-firing work",sets:3}]},
+     {letter:"D",t:"Carry",mins:8,bells:3,ex:[
+       {key:"Suitcase Carry",n:"Suitcase Carry",rx:"3 × 40 yd/side",sets:3}]}]};
+  }
+  if(day==="fullBodyB"){
+    return {name:"FULL BODY B — Squat Lead", type:"lift", blocks:[
+     MESO_PREP,
+     {letter:"A",t:"Squat",mins:12,bells:4,ex:[
+       {key:"Safety Bar Squat",n:"Goblet or Safety Bar Squat",rx:"4 × 8 · safety bar if available, goblet otherwise",sets:4}]},
+     {letter:"B",t:"Superset",mins:10,bells:3,ex:[
+       {key:"Neutral-Grip Cable Row",n:"Neutral-Grip Cable Row",rx:"3 × 12 · light, controlled, full retraction at the finish",sets:3},
+       {key:"Romanian Deadlift (DB)",n:"Romanian Deadlift (DB)",rx:"3 × 10 · hinge without the floor pull",sets:3}]},
+     {letter:"C",t:"Superset",mins:9,bells:3,ex:[
+       {key:"DB Shoulder Press",n:"DB Shoulder Press",rx:"3 × 8 · seated, neutral grip — slow ramp, see Form Reference",sets:3,note:RIGHT_LAT_CUE},
+       {key:"Cable Pullover",n:"Cable Pullover",rx:"3 × 12 · still baseline-setting, light",sets:3}]},
+     {letter:"D",t:"Carry",mins:8,bells:3,ex:[
+       {key:"Suitcase Carry",n:"Farmer's Carry",rx:"3 × 40 yd",sets:3}]}]};
+  }
+  if(day==="fullBodyC"){
+    return {name:"FULL BODY C — Push Lead", type:"lift", blocks:[
+     MESO_PREP,
+     {letter:"A",t:"Push",mins:9,bells:4,ex:[
+       {key:"Wall Push-Up Progression",n:"Floor Push-Ups",rx:"4 × max clean reps · lead position while fresh",sets:4}]},
+     {letter:"B",t:"Superset",mins:10,bells:3,ex:[
+       {key:"Chest-Supported Row",n:"Chest-Supported DB Row",rx:"3 × 12",sets:3},
+       {key:"Leg Press",n:"Leg Press",rx:"3 × 12 · light grip on the handles",sets:3}]},
+     {letter:"C",t:"Superset",mins:9,bells:3,ex:[
+       {key:"Rope Triceps Pressdown",n:"Rope Triceps Pressdown",rx:"3 × 12 · OT-prioritized, neutral wrist",sets:3},
+       {key:"Glute Bridges",n:"Glute Bridges",rx:"3 × 15",sets:3}]},
+     {letter:"D",t:"Power",mins:8,bells:4,ex:[
+       {key:"Broad Jump",n:"Broad Jump",rx:"4 × 3 · full reset between reps",sets:4}]},
+     {letter:"E",t:"Finisher",mins:6,bells:2,ex:[
+       {key:"Backward Walking Lunges",n:"Backward Walking Lunges",rx:"2 × 20 steps",sets:2}]}]};
+  }
   if(day==="upper"){
     const o=OHP(w),r=ROW(w);const early=w<=2;
     const blocks=[
@@ -518,7 +593,7 @@ function zone2MedalFor(m2,m3,m45){
   if(m2>=15&&m2<=45&&m3<=10&&m45<=4) return {t:"BRONZE",c:"var(--bronze)"};
   return null;
 }
-const LIFT_DAYS=["upper","lower","mixed"];
+const LIFT_DAYS=["upper","lower","mixed","fullBodyA","fullBodyB","fullBodyC"];
 function curDay(){ return document.getElementById("daySel").value; }
 function curModel(){
   if(pxiSet.model!=="auto") return pxiSet.model;
@@ -1190,8 +1265,8 @@ function manualScore(){
 
 /* ================= HISTORY / PRS ================= */
 const e1rm=(w,r)=>w*(1+r/30);
-const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Supported Row":"lb","DB Shoulder Press":"lb","DB Row":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec","SKB RDL":"kg","Hip Thrust":"lb","Wall Push-Up Progression":"reps","Rope Triceps Pressdown":"lb","Bulgarian SS":"lb","Cable Pullover":"lb"};
-const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun",strengthFree:"Freeform"};
+const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Supported Row":"lb","DB Shoulder Press":"lb","DB Row":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec","SKB RDL":"kg","Hip Thrust":"lb","Wall Push-Up Progression":"reps","Rope Triceps Pressdown":"lb","Bulgarian SS":"lb","Cable Pullover":"lb","Single-Arm DB Row":"lb","Neutral-Grip Cable Row":"lb","Romanian Deadlift (DB)":"lb"};
+const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun",strengthFree:"Freeform",fullBodyA:"FB-A",fullBodyB:"FB-B",fullBodyC:"FB-C"};
 const escAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 function weeklyTotals(logs){
   const totals={};
