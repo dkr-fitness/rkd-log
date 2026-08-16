@@ -570,65 +570,69 @@ function toggleHep(i){
 }
 
 /* ================= HEP DETAIL TAB (Blocks 1–4 + Float, logging only — no scoring) ================= */
-// Source: Kaiser OT notes 07/14/2026, updated per 8/11/2026 follow-up (Bhupinder Kaur, OT) — see HEP_Schedule_Final.md.
+// Source of truth: RKD_HEP_Schedule.xlsx (repo root) via HEP_Schedule_Final.md, regenerated 8/16/26.
+// Program: MedBridge X8WKBFQW · Bhupinder Kaur, Kaiser OT. Block/exercise assignments below are a
+// faithful match to that file — re-derive from it, not from this comment, if they ever drift again.
 const HEP_LEVATOR_NOTE="Supine preferred over seated/standing per 8/11 OT guidance (removes neck/head stabilization demand competing with the stretch)";
 const HEP_BICEP_DORMANT_REASON="Deprioritized per 8/11 OT visit, no longer clinically necessary";
+const HEP_LAT_RX="3×/day · 2–3 reps, 10–30+ sec · loose grip right side, don't load hand/wrist";
+const HEP_FINKELSTEIN_RX="3–5 reps · progressive hold · 2×/day (reduced from 3–4×, metacarpal aggravation)";
 const HEP_BLOCKS=[
  {label:"Block 1 · 6:00 AM (Gym)", hepIdx:0, ex:[
    {key:"b1_rom_elbow",n:"AROM/PROM: elbow flex–ext",rx:"5 reps",type:"reps"},
    {key:"b1_rom_pron",n:"AROM/PROM: pronation–supination",rx:"5 reps",type:"reps"},
    {key:"b1_levator",n:"Levator scap stretch (seated, on wall)",rx:"3–4×/day · ⚠️ if warming into fingertips, back off",type:"timed",note:HEP_LEVATOR_NOTE},
-   {key:"b1_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
-   {key:"b1_bicep",n:"Standing bicep stretch at wall",rx:"3–4×/day · palm UP",type:"timed",dormant:true,reason:HEP_BICEP_DORMANT_REASON},
-   {key:"b1_pronechest",n:"Prone chest stretch on chair",rx:"3×/day · no aggravation",type:"timed"},
-   {key:"b1_lat",n:"Lat stretch",rx:"loose grip right side, don't load hand/wrist",type:"timed"},
    {key:"b1_scapwallslides",n:"Scapular wall slides",rx:"1×/day — only here",type:"reps"},
    {key:"b1_pillowcase",n:"Scapular stability isometric (pillowcase)",rx:"5 reps/day — only here",type:"reps"},
-   {key:"b1_isometricIR",n:"Isometric internal rotation",rx:"paired with wall push-ups",type:"reps"},
-   {key:"b1_pushups",n:"Wall push-ups",rx:"max pain-free reps · progress toward 5-pushup goal",type:"reps"},
+   {key:"b1_pronechest",n:"Prone chest stretch on chair",rx:"3×/day · no aggravation",type:"timed"},
+   {key:"b1_bicep",n:"Standing bicep stretch at wall",rx:"3–4×/day · palm UP",type:"timed",dormant:true,reason:HEP_BICEP_DORMANT_REASON},
    {key:"b1_wallball",n:"Standing wall ball circles (mini Swiss ball, 2–3 lb)",rx:"1–3×/day · 7×/week · 1 min hold, progress duration",type:"timed"},
    {key:"b1_elbowdist",n:"Elbow distraction self mobilization",rx:"1–2×/day · 7×/week · 3 sets of 10 oscillations or 10-sec holds · stop on any neural symptoms",type:"reps",unit:" sets"},
-   {key:"b1_wristdev",n:"Wrist AROM: radial–ulnar deviation",rx:"3×/day · 7×/week · 3 sets of 10 reps · stop on any neural symptoms",type:"reps",unit:" sets"}]},
+   {key:"b1_wristdev",n:"Wrist AROM: radial–ulnar deviation",rx:"3×/day · 7×/week · 3 sets of 10 reps · stop on any neural symptoms",type:"reps",unit:" sets"},
+   {key:"b1_plankscap",n:"Full plank w/ scapular protraction–retraction AROM",rx:"1×/day · 7×/week · 5 reps · 10–15s hold",type:"reps"},
+   {key:"b1_isometricIR",n:"Isometric internal rotation",rx:"1×/day · 5 reps · 10–15s hold · circuited with full plank scapular AROM",type:"reps"},
+   {key:"b1_pushups",n:"Wall push-ups",rx:"max pain-free reps · progress toward 5-pushup goal",type:"reps"},
+   {key:"b1_subscap",n:"Standing subscapularis lift-off",rx:"1×/day · 7×/week · 3–5 reps · walk-to-tension hold",type:"reps"},
+   {key:"b1_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
+   {key:"b1_toothbrush",n:"Vibration desensitization (electric toothbrush)",rx:"along radial distribution · shared 2–3×/day dose w/ Block 3 self-massage",type:"timed"}]},
  {label:"Block 2 · 9:00 AM (Work)", hepIdx:1, ex:[
    {key:"b2_rom_elbow",n:"AROM/PROM: elbow flex–ext",rx:"5 reps",type:"reps"},
    {key:"b2_rom_pron",n:"AROM/PROM: pronation–supination",rx:"5 reps",type:"reps"},
    {key:"b2_levator",n:"Levator scap stretch (seated, on wall)",rx:"3–4×/day · ⚠️ if warming into fingertips, back off",type:"timed",note:HEP_LEVATOR_NOTE},
-   {key:"b2_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
    {key:"b2_bicep",n:"Standing bicep stretch at wall",rx:"3–4×/day · palm UP",type:"timed",dormant:true,reason:HEP_BICEP_DORMANT_REASON},
-   {key:"b2_finkelstein",n:"Finkelstein stretch",rx:"3–5 reps · progressive hold",type:"timed"},
-   {key:"b2_cupping",n:"Tennis elbow self massage (silicone cupping)",rx:"5–10 min gentle · shared 2–3×/day radial-nerve dose w/ Block 4 toothbrush",type:"timed"},
+   {key:"b2_wristdev",n:"Wrist AROM: radial–ulnar deviation",rx:"3×/day · 7×/week · 3 sets of 10 reps · stop on any neural symptoms",type:"reps",unit:" sets"},
+   {key:"b2_finkelstein",n:"Finkelstein stretch",rx:HEP_FINKELSTEIN_RX,type:"timed"},
+   {key:"b2_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
    {key:"b2_pronechest",n:"Prone chest stretch on chair",rx:"3×/day · no aggravation",type:"timed"},
-   {key:"b2_doorway",n:"Doorway stretch",rx:"progressive · no forward head",type:"timed"},
-   {key:"b2_wristdev",n:"Wrist AROM: radial–ulnar deviation",rx:"3×/day · 7×/week · 3 sets of 10 reps · stop on any neural symptoms",type:"reps",unit:" sets"}]},
+   {key:"b2_lat",n:"Lat stretch",rx:HEP_LAT_RX,type:"timed"}]},
  {label:"Block 3 · 2:00 PM (Work)", hepIdx:2, ex:[
    {key:"b3_rom_elbow",n:"AROM/PROM: elbow flex–ext",rx:"5 reps",type:"reps"},
    {key:"b3_rom_pron",n:"AROM/PROM: pronation–supination",rx:"5 reps",type:"reps"},
    {key:"b3_levator",n:"Levator scap stretch (seated, on wall)",rx:"3–4×/day · ⚠️ if warming into fingertips, back off",type:"timed",note:HEP_LEVATOR_NOTE},
-   {key:"b3_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
    {key:"b3_bicep",n:"Standing bicep stretch at wall",rx:"3–4×/day · palm UP",type:"timed",dormant:true,reason:HEP_BICEP_DORMANT_REASON},
-   {key:"b3_finkelstein",n:"Finkelstein stretch",rx:"3–5 reps · progressive hold",type:"timed"},
-   {key:"b3_lat",n:"Lat stretch",rx:"loose grip right side, don't load hand/wrist",type:"timed"},
-   {key:"b3_elbowdist",n:"Elbow distraction self mobilization",rx:"1–2×/day · 7×/week · 3 sets of 10 oscillations or 10-sec holds · stop on any neural symptoms",type:"reps",unit:" sets"},
-   {key:"b3_wristdev",n:"Wrist AROM: radial–ulnar deviation",rx:"3×/day · 7×/week · 3 sets of 10 reps · stop on any neural symptoms",type:"reps",unit:" sets"}]},
+   {key:"b3_cupping",n:"Tennis elbow self massage (silicone cupping)",rx:"5–10 min gentle · shared 2–3×/day radial-nerve dose w/ Block 1 vibration desensitization · light pressure only, no hard friction/trigger point work",type:"timed"},
+   {key:"b3_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
+   {key:"b3_finkelstein",n:"Finkelstein stretch",rx:HEP_FINKELSTEIN_RX,type:"timed"},
+   {key:"b3_pronechest",n:"Prone chest stretch on chair",rx:"3×/day · no aggravation",type:"timed"},
+   {key:"b3_lat",n:"Lat stretch",rx:HEP_LAT_RX,type:"timed"},
+   {key:"b3_doorway",n:"Doorway stretch",rx:"3×/day · progressive · no forward head",type:"timed"}]},
  {label:"Block 4 · 5:30 PM (Home)", hepIdx:3, ex:[
    {key:"b4_rom_elbow",n:"AROM/PROM: elbow flex–ext",rx:"5 reps",type:"reps"},
    {key:"b4_rom_pron",n:"AROM/PROM: pronation–supination",rx:"5 reps",type:"reps"},
    {key:"b4_levator",n:"Levator scap stretch (seated, on wall)",rx:"3–4×/day · ⚠️ if warming into fingertips, back off",type:"timed",note:HEP_LEVATOR_NOTE},
-   {key:"b4_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
    {key:"b4_bicep",n:"Standing bicep stretch at wall",rx:"3–4×/day · palm UP",type:"timed",dormant:true,reason:HEP_BICEP_DORMANT_REASON},
-   {key:"b4_finkelstein",n:"Finkelstein stretch",rx:"3–5 reps · progressive hold",type:"timed"},
-   {key:"b4_toothbrush",n:"Vibration desensitization (electric toothbrush)",rx:"along radial distribution · shared 2–3×/day dose w/ Block 2 self-massage",type:"timed"},
+   {key:"b4_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
+   {key:"b4_elbowdist",n:"Elbow distraction self mobilization",rx:"1–2×/day · 7×/week · 3 sets of 10 oscillations or 10-sec holds · stop on any neural symptoms",type:"reps",unit:" sets"},
+   {key:"b4_wristdev",n:"Wrist AROM: radial–ulnar deviation",rx:"3×/day · 7×/week · 3 sets of 10 reps · stop on any neural symptoms",type:"reps",unit:" sets"},
    {key:"b4_pronechest",n:"Prone chest stretch on chair",rx:"3×/day · no aggravation",type:"timed"},
-   {key:"b4_doorway",n:"Doorway stretch",rx:"progressive · no forward head",type:"timed"},
-   {key:"b4_plankscap",n:"Full plank w/ scapular protraction–retraction AROM",rx:"1×/day · 7×/week · 5 reps · 10–15s hold",type:"reps"},
-   {key:"b4_subscap",n:"Standing subscapularis lift-off",rx:"1×/day · 7×/week · 3–5 reps · walk-to-tension hold",type:"reps"}]},
+   {key:"b4_lat",n:"Lat stretch",rx:HEP_LAT_RX,type:"timed"}]},
  // Float has no hepIdx — anytime bouts, not counted toward the 4-block daily compliance score.
  {label:"Float · anytime", ex:[
-   {key:"float_rom_elbow",n:"AROM/PROM: elbow flex–ext (extra bout)",rx:"5 reps · 2 extra bouts/day",type:"reps"},
-   {key:"float_rom_pron",n:"AROM/PROM: pronation–supination (extra bout)",rx:"5 reps · 2 extra bouts/day",type:"reps"},
-   {key:"float_nightsplint",n:"Night splint",rx:"worn overnight — log 1 when done",type:"reps",unit:" done"},
-   {key:"float_calfkt",n:"Calf stretch + KT taping",rx:"ongoing · plantar fasciitis",type:"reps",unit:" done"},
-   {key:"float_diagonal",n:"Diagonal / fascial line stretch",rx:"as instructed · plantar fasciitis",type:"reps",unit:" done"}]}
+   {key:"float_arom5th",n:"AROM/PROM — 5th daily dose (elbow flex–ext + pronation–supination)",rx:"5 reps · as needed · completes the 5×/day prescription",type:"reps"},
+   {key:"float_calf",n:"Calf stretching",rx:"daily · plantar fasciitis",type:"reps",unit:" done"},
+   {key:"float_kt",n:"KT taping",rx:"as needed · plantar fasciitis",type:"reps",unit:" done"},
+   {key:"float_diagonal",n:"Diagonal / fascial line stretch",rx:"daily · plantar fasciitis, trial both sides",type:"reps",unit:" done"},
+   {key:"float_nightsplint",n:"Night splint",rx:"nightly — log 1 when done · started ~7/30, resolved nocturnal symptoms",type:"reps",unit:" done"}]}
 ];
 let hepDetailMem={};
 const hepDetailKey=()=>"hepDetail_"+todayStr();
