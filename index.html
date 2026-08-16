@@ -1478,7 +1478,7 @@ const now=new Date(), diff=Math.floor((now-start)/(7*864e5));
 ws.value=Math.min(8,Math.max(1,diff+1));
 document.getElementById("daySel").value=["sun","upper","tue","lower","thu","mixed","sat"][now.getDay()];
 if(inMeso01Window()){
-  const suffix=" (inactive during Mesocycle 01)";
+  const suffix=" (inactive)";
   document.getElementById("optUpper").textContent+=suffix;
   document.getElementById("optLower").textContent+=suffix;
   document.getElementById("optMixed").textContent+=suffix;
