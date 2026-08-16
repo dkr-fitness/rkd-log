@@ -1,122 +1,109 @@
-# HEP Schedule — Final (4 blocks)
+# HEP Schedule — Final
 
-Source: Kaiser OT notes, 07/14/2026 (Bhupinder Kaur, OT). Confirmed by Donovan for implementation.
-Updated per 8/11/2026 OT follow-up visit — see block/exercise changes below. Open questions at the bottom were for that visit.
+**Source of truth:** `RKD_HEP_Schedule.xlsx` (repo root). This file is generated from it — edit the spreadsheet, then regenerate.
+**Program:** MedBridge X8WKBFQW · Bhupinder Kaur, Kaiser OT
+**Last updated:** 8/16/26
 
-## Blocks
-
-| Block | Time | Location |
-|---|---|---|
-| 1 | 6:00 AM | Gym (pre-lift) |
-| 2 | 9:00 AM | Work |
-| 3 | 2:00 PM | Work |
-| 4 | 5:30 PM | Home |
-| Float | anytime | wherever it fits |
-
-## Schedule by block
-
-**Block 1 — 6:00 AM (gym)**
-- AROM/PROM: elbow flexion–extension (5 reps)
-- AROM/PROM: forearm pronation–supination (5 reps)
-- Seated Levator Scapulae Stretch on Wall ⚠️ nerve tension — see flag below. **Note (8/11):** supine preferred over seated/standing — removes neck/head stabilization demand competing with the stretch
-- Seated Wrist Flexion Stretch
-- ~~Standing Bicep Stretch at Wall — palm up~~ — **DORMANT (8/11):** deprioritized, no longer clinically necessary
-- Prone Chest Stretch on Chair
-- Lat stretch
-- Scapular Wall Slides (1x/day — only here)
-- Scapular stability wall isometric, pillowcase (5 reps total/day — only here)
-- Isometric internal rotation activation
-- Wall push-ups
-- Standing Wall Ball Circles (mini Swiss ball, 2–3 lb) — 1–3x/day, 7x/week, 1 min hold and progress *(new 8/11)*
-- Elbow Distraction Self Mobilization — 1–2x/day, 7x/week, 3 sets of 10 oscillations or 10-sec holds — stop on any neural symptoms *(new 8/11)*
-- Wrist AROM: Radial/Ulnar Deviation — 3x/day, 7x/week, 3 sets of 10 reps — stop on any neural symptoms *(new 8/11, Block 1/2/3 rotation)*
-
-**Block 2 — 9:00 AM (work)**
-- AROM/PROM: elbow flexion–extension
-- AROM/PROM: forearm pronation–supination
-- Seated Levator Scapulae Stretch on Wall — **Note (8/11):** supine preferred over seated/standing — removes neck/head stabilization demand competing with the stretch
-- Seated Wrist Flexion Stretch
-- ~~Standing Bicep Stretch at Wall — palm up~~ — **DORMANT (8/11):** deprioritized, no longer clinically necessary
-- Finkelstein Stretch (starts here, deliberately not in Block 1 — radial nerve territory, pre-lift)
-- Tennis Elbow Self Massage (silicone cupping) ⚠️ see flag below
-- Prone Chest Stretch on Chair
-- Doorway stretch
-- Wrist AROM: Radial/Ulnar Deviation — 3x/day, 7x/week, 3 sets of 10 reps — stop on any neural symptoms *(new 8/11, Block 1/2/3 rotation)*
-
-**Block 3 — 2:00 PM (work)**
-- AROM/PROM: elbow flexion–extension
-- AROM/PROM: forearm pronation–supination
-- Seated Levator Scapulae Stretch on Wall — **Note (8/11):** supine preferred over seated/standing — removes neck/head stabilization demand competing with the stretch
-- Seated Wrist Flexion Stretch
-- ~~Standing Bicep Stretch at Wall — palm up~~ — **DORMANT (8/11):** deprioritized, no longer clinically necessary
-- Finkelstein Stretch
-- Lat stretch
-- Elbow Distraction Self Mobilization — 1–2x/day, 7x/week, 3 sets of 10 oscillations or 10-sec holds — stop on any neural symptoms *(new 8/11)*
-- Wrist AROM: Radial/Ulnar Deviation — 3x/day, 7x/week, 3 sets of 10 reps — stop on any neural symptoms *(new 8/11, Block 1/2/3 rotation)*
-
-**Block 4 — 5:30 PM (home)**
-- AROM/PROM: elbow flexion–extension
-- AROM/PROM: forearm pronation–supination
-- Seated Levator Scapulae Stretch on Wall — **Note (8/11):** supine preferred over seated/standing — removes neck/head stabilization demand competing with the stretch
-- Seated Wrist Flexion Stretch
-- ~~Standing Bicep Stretch at Wall — palm up~~ — **DORMANT (8/11):** deprioritized, no longer clinically necessary
-- Finkelstein Stretch
-- Vibration desensitization (electric toothbrush)
-- Prone Chest Stretch on Chair
-- Doorway stretch
-- Full Plank with Scapular Protraction/Retraction AROM — 1x/day, 7x/week, 5 reps, 10–15 sec hold *(new 8/11)*
-- Standing Subscapularis Lift-Off — 1x/day, 7x/week, 3–5 reps, walk-to-tension hold *(new 8/11)*
-
-**Float (anytime)**
-- AROM/PROM elbow flexion–extension ×2 extra bouts
-- AROM/PROM pronation–supination ×2 extra bouts
-- Night splint (overnight)
-- Calf stretching + KT taping (plantar fasciitis, ongoing)
-- Diagonal / fascial line stretching (plantar fasciitis)
-
-## Full exercise reference (dose, actual bout count, notes)
-
-| Exercise | Prescribed | Bouts scheduled | Notes |
-|---|---|---|---|
-| AROM/PROM: elbow flex–ext | 5 reps, 5x/day | 6 (4 blocks + 2 float) | Supine at Blocks 1 & 4; seated fine at work |
-| AROM/PROM: pronation–supination | 5 reps, 5x/day | 6 (4 blocks + 2 float) | Baseline R 63° vs L 75° — retested 8/11: pronation WFL, still mild decreased R vs L |
-| Levator scapulae stretch | 3–4x/day | 4 (all blocks) | ⚠️ Warming into fingertips during this stretch — likely nerve tension. Back off angle/hold. **8/11 note:** supine preferred over seated/standing — removes neck/head stabilization demand competing with the stretch |
-| Seated wrist flexion stretch | 3–4x/day | 4 (all blocks) | Fingers as guide, 10–30 sec hold |
-| Standing bicep stretch at wall | 3–4x/day | 4 (all blocks) | **DORMANT as of 8/11** — deprioritized per OT visit, no longer clinically necessary |
-| Finkelstein stretch | 3–4x/day | 3 (Blocks 2, 3, 4) | Deliberately excluded from Block 1 — radial nerve territory, don't stretch it right before loading |
-| Tennis elbow self massage (cupping) | Combined with vibration desensitization, 2–3x/day total | 1 (Block 2) | Counts toward the shared radial-nerve-desensitization dose below |
-| Vibration desensitization | Combined with self massage, 2–3x/day total | 1 (Block 4) | Counts toward the shared dose — see note below |
-| Prone chest stretch on chair | 3x/day | 3 (Blocks 1, 2, 4) | Meets prescription |
-| Lat stretch | not specified | 2 (Blocks 1, 3) | Loose grip on right side, don't load hand/wrist |
-| Doorway stretch | as tolerated | 2 (Blocks 2, 4) | Moot vs. bicep stretch duplicate question — bicep stretch is dormant as of 8/11 |
-| Scapular wall slides | 1x/day | 1 (Block 1) | Gym warm-up |
-| Scapular stability isometric (pillowcase) | 5 reps/day, may space out | 1 (Block 1) | Kept together rather than split |
-| Isometric internal rotation | not specified | 1 (Block 1) | Paired with wall push-ups |
-| Wall push-ups | not specified | 1 (Block 1) | Progression toward 5-pushup goal is Donovan's inference, not OT-specified — confirm ladder Aug 11 |
-| Standing wall ball circles (mini Swiss ball, 2–3 lb) | 1–3x/day, 7x/week | 1 (Block 1) | **New 8/11.** 1 min hold, progress duration |
-| Full plank w/ scapular protraction–retraction AROM | 1x/day, 7x/week | 1 (Block 4) | **New 8/11.** 5 reps, 10–15 sec hold |
-| Standing subscapularis lift-off | 1x/day, 7x/week | 1 (Block 4) | **New 8/11.** 3–5 reps, walk-to-tension hold |
-| Elbow distraction self mobilization | 1–2x/day, 7x/week | 2 (Blocks 1, 3) | **New 8/11.** 3 sets of 10 oscillations or 10-sec holds — stop on any neural symptoms |
-| Wrist AROM: radial–ulnar deviation | 3x/day, 7x/week | 3 (Blocks 1, 2, 3) | **New 8/11.** 3 sets of 10 reps — stop on any neural symptoms — one dose per block satisfies 3x/day |
-| Triceps extension work | prioritize | — | Lives in training program, not HEP |
-| Night splint | overnight | Float | Plantar fasciitis |
-| Calf stretch + KT tape | ongoing | Float | Plantar fasciitis |
-| Diagonal/fascial stretch | as instructed | Float | Plantar fasciitis |
-
-## Note on radial nerve desensitization dosing
-
-Self-massage (Block 2) and vibration desensitization (Block 4) are treated as interchangeable techniques satisfying one shared 2–3x/day dose, not two separate prescriptions each needing their own 2–3x. One bout of each = 2 total, meeting the minimum. Confirm this reading is correct at Aug 11 (question 7 below) — the notes don't explicitly say the two are combinable, that's Donovan's working interpretation.
-
-## Open questions for Bhupinder — Aug 11, 9:00 AM
-
-1. Bicep stretch: palm up (clinical note) vs palm down (printed handout) — confirming palm up is correct.
-2. Levator scapulae stretch produces warming into fingertips — [fill in: which fingers, intensity, duration].
-3. Lat stretch, vibration desensitization, isometric IR, and wall push-ups have no stated frequency — what's the target for each?
-4. Wall push-ups — what's the actual progression toward the 5-push-up goal? Chest press is still aggravating at a certain point in its range.
-5. Notes ask for frequent, distributed bouts — this schedule consolidates into 4 fixed blocks since distribution isn't workable at work. Frequency is preserved; is losing the spread a problem?
-6. Is the doorway stretch a separate item from the standing bicep stretch, or the same movement described twice?
-7. Self-massage (1x, Block 2) and vibration desensitization (1x, Block 4) are being treated as interchangeable toward one shared 2–3x/day dose — is that a valid reading, or does each need its own 2–3x?
+**Circuit notation:** items sharing a whole number (1.1 / 1.2) run as a circuit.
 
 ---
 
-**For Claude Code:** this is the finalized block/exercise structure for the RKD Log HEP tab. Point Code at this file plus `index.html`'s current HEP section; the outcome is the schedule above, not a specific implementation approach.
+## Block 1 — 6:00 AM (Gym / Pre-Lift)
+**Approx. 21–24 min.** On lifting days: 6:00 HEP → 6:25 lift.
+
+| # | Exercise | Dose | Hold | Freq |
+|---|---|---|---|---|
+| 1.1 | AROM/PROM — Shoulder Flex/Ext + Pron/Sup | 5 reps | — | 5x daily |
+| 1.2 | Levator Scapulae Stretch | 2–5 reps | 10–15 sec | 3–4x daily |
+| 3 | Scapular Wall Slides / Isometric | 5 reps | slow, controlled | 1x daily |
+| 4 | Prone Chest Stretch on Chair | 2–3 reps | 10–30 sec | 3x daily |
+| 5 | Standing Wall Ball Circles | 1 min | progressive | 1–3x daily |
+| 6 | Elbow Distraction Self Mobilization | 3 × 10 osc. | or 10 sec holds | 1–2x daily |
+| 7 | Wrist AROM — Radial/Ulnar Deviation | 3 × 10 | continuous | 3x daily |
+| 8.1 | Full Plank with Scapular AROM | 5 reps | 10–15 sec | 1x daily |
+| 8.2 | Isometric Internal Rotation Activation | 5 reps | 10–15 sec | 1x daily |
+| 9 | Standing Subscapularis Lift-Off | 3–5 reps | walk-to-tension | 1x daily |
+| 10 | Seated Wrist Flexion Stretch | — | 10–30 sec | 3–4x daily |
+| 11 | Vibration Desensitization | — | brief | 2–3x daily |
+
+**Notes**
+- Scapular Wall Slides is the pre-lift gate on lifting days.
+- 8.1/8.2 circuit — subscap/serratus strategy per 7/14 notes. Also pairs with Floor Push-Ups on training days.
+- **No Finkelstein in Block 1** — don't pre-load radial tissue before lifting.
+- **No Lat Stretch in Block 1** — stretching the lat before pulling works against the deadlift firing cue.
+- If time-constrained: Vibration Desensitization and Seated Wrist Flexion move most easily to a later block.
+
+## Block 2 — 9:00 AM (Work)
+
+| # | Exercise | Dose | Hold | Freq |
+|---|---|---|---|---|
+| 1.1 | AROM/PROM — Shoulder Flex/Ext + Pron/Sup | 5 reps | — | 5x daily |
+| 1.2 | Levator Scapulae Stretch | 2–5 reps | 10–15 sec | 3–4x daily |
+| 2 | Wrist AROM — Radial/Ulnar Deviation | 3 × 10 | continuous | 3x daily |
+| 3 | Finkelstein Stretch | 3–5 reps | progressive | 2x daily (reduced) |
+| 4 | Seated Wrist Flexion Stretch | — | 10–30 sec | 3–4x daily |
+| 5.1 | Prone Chest Stretch on Chair | 2–3 reps | 10–30 sec | 3x daily |
+| 5.2 | Lat Stretch | 2–3 reps | 10–30+ sec | 3x daily |
+
+## Block 3 — 2:00 PM (Work)
+
+| # | Exercise | Dose | Hold | Freq |
+|---|---|---|---|---|
+| 1.1 | AROM/PROM — Shoulder Flex/Ext + Pron/Sup | 5 reps | — | 5x daily |
+| 1.2 | Levator Scapulae Stretch | 2–5 reps | 10–15 sec | 3–4x daily |
+| 2 | Tennis Elbow Self Massage | — | 5–10 min | 2–3x daily |
+| 3 | Seated Wrist Flexion Stretch | — | 10–30 sec | 3–4x daily |
+| 4 | Finkelstein Stretch | 3–5 reps | progressive | 2x daily (reduced) |
+| 5.1 | Prone Chest Stretch on Chair | 2–3 reps | 10–30 sec | 3x daily |
+| 5.2 | Lat Stretch | 2–3 reps | 10–30+ sec | 3x daily |
+| 6 | Doorway Stretch | 2–3 reps | progressive | 3x daily |
+
+**Notes**
+- Tennis Elbow Self Massage: light pressure only. **No hard friction or trigger point work** — explicit exclusion.
+- Doorway Stretch: avoid forward head posture. The palm-up variation biases biceps and overlaps the dormant Standing Bicep Stretch — confirm with Bhupinder before using that version.
+
+## Block 4 — 5:30 PM (Home)
+
+| # | Exercise | Dose | Hold | Freq |
+|---|---|---|---|---|
+| 1.1 | AROM/PROM — Shoulder Flex/Ext + Pron/Sup | 5 reps | — | 5x daily |
+| 1.2 | Levator Scapulae Stretch | 2–5 reps | 10–15 sec | 3–4x daily |
+| 2 | Seated Wrist Flexion Stretch | — | 10–30 sec | 3–4x daily |
+| 3 | Elbow Distraction Self Mobilization | 3 × 10 osc. | or 10 sec holds | 1–2x daily |
+| 4 | Wrist AROM — Radial/Ulnar Deviation | 3 × 10 | continuous | 3x daily |
+| 5.1 | Prone Chest Stretch on Chair | 2–3 reps | 10–30 sec | 3x daily |
+| 5.2 | Lat Stretch | 2–3 reps | 10–30+ sec | 3x daily |
+
+## Float — Overflow / Plantar Fasciitis
+Renders as "done," not reps.
+
+| # | Item | Freq | Notes |
+|---|---|---|---|
+| 1 | AROM/PROM — 5th daily dose | as needed | Completes the 5x/day prescription |
+| 2 | Calf Stretching | daily | |
+| 3 | KT Taping | as needed | |
+| 4 | Diagonal / Fascial Line Stretching | daily | Trial both sides |
+| 5 | Night Splint | nightly | Started ~7/30; resolved nocturnal symptoms |
+
+## Dormant
+
+| Exercise | Status |
+|---|---|
+| Standing Bicep Stretch at Wall | Deprioritized 8/11 — no longer clinically necessary. **Not an exclusion.** Palm-UP was the corrected form. |
+
+---
+
+## Standing Rules
+
+- **Stop on neural symptoms** — Elbow Distraction and Wrist AROM Radial/Ulnar both carry a hard stop. Tingling, shooting, or numbness ends the set.
+- **Wrist AROM Radial/Ulnar is the ulnar nerve glide.** Slider, not tensioner — continuous motion, no end-range holds.
+- **Levator Scapulae:** fingertip warming during the hold is likely nerve tension. Back off angle and hold time, log which fingers, intensity, duration.
+- **No trigger point release or hard friction massage** on the right arm.
+- **Symptom gate:** pain, plus paresthesia (ring/pinky ulnar, thumb/dorsal radial) and painless weakness — the two findings that never presented as pain.
+
+## Open Items
+
+- **Finkelstein reduced to 2x/day** (from 3–4x) by Donovan — aggravates the metacarpals, requiring manual reduction by Dr. Zak. Bhupinder assigned this exercise and is the only one who can modify MedBridge. Worth raising at the **Sept 3 ortho** as well — recurring displacement speaks to joint stability on that side.
+- **Doorway Stretch palm-up variation** — overlaps the dormant Standing Bicep Stretch. Bhupinder's call.
+- **App HEP tab** — `index.html` renders blocks in its own hardcoded order, which no longer matches this file. Four items don't exist in the app yet: Lat Stretch, Isometric Internal Rotation Activation, Doorway Stretch, and the Float AROM/PROM dose. Separate Claude Code session.
+- **Block 3 label** — confirm `index.html` reads 2:00 PM, not "Work Lunch" / 1:00 PM.
