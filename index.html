@@ -183,14 +183,19 @@ main{padding:12px 14px}
     <option value="thu">Thu · Zone 2 / Rest</option>
     <option value="mixed" id="optMixed">Fri · Split Squat</option>
     <option value="sat">Sat · Conditioning</option>
-    <option value="sun">Sun · Gentle Yoga</option>
+    <option value="sun" id="optSun">Sun · Gentle Yoga</option>
     <optgroup label="Override (any day)">
       <option value="strengthFree">Strength · Freeform</option>
     </optgroup>
     <optgroup label="Mesocycle 01 (8/17–9/6)">
-      <option value="fullBodyA">Full Body A · Hinge</option>
-      <option value="fullBodyB">Full Body B · Squat</option>
-      <option value="fullBodyC">Full Body C · Push</option>
+      <option value="fullBodyA" id="optFBA">Full Body A · Hinge</option>
+      <option value="fullBodyB" id="optFBB">Full Body B · Squat</option>
+      <option value="fullBodyC" id="optFBC">Full Body C · Push</option>
+    </optgroup>
+    <optgroup label="Mesocycle 02 (9/7–10/18)">
+      <option value="meso02Mon">Mon · Lower/Hinge</option>
+      <option value="meso02Wed">Wed · Upper Push</option>
+      <option value="meso02Fri">Fri · Pull + Accessory</option>
     </optgroup>
   </select>
 </div>
@@ -229,7 +234,10 @@ const EQ={
  strengthFree:"Whatever you actually used this session — note specifics below if it matters.",
  fullBodyA:"Barbell + plates (deadlift) · DBs (chest-supported row, single-arm row, carry) · incline bench (chest-supported row) · light band (prep pull-aparts)",
  fullBodyB:"Safety bar or DB/KB (squat) · cable stack (row + pullover) · DBs (RDL, shoulder press, carry) · light band (prep pull-aparts)",
- fullBodyC:"Bodyweight (push-ups, lunges, bridges) · DBs (chest-supported row) · leg press machine · cable + rope (triceps) · light band (prep pull-aparts)"};
+ fullBodyC:"Bodyweight (push-ups, lunges, bridges) · DBs (chest-supported row) · leg press machine · cable + rope (triceps) · light band (prep pull-aparts)",
+ meso02Mon:"Rack pull station · DB or KB (goblet squat) or leg press machine · DBs (Bulgarian split squat) · cable or band (Pallof)",
+ meso02Wed:"Chest press machine or DBs · bodyweight (floor push-ups, wall slides) · cable or DB (triceps extension)",
+ meso02Fri:"Light band or light DBs (Y-raise/pull-apart) · cable or DB (neutral-grip row) · DBs (RDL) or hip thrust setup · bodyweight (dead bug)"};
 // Mesocycle 01 (rebuild block, Dr. Zak 8/14 functional clearance) — a fixed 3-week structure
 // running 8/17–9/6, ending at the 9/3 ortho appointment. Its own week phase is computed from
 // the real calendar date, deliberately independent of weekSel (which is the OLD 8-week
@@ -249,6 +257,24 @@ function inMeso01Window(){
   const days=Math.floor((new Date()-MESO01_START)/864e5);
   return days>=0&&days<=MESO01_END_DAY;
 }
+// Mesocycle 02 — 6-week block, 9/7–10/18. True Mon/Wed/Fri split (not full-body rotation like
+// Meso01): Monday lower/hinge lead, Wednesday upper push + scapular stability, Friday pull +
+// lower accessory. Progression is 2-week phases per RKD_Mesocycle_02.md, not weekly.
+const MESO02_START=new Date(2026,8,7); // Mon Sep 7, 2026
+const MESO02_PHASES=[
+ {label:"Weeks 1–2 — Baseline",rpe:"Baseline loads. Confirm nothing aggravates under the Chest Press 90° elbow-flexion cap."},
+ {label:"Weeks 3–4 — Progressive overload (cleared movements only)",rpe:"Add load on Rack Pull, Goblet Squat/Leg Press, Bulgarian Split Squat, RDL/Hip Thrust, Triceps Extension. Chest Press and Neutral-Grip Row hold steady or add a rep — not load."},
+ {label:"Weeks 5–6 — Hold / taper",rpe:"Hold or nudge slightly. Taper volume in week 6 to land wherever NCS/follow-up lands."}];
+function mesoPhase2(){
+  const days=Math.floor((new Date()-MESO02_START)/864e5);
+  const week=Math.floor(days/7);
+  return MESO02_PHASES[Math.min(2,Math.max(0,Math.floor(week/2)))];
+}
+const MESO02_END_DAY=41; // Sun 10/18 — last day of the 6-week window (day 0 = Mon 9/7)
+function inMeso02Window(){
+  const days=Math.floor((new Date()-MESO02_START)/864e5);
+  return days>=0&&days<=MESO02_END_DAY;
+}
 function hrText(day,w){
   if(day==="lower"&&w===8) return "Taper: Z1–Z2 only. Save everything for Wednesday's test day.";
   return {
@@ -258,7 +284,10 @@ function hrText(day,w){
    strengthFree:"Strength curve — stay Z0–Z2, brief Z3 fine. RKD ≈ 105 is the usual lift-day ballpark. No medal on freeform — nothing prescribed to score against.",
    fullBodyA:`Hinge lead — strength curve, Z1–Z2 base, DL spikes to Z3 OK. ${mesoPhase().label} · ${mesoPhase().rpe}`,
    fullBodyB:`Squat lead — strength curve throughout. ${mesoPhase().label} · ${mesoPhase().rpe}`,
-   fullBodyC:`Push lead — strength curve throughout. ${mesoPhase().label} · ${mesoPhase().rpe}`}[day];
+   fullBodyC:`Push lead — strength curve throughout. ${mesoPhase().label} · ${mesoPhase().rpe}`,
+   meso02Mon:`Lower/hinge lead — strength curve, Z1–Z2 base, Rack Pull spikes to Z3 OK. ${mesoPhase2().label} · ${mesoPhase2().rpe}`,
+   meso02Wed:`Upper push lead — strength curve throughout, stay pain-free through the Chest Press cap. ${mesoPhase2().label} · ${mesoPhase2().rpe}`,
+   meso02Fri:`Pull lead — strength curve throughout. ${mesoPhase2().label} · ${mesoPhase2().rpe}`}[day];
 }
 // Shared pre-activation cue — surfaces on every exercise where the right lat
 // coordination gap shows up (confirmed 8/11 across Deadlift + DB Shoulder Press).
@@ -513,6 +542,51 @@ function getSession(w,day){
      {letter:"E",t:"Finisher",mins:6,bells:2,ex:[
        {key:"Backward Walking Lunges",n:"Backward Walking Lunges",rx:"2 × 20 steps",sets:2}]}]};
   }
+  // Mesocycle 02 — fixed exercise lists/set-rep schemes, progression is 2-week phases (see
+  // MESO02_PHASES, surfaced via hrText, not branched here). True Mon/Wed/Fri split, not a
+  // full-body rotation like Meso01.
+  const MESO2_PREP={letter:"P",t:"Prep",mins:2,bells:1,ex:[
+   {key:"Scapular Wall Isometric",n:"Scapular Wall Isometric",rx:"one 6:00 countdown · 5 reps — existing pre-lift gate, unchanged",sets:0}]};
+  if(day==="meso02Mon"){
+    return {name:"MONDAY — Lower Body / Hinge Lead", type:"lift", blocks:[
+     MESO2_PREP,
+     {letter:"A",t:"Hinge",mins:10,bells:4,ex:[
+       {key:"Rack Pull",n:"Rack Pull",rx:"4 × 5 · chiro-approved; monitor grip-side",sets:4}]},
+     // Squat-pattern default is Goblet Squat or Leg Press. Back squat is NOT in this pool —
+     // it stays on the named-exclusion list — so there is nothing here to mark DORMANT.
+     {letter:"B",t:"Squat",mins:9,bells:3,ex:[
+       {key:"Goblet Squat",n:"Goblet Squat or Leg Press",rx:"3 × 10 · squat-pattern default — back squat stays excluded",sets:3}]},
+     {letter:"C",t:"Unilateral",mins:8,bells:3,ex:[
+       {key:"Bulgarian SS",n:"Bulgarian Split Squat",rx:"3 × 8/leg",sets:3}]},
+     {letter:"D",t:"Core",mins:6,bells:3,ex:[
+       {key:"Pallof",n:"Pallof Press",rx:"3 × 10/side · anti-rotation core",sets:3}]}]};
+  }
+  if(day==="meso02Wed"){
+    return {name:"WEDNESDAY — Upper Push + Scapular Stability", type:"lift", blocks:[
+     MESO2_PREP,
+     {letter:"A",t:"Push",mins:9,bells:3,ex:[
+       {key:"Chest Press",n:"Chest Press",rx:"3 × 10 · machine or DB, hard stop at 90° elbow flexion, pain-free only",sets:3}]},
+     // Push-pattern default is Floor Push-Ups — wall push-up ladder retired, goal met.
+     // Key stays "Wall Push-Up Progression" for PR-history continuity (see PR_KEYS).
+     {letter:"B",t:"Push",mins:8,bells:3,ex:[
+       {key:"Wall Push-Up Progression",n:"Floor Push-Ups",rx:"3 × max clean reps · push-pattern default — wall progression retired, log rep count",sets:3}]},
+     {letter:"C",t:"Scapular Stability",mins:6,bells:3,ex:[
+       {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"3 × 10",sets:3}]},
+     {letter:"D",t:"Triceps",mins:6,bells:3,ex:[
+       {key:"Triceps Extension",n:"Triceps Extension (pushdown or overhead)",rx:"3 × 12 · prioritized per OT guidance",sets:3}]}]};
+  }
+  if(day==="meso02Fri"){
+    return {name:"FRIDAY — Pull + Lower Accessory", type:"lift", blocks:[
+     MESO2_PREP,
+     {letter:"A",t:"Pre-activation",mins:5,bells:3,ex:[
+       {key:"Prone Y-Raises",n:"Prone Y-Raise or Band Pull-Apart",rx:"3 × 15 · pre-activation, light, first in session",sets:3}]},
+     {letter:"B",t:"Pull",mins:9,bells:3,ex:[
+       {key:"Neutral-Grip Row",n:"Neutral-Grip Row (cable or DB)",rx:"3 × 10 · light load, stop at first sign of pain",sets:3}]},
+     {letter:"C",t:"Hinge",mins:9,bells:3,ex:[
+       {key:"Romanian Deadlift (DB)",n:"RDL or Hip Thrust",rx:"3 × 10",sets:3}]},
+     {letter:"D",t:"Core",mins:6,bells:3,ex:[
+       {key:"Bird Dog",n:"Core (Dead Bug or similar)",rx:"3 × 10/side",sets:3}]}]};
+  }
   if(day==="upper"){
     const o=OHP(w),r=ROW(w);const early=w<=2;
     const blocks=[
@@ -564,7 +638,10 @@ function getSession(w,day){
       {letter:"B",t:"Circuit",mins:9,bells:3,ex:[{n:"Reverse Lunge + Band Pull-Apart + Glute Bridge March",rx:"2–3 rds — light, RPE 5. Bell = next round.",sets:0}]},
       {letter:"C",t:"Optional",mins:8,bells:1,ex:[{n:"Farmer Carry — light (optional, skippable — only if feeling good)",rx:"5–10 min continuous or interval carries, light load",sets:0}]}]};
   }
-  return {name:"SUN — Gentle Yoga · Active Recovery", type:"recovery", blocks:[]};
+  // Sun defaults to CS4; Meso01 (8/17-9/6) swapped it for yoga (thoracic mobility follow-on
+  // to the 8/14 clearance). Meso02 has no yoga override, so this reverts to CS4 on its own.
+  if(inMeso01Window()) return {name:"SUN — Gentle Yoga · Active Recovery", type:"recovery", blocks:[]};
+  return {name:"SUN — CS4 · Active Recovery", type:"recovery", blocks:[]};
 }
 const interval=b=>b.bells>0?q15(b.mins*60/b.bells):0;
 
@@ -598,7 +675,7 @@ function zone2MedalFor(m2,m3,m45){
   if(m2>=15&&m2<=45&&m3<=10&&m45<=4) return {t:"BRONZE",c:"var(--bronze)"};
   return null;
 }
-const LIFT_DAYS=["upper","lower","mixed","fullBodyA","fullBodyB","fullBodyC"];
+const LIFT_DAYS=["upper","lower","mixed","fullBodyA","fullBodyB","fullBodyC","meso02Mon","meso02Wed","meso02Fri"];
 function curDay(){ return document.getElementById("daySel").value; }
 function curModel(){
   if(pxiSet.model!=="auto") return pxiSet.model;
@@ -1057,10 +1134,15 @@ function render(){
     h+=`<button class="restbtn" onclick="logRest()">Skipped class — log rest</button>`;
     m.innerHTML=h; curRPE=0; restoreSessionDraft(); updateCompliance(); return;
   }
-  /* ---- Sun: CS4 recovery ---- */
+  /* ---- Sun: CS4 recovery (Meso01 swaps this for yoga — see getSession) ---- */
   if(s.type==="recovery"){
-    h+=`<div class="meta"><b>Gentle yoga — active recovery.</b> Tell the instructor about the right forearm before class. <b>Modify every hands-down pose:</b> forearm plank instead of plank, dolphin instead of down dog, skip chaturanga, fists or wedge if hands must touch the floor. A gentle class can still be 20 min of loaded wrist extension if you don't modify.</div>`;
-    h+=`<div class="meta eq"><b>Why it matters:</b> Sat (capped) + Sun (easy yoga) = your built-in two-day taper into Monday's Upper session.</div>`;
+    if(inMeso01Window()){
+      h+=`<div class="meta"><b>Gentle yoga — active recovery.</b> Tell the instructor about the right forearm before class. <b>Modify every hands-down pose:</b> forearm plank instead of plank, dolphin instead of down dog, skip chaturanga, fists or wedge if hands must touch the floor. A gentle class can still be 20 min of loaded wrist extension if you don't modify.</div>`;
+      h+=`<div class="meta eq"><b>Why it matters:</b> Sat (capped) + Sun (easy yoga) = your built-in two-day taper into Monday's Upper session.</div>`;
+    } else {
+      h+=`<div class="meta"><b>CS4 — active recovery.</b> Condensed CS4 at reduced pace/volume — coaching practice, not training. If Saturday ran harder than planned, keep this strictly easy. Sauna 10 min after is ideal.</div>`;
+      h+=`<div class="meta eq"><b>Why it matters:</b> Sat (capped) + Sun (light CS4) = your built-in two-day taper into Monday's session.</div>`;
+    }
     if(w===8) h+=`<div class="meta warn"><b>Week 8:</b> walk-through pace only. Block complete — log final numbers. New 1RMs from Mon/Wed become the Block 2 baselines.</div>`;
     h+=rpeNoteSaveHtml();
     m.innerHTML=h; curRPE=0; restoreSessionDraft(); return;
@@ -1137,7 +1219,8 @@ function zone2ActivityHtml(){
   return `<div class="notecard"><label>Activity</label>
     <select id="z2act" style="width:100%">
       <option>Peloton class</option><option>Jog</option><option>Ski erg</option>
-      <option>Row</option><option>Assault runner</option><option>Bike</option><option>Other</option>
+      <option>Row</option><option>Assault runner</option><option>Bike</option>
+      <option>Lap swimming (breaststroke)</option><option>Other</option>
     </select></div>`;
 }
 function setRPE(v){curRPE=v;for(let i=6;i<=10;i++)document.getElementById("rpe"+i).className="rpe"+(i===v?" on":"");}
@@ -1270,8 +1353,8 @@ function manualScore(){
 
 /* ================= HISTORY / PRS ================= */
 const e1rm=(w,r)=>w*(1+r/30);
-const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Supported Row":"lb","DB Shoulder Press":"lb","DB Row":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec","SKB RDL":"kg","Hip Thrust":"lb","Wall Push-Up Progression":"reps","Rope Triceps Pressdown":"lb","Bulgarian SS":"lb","Cable Pullover":"lb","Single-Arm DB Row":"lb","Neutral-Grip Cable Row":"lb","Romanian Deadlift (DB)":"lb"};
-const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun",strengthFree:"Freeform",fullBodyA:"FB-A",fullBodyB:"FB-B",fullBodyC:"FB-C"};
+const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Supported Row":"lb","DB Shoulder Press":"lb","DB Row":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec","SKB RDL":"kg","Hip Thrust":"lb","Wall Push-Up Progression":"reps","Rope Triceps Pressdown":"lb","Bulgarian SS":"lb","Cable Pullover":"lb","Single-Arm DB Row":"lb","Neutral-Grip Cable Row":"lb","Romanian Deadlift (DB)":"lb","Rack Pull":"lb","Chest Press":"lb","Triceps Extension":"lb","Neutral-Grip Row":"lb"};
+const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun",strengthFree:"Freeform",fullBodyA:"FB-A",fullBodyB:"FB-B",fullBodyC:"FB-C",meso02Mon:"Mon",meso02Wed:"Wed",meso02Fri:"Fri"};
 const escAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 function weeklyTotals(logs){
   const totals={};
@@ -1483,6 +1566,17 @@ if(inMeso01Window()){
   document.getElementById("optLower").textContent+=suffix;
   document.getElementById("optMixed").textContent+=suffix;
   const mesoDefaultDay={1:"fullBodyA",3:"fullBodyB",5:"fullBodyC"}[now.getDay()];
+  if(mesoDefaultDay) document.getElementById("daySel").value=mesoDefaultDay;
+} else if(inMeso02Window()){
+  const suffix=" (inactive)";
+  document.getElementById("optUpper").textContent+=suffix;
+  document.getElementById("optLower").textContent+=suffix;
+  document.getElementById("optMixed").textContent+=suffix;
+  document.getElementById("optFBA").textContent+=suffix;
+  document.getElementById("optFBB").textContent+=suffix;
+  document.getElementById("optFBC").textContent+=suffix;
+  document.getElementById("optSun").textContent="Sun · CS4 Active Recovery";
+  const mesoDefaultDay={1:"meso02Mon",3:"meso02Wed",5:"meso02Fri"}[now.getDay()];
   if(mesoDefaultDay) document.getElementById("daySel").value=mesoDefaultDay;
 }
 render();
