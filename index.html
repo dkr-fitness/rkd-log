@@ -197,26 +197,34 @@ main{padding:12px 14px}
 
 <div class="selects">
   <select id="weekSel" onchange="stopBlock();render()"></select>
+  <!-- Groups are ordered current-block-first by orderDaySel() at init, so the block you're
+       actually training is at the top of the list on mobile. Tue/Thu/Sat/Sun are shared by
+       every block (not legacy), so they sit in their own group right below rather than being
+       buried at the bottom. Each block group carries its date range in the label. -->
   <select id="daySel" onchange="stopBlock();render()">
-    <option value="upper" id="optUpper">Mon · Row/Press</option>
-    <option value="tue">Tue · Zone 2 / Rest</option>
-    <option value="lower" id="optLower">Wed · Deadlift</option>
-    <option value="thu">Thu · Zone 2 / Rest</option>
-    <option value="mixed" id="optMixed">Fri · Split Squat</option>
-    <option value="sat">Sat · Conditioning</option>
-    <option value="sun" id="optSun">Sun · Gentle Yoga</option>
-    <optgroup label="Override (any day)">
-      <option value="strengthFree">Strength · Freeform</option>
-    </optgroup>
-    <optgroup label="Mesocycle 01 (8/17–9/6)">
-      <option value="fullBodyA" id="optFBA">Full Body A · Hinge</option>
-      <option value="fullBodyB" id="optFBB">Full Body B · Squat</option>
-      <option value="fullBodyC" id="optFBC">Full Body C · Push</option>
-    </optgroup>
-    <optgroup label="Mesocycle 02 (9/7–10/18)">
+    <optgroup id="ogMeso02" label="Mesocycle 02 · 9/7–10/18">
       <option value="meso02Mon">Mon · Lower/Hinge</option>
       <option value="meso02Wed">Wed · Upper Push</option>
       <option value="meso02Fri">Fri · Pull + Accessory</option>
+    </optgroup>
+    <optgroup label="Every week">
+      <option value="tue">Tue · Zone 2 / Rest</option>
+      <option value="thu">Thu · Zone 2 / Rest</option>
+      <option value="sat">Sat · Conditioning</option>
+      <option value="sun" id="optSun">Sun · CS4 Recovery</option>
+    </optgroup>
+    <optgroup label="Override (any day)">
+      <option value="strengthFree">Strength · Freeform</option>
+    </optgroup>
+    <optgroup id="ogMeso01" label="Mesocycle 01 · 8/17–9/6">
+      <option value="fullBodyA">Full Body A · Hinge</option>
+      <option value="fullBodyB">Full Body B · Squat</option>
+      <option value="fullBodyC">Full Body C · Push</option>
+    </optgroup>
+    <optgroup id="ogLegacy" label="Block 1 · 7/6–8/16">
+      <option value="upper">Mon · Row/Press</option>
+      <option value="lower">Wed · Deadlift</option>
+      <option value="mixed">Fri · Split Squat</option>
     </optgroup>
   </select>
 </div>
@@ -1778,26 +1786,21 @@ for(let i=1;i<=8;i++){const o=document.createElement("option");o.value=i;
   o.textContent="Block 1 · Wk "+i;ws.appendChild(o);}
 const now=new Date(), diff=Math.floor((now-LEGACY_START)/(7*864e5));
 ws.value=Math.min(8,Math.max(1,diff+1));
-document.getElementById("daySel").value=["sun","upper","tue","lower","thu","mixed","sat"][now.getDay()];
-if(inMeso01Window()){
-  const suffix=" (inactive)";
-  document.getElementById("optUpper").textContent+=suffix;
-  document.getElementById("optLower").textContent+=suffix;
-  document.getElementById("optMixed").textContent+=suffix;
-  const mesoDefaultDay={1:"fullBodyA",3:"fullBodyB",5:"fullBodyC"}[now.getDay()];
-  if(mesoDefaultDay) document.getElementById("daySel").value=mesoDefaultDay;
-} else if(inMeso02Window()){
-  const suffix=" (inactive)";
-  document.getElementById("optUpper").textContent+=suffix;
-  document.getElementById("optLower").textContent+=suffix;
-  document.getElementById("optMixed").textContent+=suffix;
-  document.getElementById("optFBA").textContent+=suffix;
-  document.getElementById("optFBB").textContent+=suffix;
-  document.getElementById("optFBC").textContent+=suffix;
-  document.getElementById("optSun").textContent="Sun · CS4 Active Recovery";
-  const mesoDefaultDay={1:"meso02Mon",3:"meso02Wed",5:"meso02Fri"}[now.getDay()];
-  if(mesoDefaultDay) document.getElementById("daySel").value=mesoDefaultDay;
+const daySel=document.getElementById("daySel");
+/* Float the block being trained today to the top of the list. Replaces the old
+   " (inactive)" suffixes: the dated group labels say which block a day belongs to, and the
+   current one sorting first says which is live — without widening any option text. */
+function orderDaySel(){
+  const og=document.getElementById({legacy:"ogLegacy",meso01:"ogMeso01",meso02:"ogMeso02"}[blockFor().id]||"");
+  if(og) daySel.insertBefore(og,daySel.firstChild);
 }
+orderDaySel();
+/* Sun is yoga only inside Meso01 — same condition getSession()/render() branch on */
+document.getElementById("optSun").textContent=inMeso01Window()?"Sun · Gentle Yoga":"Sun · CS4 Recovery";
+daySel.value=["sun","upper","tue","lower","thu","mixed","sat"][now.getDay()];
+const mesoDefaultDay=inMeso01Window()?{1:"fullBodyA",3:"fullBodyB",5:"fullBodyC"}[now.getDay()]
+                    :inMeso02Window()?{1:"meso02Mon",3:"meso02Wed",5:"meso02Fri"}[now.getDay()]:null;
+if(mesoDefaultDay) daySel.value=mesoDefaultDay;
 render();
 </script>
 </body>
