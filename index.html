@@ -297,6 +297,48 @@ function inMeso02Window(){
   const days=Math.floor((new Date()-MESO02_START)/864e5);
   return days>=0&&days<=MESO02_END_DAY;
 }
+/* ================= BLOCK / WEEK IDENTITY =================
+   Single source of truth for "which training block does a date belong to, and which week of
+   that block is it" — same calendar day-offset math as inMeso01Window()/inMeso02Window().
+   Deliberately NOT weekSel: that dropdown numbers the OLD 8-week program (start Mon Jul 6
+   2026, clamped by Math.min(8,...)), so it stopped advancing on Mon Aug 24 and tags every
+   session after that — across Meso01 and Meso02, two unrelated blocks — as "week 8".
+   weekSel is left in place and still selects the legacy upper/lower/mixed loads (DL/OHP/ROW);
+   it is just no longer the source of truth for the displayed label or for log grouping.
+   The three windows tile with no gap: Jul 6–Aug 16, Aug 17–Sep 6, Sep 7–Oct 18. */
+const LEGACY_START=new Date(2026,6,6); // Mon Jul 6, 2026 — the original 8-week block
+const LEGACY_END_DAY=41;               // Sun Aug 16 — Meso01 supersedes it the next day
+const BLOCKS=[
+ {id:"legacy",label:"Block 1",start:LEGACY_START,lastDay:LEGACY_END_DAY},
+ {id:"meso01",label:"Meso 1", start:MESO01_START,lastDay:MESO01_END_DAY},
+ {id:"meso02",label:"Meso 2", start:MESO02_START,lastDay:MESO02_END_DAY}];
+const BLOCK_ORD={pre:-1,legacy:0,meso01:1,meso02:2,open:3};
+function blockFor(when){
+  const t=(when?new Date(when):new Date()).getTime();
+  for(let i=BLOCKS.length-1;i>=0;i--){ /* newest first — a later block wins any overlap */
+    const b=BLOCKS[i], off=Math.floor((t-b.start)/864e5);
+    if(off>=0&&off<=b.lastDay) return {id:b.id,label:b.label,week:Math.floor(off/7)+1};
+  }
+  /* FALLBACK for dates no block covers — FLAGGED FOR CONFIRMATION. Past the end of the last
+     defined block we keep counting weeks ("Off-block · Wk 1, 2, …") so totals keep advancing
+     and unrelated weeks never merge into one bucket — i.e. the exact failure being fixed here
+     does not just reappear after Oct 18. Anything before Block 1 began is "Pre-block". */
+  const last=BLOCKS[BLOCKS.length-1];
+  const past=Math.floor((t-last.start)/864e5)-last.lastDay;
+  return past>0?{id:"open",label:"Off-block",week:Math.ceil(past/7)}
+               :{id:"pre", label:"Pre-block",week:1};
+}
+/* A saved log: trust the identity stamped at save time, else re-derive from its real date so
+   sessions logged before this fix stop being lumped together under the frozen week 8. */
+function blockOf(l){
+  return (l.block&&l.blockWeek)?{id:l.block,label:l.blockLabel||l.block,week:l.blockWeek}:blockFor(l.date);
+}
+/* Two display forms off the same identity: blockText for roomy contexts (weekly totals list,
+   copy-summary), blockTag for tight ones (top bar, history card headers). Keyed on b.id so it
+   works for reconstructed identities from blockOf() too, which carry no label of their own. */
+const blockText=b=>b.label+" · Wk "+b.week;
+const BLOCK_SHORT={pre:"PRE",legacy:"B1",meso01:"M1",meso02:"M2",open:"OFF"};
+const blockTag=b=>(BLOCK_SHORT[b.id]||b.id)+"·W"+b.week;
 function hrText(day,w){
   if(day==="lower"&&w===8) return "Taper: Z1–Z2 only. Save everything for Wednesday's test day.";
   return {
@@ -1240,7 +1282,8 @@ function render(){
   if(view==="hep"){renderHepTab(m);return;}
   finishedBlocks=new Set();
   const s=getSession(w,day);
-  document.getElementById("title").textContent="WK "+w+" · "+s.name.split(" — ")[0];
+  /* Label comes from the calendar block, not weekSel — see BLOCK / WEEK IDENTITY */
+  document.getElementById("title").textContent=blockTag(blockFor())+" · "+s.name.split(" — ")[0];
   let h="";
   if(!storageOK) h+=`<div class="warnbar">Preview mode: saving is in-memory only here. Hosted on GitHub Pages (or opened locally / in Bluefy), your log persists on this device.</div>`;
   h+=hepPanelHtml();
@@ -1271,7 +1314,8 @@ function render(){
     }
     h+=`<div class="meta warn"><b>Effort cap ~7/10.</b> Don't chase RKD or race the class — this fills the conditioning slot, it is NOT a fourth lifting day. If the class runs hot (true HIIT), dial back or skip.</div>`;
     if(w===7) h+=`<div class="meta warn"><b>Week 7:</b> keep this genuinely easy — test week starts Monday.</div>`;
-    if(w===8) h+=`<div class="meta warn"><b>Week 8 — test week:</b> skip class, or very easy Z1–Z2 only. A walk or 20 easy minutes on the bike at most.</div>`;
+    /* Block 1 only — weekSel sits at a permanent 8, so this fired on every Sat regardless of block */
+    if(w===8&&blockFor().id==="legacy") h+=`<div class="meta warn"><b>Week 8 — test week:</b> skip class, or very easy Z1–Z2 only. A walk or 20 easy minutes on the bike at most.</div>`;
     h+=`<div class="meta px"><b>Scoring:</b> RKD counts on the cardio ramp for reference only — no medal, no target. Watch the zone card instead.</div>`;
     h+=`<div class="notecard"><label>Zone check (live from WHOOP)</label><div id="zc" data-type="class"></div></div>`;
     h+=rpeNoteSaveHtml();
@@ -1287,7 +1331,8 @@ function render(){
       h+=`<div class="meta"><b>CS4 — active recovery.</b> Condensed CS4 at reduced pace/volume — coaching practice, not training. If Saturday ran harder than planned, keep this strictly easy. Sauna 10 min after is ideal.</div>`;
       h+=`<div class="meta eq"><b>Why it matters:</b> Sat (capped) + Sun (light CS4) = your built-in two-day taper into Monday's session.</div>`;
     }
-    if(w===8) h+=`<div class="meta warn"><b>Week 8:</b> walk-through pace only. Block complete — log final numbers. New 1RMs from Mon/Wed become the Block 2 baselines.</div>`;
+    /* Block 1 only — same permanent-week-8 problem as the Sat warning above */
+    if(w===8&&blockFor().id==="legacy") h+=`<div class="meta warn"><b>Week 8:</b> walk-through pace only. Block complete — log final numbers. New 1RMs from Mon/Wed become the Block 2 baselines.</div>`;
     h+=rpeNoteSaveHtml();
     m.innerHTML=h; curRPE=0; restoreSessionDraft(); return;
   }
@@ -1394,7 +1439,11 @@ function saveSession(){
   }
   const strainEl=document.getElementById("strain");
   const strain=strainEl&&strainEl.value!==""?Math.min(21,Math.max(0,Math.round(+strainEl.value*10)/10)):null;
-  const entry={date:new Date().toISOString(),week:w,day,name:s.name,type:s.type,entries,rpe:curRPE,
+  /* week:w kept for backward compatibility with already-saved logs; block/blockWeek are what
+     the label and weeklyTotals() grouping actually read now */
+  const bk=blockFor();
+  const entry={date:new Date().toISOString(),week:w,block:bk.id,blockLabel:bk.label,blockWeek:bk.week,
+    day,name:s.name,type:s.type,entries,rpe:curRPE,
     note:document.getElementById("note").value,strain,duration:elapsedSec(),
     pxi,zoneMins,pxiModel:pxi!=null?model:null,medal,
     target:medal==null?null:(s.type==="zone2"?100:pxiSet.target)};
@@ -1409,7 +1458,9 @@ function saveSession(){
 function logRest(){
   const w=+document.getElementById("weekSel").value, day=curDay();
   const logs=loadLogs();
-  logs.push({date:new Date().toISOString(),week:w,day,name:"REST",type:"rest",entries:[],rpe:0,
+  const bk=blockFor(); /* same stamp as saveSession — rest days show in history and weeklyTotals too */
+  logs.push({date:new Date().toISOString(),week:w,block:bk.id,blockLabel:bk.label,blockWeek:bk.week,
+    day,name:"REST",type:"rest",entries:[],rpe:0,
     note:(document.getElementById("note")||{value:""}).value,duration:0,pxi:0,zoneMins:null,medal:"Rest ✓"});
   saveLogs(logs); sessionDraft=null; toast("Rest day logged — good call");
 }
@@ -1505,11 +1556,15 @@ const e1rm=(w,r)=>w*(1+r/30);
 const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Supported Row":"lb","DB Shoulder Press":"lb","DB Row":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec","SKB RDL":"kg","Hip Thrust":"lb","Wall Push-Up Progression":"reps","Rope Triceps Pressdown":"lb","Bulgarian SS":"lb","Cable Pullover":"lb","Single-Arm DB Row":"lb","Neutral-Grip Cable Row":"lb","Romanian Deadlift (DB)":"lb","Rack Pull":"lb","Chest Press":"lb","Triceps Extension":"lb","Neutral-Grip Row":"lb"};
 const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun",strengthFree:"Freeform",fullBodyA:"FB-A",fullBodyB:"FB-B",fullBodyC:"FB-C",meso02Mon:"Mon",meso02Wed:"Wed",meso02Fri:"Fri"};
 const escAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+/* Keyed by block + week-within-block, so two unrelated blocks never share a bucket.
+   Was keyed on l.week (weekSel), which pinned everything after Aug 24 into a single "8". */
 function weeklyTotals(logs){
   const totals={};
   logs.forEach(l=>{
     if(l.day==="sat"||l.pxi==null)return;
-    totals[l.week]=(totals[l.week]||0)+l.pxi;
+    const b=blockOf(l), k=b.id+"|"+b.week;
+    if(!totals[k]) totals[k]={label:blockText(b),ord:BLOCK_ORD[b.id]??0,week:b.week,sum:0};
+    totals[k].sum+=l.pxi;
   });
   return totals;
 }
@@ -1530,12 +1585,13 @@ function renderHistory(m){
     h+=`<div class="pr"><div class="l">${k}${PR_KEYS[k]==="lb"?" · e1RM":""}${k==="Wall Push-Up Progression"?" · resets meaning per stage":""}</div><div class="v">${p?Math.round(p.v)+(PR_KEYS[k]==="sec"?"s":PR_KEYS[k]==="+lb"?" lb":PR_KEYS[k]==="kg"?" kg":PR_KEYS[k]==="reps"?" reps":""):"—"}</div>${p&&p.raw?`<div class="sub" style="font-size:12px;color:var(--muted)">${p.raw}</div>`:""}</div>`;});
   h+=`</div>`;
   const totals=weeklyTotals(logs);
-  const weeks=Object.keys(totals).map(Number).sort((a,b)=>b-a);
-  if(weeks.length){
+  /* newest block first, then newest week within it — the old numeric sort can't order across blocks */
+  const keys=Object.keys(totals).sort((a,b)=>totals[b].ord-totals[a].ord||totals[b].week-totals[a].week);
+  if(keys.length){
     h+=`<div class="notecard"><label>Weekly RKD (Mon–Sun · Sat excluded)</label>`;
-    weeks.forEach(wk=>{
-      const t=totals[wk];
-      h+=`<div class="fieldrow"><span>Week ${wk}</span><span style="font-family:var(--disp);font-weight:700;font-size:18px;color:${t<0?"var(--red)":"var(--text)"}">${t}</span></div>`;
+    keys.forEach(k=>{
+      const t=totals[k];
+      h+=`<div class="fieldrow"><span>${t.label}</span><span style="font-family:var(--disp);font-weight:700;font-size:18px;color:${t.sum<0?"var(--red)":"var(--text)"}">${t.sum}</span></div>`;
     });
     h+=`</div>`;
   }
@@ -1546,7 +1602,7 @@ function renderHistory(m){
     const dl=DAY_LABEL[l.day]||"";
     const strainPill=l.strain!=null?`<span class="pxi-pill" style="color:var(--z2)">Strain ${l.strain.toFixed(1)}</span>`:"";
     const noteIcon=l.note?`<svg class="note-ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="${escAttr(l.note)}" style="cursor:pointer" onclick="toggleNote(${idx})"><path d="M4 4h13l3 3v13H4z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>`:"";
-    h+=`<div class="hist-card"><div class="h"><span>Wk ${l.week}${dl?" · "+dl:""} · ${l.name}</span>
+    h+=`<div class="hist-card"><div class="h"><span>${blockTag(blockOf(l))}${dl?" · "+dl:""} · ${l.name}</span>
       <span style="display:flex;align-items:center;gap:8px">${l.pxi!=null?`<span class="pxi-pill"${l.pxi<0?' style="color:var(--red)"':''}>RKD ${l.pxi}</span>`:""}${l.medal?`<span class="medal-pill" style="color:${medalColor}">${l.medal}</span>`:""}${strainPill}${noteIcon}<span style="font-weight:400;color:var(--muted);font-size:13px">${dt.toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span></span></div>
     <div class="sub">${l.duration?fmt(l.duration)+" · ":""}${l.rpe?"RPE "+l.rpe:""}${l.activity?" · "+l.activity:""}${l.zoneMins?" · "+l.zoneMins.map((z,i)=>i>0&&z>=0.5?"Z"+i+" "+Math.round(z)+"m":null).filter(Boolean).join(" "):""}</div>
     ${l.note?`<div class="note-full" id="noteFull${idx}" style="display:none">${escAttr(l.note)}</div>`:""}
@@ -1593,6 +1649,7 @@ function buildSummary(logs,idx){
   const exLines=(l.entries&&l.entries.length)?l.entries.map(e=>exerciseSummaryLine(logs,idx,e)).join("\n"):"none logged";
   return `RKD SESSION SUMMARY
 Date: ${dt.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"})}
+Block: ${blockText(blockOf(l))}
 Session: ${l.name}
 RKD: ${l.pxi!=null?l.pxi:"not logged"} (${l.medal||"no medal"})
 Zone minutes: ${zoneLine}
