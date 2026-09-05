@@ -739,7 +739,17 @@ function medalFor(pxi,target){
 function pctZ2(mins){ const total=mins.reduce((a,b)=>a+(b||0),0); return total>0?Math.round((mins[2]||0)/total*100):0; }
 function zone2MedalFor(mins){ return medalFor(pctZ2(mins),100); }
 const LIFT_DAYS=["upper","lower","mixed","fullBodyA","fullBodyB","fullBodyC","meso02Mon","meso02Wed","meso02Fri"];
+/* The only templates that still read weekSel — DL[w-1], OHP(w), ROW(w), the w<=2 rehab
+   variants, the w<8 finisher. Every mesocycle day is calendar-driven and ignores w. */
+const LEGACY_DAYS=["upper","lower","mixed"];
 function curDay(){ return document.getElementById("daySel").value; }
+/* weekSel is Block 1's week picker and nothing else, so it only makes sense on a legacy day.
+   Hidden elsewhere: it can't be mistaken for the current block's week, and daySel gets the
+   full row. Value survives hiding, so legacy templates still resolve normally. */
+function syncWeekSel(){
+  const ws=document.getElementById("weekSel");
+  if(ws) ws.style.display=LEGACY_DAYS.includes(curDay())?"":"none";
+}
 function curModel(){
   if(pxiSet.model!=="auto") return pxiSet.model;
   /* sheet: strength curve on all lifting days (mixed through Block B); class day = cardio ramp informationally */
@@ -1275,6 +1285,7 @@ function renderDock(){
 }
 function render(){
   renderDock();
+  syncWeekSel(); /* before the view early-returns below — .selects is visible on every tab */
   const w=+document.getElementById("weekSel").value, day=curDay();
   const m=document.getElementById("main");
   if(view==="history"){renderHistory(m);return;}
@@ -1759,11 +1770,13 @@ function importLogs(){
 
 /* ================= INIT ================= */
 const ws=document.getElementById("weekSel");
-const start=new Date(2026,6,6); /* Mon Jul 6 – Sun Aug 30 */
+/* Labelled "Block 1 · Wk N" — these are the OLD 8-week program's weeks, not the current
+   block's. Reuses LEGACY_START so the date isn't defined in two places. The clamp to 8 is
+   kept deliberately: it just parks the picker on Block 1's last week as a default, and no
+   longer drives any label or log field. */
 for(let i=1;i<=8;i++){const o=document.createElement("option");o.value=i;
-  const d1=new Date(start);d1.setDate(start.getDate()+(i-1)*7);
-  o.textContent="Week "+i+" · "+d1.toLocaleDateString(undefined,{month:"short",day:"numeric"});ws.appendChild(o);}
-const now=new Date(), diff=Math.floor((now-start)/(7*864e5));
+  o.textContent="Block 1 · Wk "+i;ws.appendChild(o);}
+const now=new Date(), diff=Math.floor((now-LEGACY_START)/(7*864e5));
 ws.value=Math.min(8,Math.max(1,diff+1));
 document.getElementById("daySel").value=["sun","upper","tue","lower","thu","mixed","sat"][now.getDay()];
 if(inMeso01Window()){
