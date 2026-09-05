@@ -248,20 +248,18 @@ main{padding:12px 14px}
 
 <script>
 /* ================= PROGRAM DATA ================= */
-// DORMANT — bench loading progression, retained for post-clearance
-// reintroduction (OT reassessment Aug 11). Do not delete.
-const BENCH=[[3,10,"120 lb",12],[4,8,"130 lb",13],[4,8,"135 lb",13],[4,6,"145 lb",13],[5,5,"150 lb",14],[4,3,"160 lb",15],[5,2,"170 lb",17],["Ramp","1","185–195 test",16]];
-// DORMANT — SA DB Row / Chest-Supported Row progression, retired from the
-// old Monday "Row" slot when Monday's pool moved to Neutral-Grip DB Row
-// (ROW) + DB Shoulder Press + Box Jump/Step-Up/Pallof/Sled Push. Retained
-// in case the rehab-row progression is needed again. Do not delete.
-const PULL=[[4,6,"BW"],[4,6,"BW +2s lower"],[4,5,"+10 lb"],[4,5,"+15 lb"],[4,4,"+20 lb"],[4,3,"+25 lb"],[4,3,"+30 lb"],["Ramp","1–3","+35–45 test"]];
+// RETIRED PROGRESSIONS — these were `const BENCH`, `const PULL` and `const SQ`, each referenced
+// by nothing but its own declaration. The constants are gone; the load progressions they carried
+// are kept here, since it was the numbers the old "do not delete" notes were protecting, not the
+// array syntax. Full arrays remain in git history if a live table is ever needed again.
+//   Bench (post-clearance reintroduction, OT reassessment Aug 11):
+//     3×10 120 · 4×8 130 · 4×8 135 · 4×6 145 · 5×5 150 · 4×3 160 · 5×2 170 · ramp 185–195 test
+//   Weighted pull-up / rehab-row progression (retired from the old Monday "Row" slot when that
+//   pool moved to Neutral-Grip DB Row + DB Shoulder Press + Box Jump/Step-Up/Pallof/Sled Push):
+//     4×6 BW · 4×6 BW+2s lower · 4×5 +10 · 4×5 +15 · 4×4 +20 · 4×3 +25 · 4×3 +30 · ramp +35–45 test
+//   Leg press (retired when Wednesday moved to flat-prescription Goblet Squat):
+//     3×8 185 · 3×8 195 · 4×6 205 · 4×6 215 · 4×5 225 · 3×4 235 · 3×3 245 · 2×3 205 deload
 const DL=[[3,8,"220 lb",13],[3,8,"235 lb",13],[4,6,"250 lb",14],[4,5,"260 lb",14],[5,4,"270 lb",15],[4,3,"285 lb",15],[3,2,"305 lb",16],["Ramp","1","335–350 test",16]];
-// DORMANT — Leg Press progression, retired from the old Wednesday "Leg
-// Press" slot when Wednesday's pool moved to flat-prescription Goblet
-// Squat. Retained in case Leg Press returns as the primary lower load.
-// Do not delete.
-const SQ=[[3,8,"185 lb",10],[3,8,"195 lb",10],[4,6,"205 lb",10],[4,6,"215 lb",10],[4,5,"225 lb",10],[3,4,"235 lb",9],[3,3,"245 lb",9],[2,3,"205 deload",6]];
 const OHP=w=>w<=2?[3,10,"75 lb"]:w<=5?[4,8,"85 lb"]:w<=7?[4,5,"100 lb"]:[2,5,"85 lb"];
 const ROW=w=>w<=2?[3,10,"115 lb"]:w<=5?[4,8,"125 lb"]:w<=7?[4,6,"135 lb"]:[2,6,"115 lb"];
 const EQ={
@@ -2027,6 +2025,11 @@ function manualScore(){
 /* ================= HISTORY / PRS ================= */
 const e1rm=(w,r)=>w*(1+r/30);
 const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Supported Row":"lb","DB Shoulder Press":"lb","DB Row":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec","SKB RDL":"kg","Hip Thrust":"lb","Wall Push-Up Progression":"reps","Rope Triceps Pressdown":"lb","Bulgarian SS":"lb","Cable Pullover":"lb","Single-Arm DB Row":"lb","Neutral-Grip Cable Row":"lb","Romanian Deadlift (DB)":"lb","Rack Pull":"lb","Chest Press":"lb","Triceps Extension":"lb","Neutral-Grip Row":"lb"};
+/* User-facing labels where the internal key has gone stale. The key itself never changes — it's
+   the identity every saved log entry and PR history is keyed on, same backward-compat rule as
+   the pxi/dtp-* internals. Only the label moves on. The wall ladder is retired; the movement has
+   been Floor Push-Ups in every template since 8/12. */
+const PR_LABEL={"Wall Push-Up Progression":"Floor Push-Ups"};
 const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun",strengthFree:"Freeform",fullBodyA:"FB-A",fullBodyB:"FB-B",fullBodyC:"FB-C",meso02Mon:"Mon",meso02Wed:"Wed",meso02Fri:"Fri"};
 const escAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 /* Keyed by block + week-within-block, so two unrelated blocks never share a bucket.
@@ -2053,10 +2056,22 @@ function renderHistory(m){
       if(e.key==="Wall Push-Up Progression"){if(r&&(!prs[e.key]||r>prs[e.key].v))prs[e.key]={v:r};return;}
       if(w&&r){const est=e1rm(w,r);if(!prs[e.key]||est>prs[e.key].v)prs[e.key]={v:est,raw:w+"×"+r};}});
   }));
-  let h=`<div class="pr-grid">`;
-  Object.keys(PR_KEYS).forEach(k=>{const p=prs[k];
-    h+=`<div class="pr"><div class="l">${k}${PR_KEYS[k]==="lb"?" · e1RM":""}${k==="Wall Push-Up Progression"?" · resets meaning per stage":""}</div><div class="v">${p?Math.round(p.v)+(PR_KEYS[k]==="sec"?"s":PR_KEYS[k]==="+lb"?" lb":PR_KEYS[k]==="kg"?" kg":PR_KEYS[k]==="reps"?" reps":""):"—"}</div>${p&&p.raw?`<div class="sub" style="font-size:12px;color:var(--muted)">${p.raw}</div>`:""}</div>`;});
-  h+=`</div>`;
+  /* Only movements with a recorded best get a tile. The grid used to render every PR_KEYS entry,
+     so retired and excluded lifts — Back Squat, Weighted Pull-Up, Bench Press, OHP, BB Row,
+     Dead Hang, Hip Thrust — sat there as permanent dashes, several of them movements that are on
+     the exclusion list and will never produce a number. PR *tracking* is unchanged: every
+     PR_KEYS entry is still scored, and its tile appears the moment one is logged. */
+  const prKeys=Object.keys(PR_KEYS).filter(k=>prs[k]);
+  let h="";
+  if(prKeys.length){
+    h+=`<div class="pr-grid">`;
+    prKeys.forEach(k=>{const p=prs[k];
+      const unit=PR_KEYS[k]==="sec"?"s":PR_KEYS[k]==="+lb"?" lb":PR_KEYS[k]==="kg"?" kg":PR_KEYS[k]==="reps"?" reps":"";
+      h+=`<div class="pr"><div class="l">${PR_LABEL[k]||k}${PR_KEYS[k]==="lb"?" · e1RM":""}</div><div class="v">${Math.round(p.v)+unit}</div>${p.raw?`<div class="sub" style="font-size:12px;color:var(--muted)">${p.raw}</div>`:""}</div>`;});
+    h+=`</div>`;
+  } else if(logs.length){
+    h+=`<div class="meta">No PRs yet — log weight × reps against a tracked movement and its best lands here.</div>`;
+  }
   const totals=weeklyTotals(logs);
   /* newest block first, then newest week within it — the old numeric sort can't order across blocks */
   const keys=Object.keys(totals).sort((a,b)=>totals[b].ord-totals[a].ord||totals[b].week-totals[a].week);
