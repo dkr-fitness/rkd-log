@@ -197,17 +197,17 @@ main{padding:12px 14px}
 
 <div class="selects">
   <select id="weekSel" onchange="stopBlock();render()"></select>
-  <!-- Groups are ordered current-block-first by orderDaySel() at init, so the block you're
-       actually training is at the top of the list on mobile. Tue/Thu/Sat/Sun are shared by
-       every block (not legacy), so they sit in their own group right below rather than being
-       buried at the bottom. Each block group carries its date range in the label. -->
+  <!-- Static fallback order only. At init orderDaySel() folds the shared Tue/Thu/Sat/Sun
+       options into whichever block is current, in weekday order, and floats that group to the
+       top — so the list opens on one complete Mon–Sun week for the block you're training, with
+       the other blocks' lifting days below. Each block group carries its date range. -->
   <select id="daySel" onchange="stopBlock();render()">
     <optgroup id="ogMeso02" label="Mesocycle 02 · 9/7–10/18">
       <option value="meso02Mon">Mon · Lower/Hinge</option>
       <option value="meso02Wed">Wed · Upper Push</option>
       <option value="meso02Fri">Fri · Pull + Accessory</option>
     </optgroup>
-    <optgroup label="Every week">
+    <optgroup id="ogShared" label="Every week">
       <option value="tue">Tue · Zone 2 / Rest</option>
       <option value="thu">Thu · Zone 2 / Rest</option>
       <option value="sat">Sat · Conditioning</option>
@@ -1787,12 +1787,26 @@ for(let i=1;i<=8;i++){const o=document.createElement("option");o.value=i;
 const now=new Date(), diff=Math.floor((now-LEGACY_START)/(7*864e5));
 ws.value=Math.min(8,Math.max(1,diff+1));
 const daySel=document.getElementById("daySel");
-/* Float the block being trained today to the top of the list. Replaces the old
-   " (inactive)" suffixes: the dated group labels say which block a day belongs to, and the
-   current one sorting first says which is live — without widening any option text. */
+/* Mon/Wed/Fri template per block — the slots the shared days interleave with below. */
+const BLOCK_LIFTS={legacy:["upper","lower","mixed"],
+                   meso01:["fullBodyA","fullBodyB","fullBodyC"],
+                   meso02:["meso02Mon","meso02Wed","meso02Fri"]};
+const BLOCK_OG={legacy:"ogLegacy",meso01:"ogMeso01",meso02:"ogMeso02"};
+/* Fold Tue/Thu/Sat/Sun into the current block's group in weekday order and float it to the
+   top, so the list opens on a complete Mon–Sun week. appendChild moves an existing node, so
+   this both reorders the block's own options and pulls the shared ones across; the emptied
+   "Every week" group is then removed. Replaces the old " (inactive)" suffixes — the dated
+   group labels and top placement carry that now, without widening any option text.
+   Off-block (after 10/18, before 7/6) there is no current block, so the static layout stands
+   and Tue/Thu/Sat/Sun stay in their own "Every week" group. */
 function orderDaySel(){
-  const og=document.getElementById({legacy:"ogLegacy",meso01:"ogMeso01",meso02:"ogMeso02"}[blockFor().id]||"");
-  if(og) daySel.insertBefore(og,daySel.firstChild);
+  const id=blockFor().id, lifts=BLOCK_LIFTS[id], og=document.getElementById(BLOCK_OG[id]||"");
+  const shared=document.getElementById("ogShared");
+  if(!og||!lifts||!shared) return;
+  [lifts[0],"tue",lifts[1],"thu",lifts[2],"sat","sun"].forEach(v=>{
+    const o=daySel.querySelector('option[value="'+v+'"]'); if(o) og.appendChild(o);});
+  shared.remove();
+  daySel.insertBefore(og,daySel.firstChild);
 }
 orderDaySel();
 /* Sun is yoga only inside Meso01 — same condition getSession()/render() branch on */
