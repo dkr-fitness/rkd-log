@@ -95,10 +95,11 @@ Not a reason to hold back on anything. Just the reason the gate is "symptom-free
 - **Stop on any neural symptom**, same rule as above
 - Full active range side to side, no weight, no bounce at end-range
 
-### AROM/PROM — Shoulder Flexion/Extension (supine) + Forearm Pronation/Supination
+### AROM/PROM — Elbow Flexion/Extension (supine, shoulder at 90°) + Forearm Pronation/Supination (seated, elbow at 90°)
 **Status:** ✅ · **Dose:** 5 reps, 5x/day
-- Supine, shoulder flexed to 90° for the flexion/extension piece
-- Seated, elbow at 90° for pronation/supination — this is the movement that directly tracks your pronation recovery (63° → WNL bilateral as of 8/11)
+- **The 90° in each half is the position you hold, not the joint you move.** Corrected 9/6 — this entry previously read "Shoulder Flexion/Extension", taking the set-up for the movement.
+- Supine, **shoulder held at 90° flexion**; the movement is **elbow** flexion/extension through full available range
+- Seated, **elbow held at 90°**; the movement is forearm **pronation/supination** — the half that directly tracks your pronation recovery (63° → WNL bilateral as of 8/11)
 
 ### Ulnar Nerve Glide ("Goggles" Slider)
 **Status:** ❓ PENDING — discussed as appropriate given your active ulnar symptoms, but not confirmed as a formal MedBridge addition

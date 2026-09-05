@@ -1066,92 +1066,94 @@ let pendingManual=null;
 // see getSession's "freeform_"+si+"_"+ei keys. Reset on save.
 let freeformNames=[[],[],[]];
 
-/* ================= HEP TRACKER (compliance only — no RKD scoring) ================= */
-const HEP_LABELS=["B1 Gym","B2 Work AM","B3 Work Lunch","B4 Home PM"];
+/* ================= HEP TRACKER (compliance only — no RKD scoring) =================
+   Discharged from OT — this is self-managed maintenance, not a prescribed 4-block program.
+   Collapsed from B1–B4 + Float to one scheduled block + Float, because B2–B4 stopped being
+   logged in early August and tracking against them was measuring a program no longer run. */
+const HEP_LABELS=["B1 Gym","Float"];
 let hepMem={};
 const todayStr=()=>{ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
 const todayLabel=()=>new Date().toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
 const hepKey=()=>"hep_"+todayStr();
+const hepBlank=()=>HEP_LABELS.map(()=>false);
 function loadHep(){
   const k=hepKey();
-  if(!storageOK) return hepMem[k]||[false,false,false,false];
-  try{return JSON.parse(localStorage.getItem(k)||"null")||[false,false,false,false];}catch(e){return [false,false,false,false];}
+  let v=null;
+  if(!storageOK) v=hepMem[k];
+  else { try{ v=JSON.parse(localStorage.getItem(k)||"null"); }catch(e){ v=null; } }
+  if(!Array.isArray(v)) return hepBlank();
+  /* Arrays written before the collapse are 4 long (5 after an import round-trip). Normalise to
+     the current block count so the daily score can't count blocks that no longer exist. Index 0
+     still means B1 Gym; index 1 is Float's reserved slot, which nothing writes to now. */
+  return hepBlank().map((_,i)=>!!v[i]);
 }
 function saveHep(arr){ const k=hepKey(); if(storageOK) localStorage.setItem(k,JSON.stringify(arr)); else hepMem[k]=arr; }
-const hepCls=n=>n===4?"ok":n>=2?"warn":"bad";
-const hepRowHtml=n=>`<div class="zc-row ${hepCls(n)}"><span class="zl">HEP</span><span class="zr">home exercise program — today</span><span class="zv">${n}/4</span></div>`;
+/* Only blocks carrying a hepIdx have a daily target. Float is anytime/as-needed, so it neither
+   appears in the Session-tab box nor counts toward the daily score — a completion counter on it
+   would be noise. It stays fully loggable in the HEP tab. Declared as a hoisted function rather
+   than a const because HEP_BLOCKS is initialised further down the file. */
+function hepTargetIdx(){ return HEP_BLOCKS.filter(b=>b.hepIdx!=null).map(b=>b.hepIdx); }
+const hepCount=arr=>hepTargetIdx().filter(i=>arr[i]).length;
+const hepCls=n=>n===hepTargetIdx().length?"ok":n>0?"warn":"bad";
+const hepRowHtml=n=>`<div class="zc-row ${hepCls(n)}"><span class="zl">HEP</span><span class="zr">home exercise program — today</span><span class="zv">${n}/${hepTargetIdx().length}</span></div>`;
 function hepPanelHtml(){
-  const arr=loadHep(); const n=arr.filter(Boolean).length;
+  const arr=loadHep(); const n=hepCount(arr);
   let h=`<div class="notecard"><label>Daily HEP · ${todayLabel()} — always today, not the selected Week/Day</label>`;
-  HEP_LABELS.forEach((l,i)=>{ h+=`<div class="fieldrow"><span>${l}</span><input type="checkbox" id="hep${i}" ${arr[i]?"checked":""} onchange="toggleHep(${i})"></div>`; });
+  hepTargetIdx().forEach(i=>{ h+=`<div class="fieldrow"><span>${HEP_LABELS[i]}</span><input type="checkbox" id="hep${i}" ${arr[i]?"checked":""} onchange="toggleHep(${i})"></div>`; });
   h+=`<div id="hepStatus">${hepRowHtml(n)}</div></div>`;
   return h;
 }
 function toggleHep(i){
   const arr=loadHep(); arr[i]=document.getElementById("hep"+i).checked; saveHep(arr);
-  document.getElementById("hepStatus").innerHTML=hepRowHtml(arr.filter(Boolean).length);
+  document.getElementById("hepStatus").innerHTML=hepRowHtml(hepCount(arr));
 }
 
-/* ================= HEP DETAIL TAB (Blocks 1–4 + Float, logging only — no scoring) ================= */
-// Source of truth: RKD_HEP_Schedule.xlsx (repo root) via HEP_Schedule_Final.md, regenerated 8/16/26.
-// Program: MedBridge X8WKBFQW · Bhupinder Kaur, Kaiser OT. Block/exercise assignments below are a
-// faithful match to that file — re-derive from it, not from this comment, if they ever drift again.
+/* ================= HEP DETAIL TAB (B1 Gym + Float, logging only — no scoring) ================= */
+// Originally a faithful transcription of RKD_HEP_Schedule.xlsx via HEP_Schedule_Final.md
+// (MedBridge X8WKBFQW · Bhupinder Kaur, Kaiser OT). Post-discharge this is self-managed
+// maintenance: the four prescribed blocks are collapsed to one scheduled block plus Float, and
+// HEP_Schedule_Final.md has been updated to match. The exercises and their doses are unchanged
+// from the prescription — only the block structure they were grouped into is gone.
 const HEP_LEVATOR_NOTE="Supine preferred over seated/standing per 8/11 OT guidance (removes neck/head stabilization demand competing with the stretch)";
 const HEP_BICEP_DORMANT_REASON="Deprioritized per 8/11 OT visit, no longer clinically necessary";
 const HEP_LAT_RX="3×/day · 2–3 reps, 10–30+ sec · loose grip right side, don't load hand/wrist";
 const HEP_FINKELSTEIN_RX="3–5 reps · progressive hold · 2×/day (reduced from 3–4×, metacarpal aggravation)";
+const HEP_PUSHUP_DORMANT_REASON="Goal met 8/12 — floor push-ups now run in training (Meso 02 Wednesday), not as an HEP item";
 const HEP_BLOCKS=[
- {label:"Block 1 · 6:00 AM (Gym)", hepIdx:0, ex:[
-   {key:"b1_rom_elbow",n:"AROM/PROM: elbow flex–ext",rx:"5 reps",type:"reps"},
-   {key:"b1_rom_pron",n:"AROM/PROM: pronation–supination",rx:"5 reps",type:"reps"},
+ {label:"B1 Gym · pre-lift", hepIdx:0, ex:[
    {key:"b1_levator",n:"Levator scap stretch (seated, on wall)",rx:"3–4×/day · ⚠️ if warming into fingertips, back off",type:"timed",note:HEP_LEVATOR_NOTE},
    {key:"b1_scapwallslides",n:"Scapular wall slides",rx:"1×/day — only here",type:"reps"},
    {key:"b1_pillowcase",n:"Scapular stability isometric (pillowcase)",rx:"5 reps/day — only here",type:"reps"},
    {key:"b1_pronechest",n:"Prone chest stretch on chair",rx:"3×/day · no aggravation",type:"timed"},
-   {key:"b1_bicep",n:"Standing bicep stretch at wall",rx:"3–4×/day · palm UP",type:"timed",dormant:true,reason:HEP_BICEP_DORMANT_REASON},
    {key:"b1_wallball",n:"Standing wall ball circles (mini Swiss ball, 2–3 lb)",rx:"1–3×/day · 7×/week · 1 min hold, progress duration",type:"timed"},
    {key:"b1_elbowdist",n:"Elbow distraction self mobilization",rx:"1–2×/day · 7×/week · 3 sets of 10 oscillations or 10-sec holds · stop on any neural symptoms",type:"reps",unit:" sets"},
    {key:"b1_wristdev",n:"Wrist AROM: radial–ulnar deviation",rx:"3×/day · 7×/week · 3 sets of 10 reps · stop on any neural symptoms",type:"reps",unit:" sets"},
    {key:"b1_plankscap",n:"Full plank w/ scapular protraction–retraction AROM",rx:"1×/day · 7×/week · 5 reps · 10–15s hold",type:"reps"},
    {key:"b1_isometricIR",n:"Isometric internal rotation",rx:"1×/day · 5 reps · 10–15s hold · circuited with full plank scapular AROM",type:"reps"},
-   {key:"b1_pushups",n:"Wall push-ups",rx:"max pain-free reps · progress toward 5-pushup goal",type:"reps"},
    {key:"b1_subscap",n:"Standing subscapularis lift-off",rx:"1×/day · 7×/week · 3–5 reps · walk-to-tension hold",type:"reps"},
    {key:"b1_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
-   {key:"b1_toothbrush",n:"Vibration desensitization (electric toothbrush)",rx:"along radial distribution · shared 2–3×/day dose w/ Block 3 self-massage",type:"timed"}]},
- {label:"Block 2 · 9:00 AM (Work)", hepIdx:1, ex:[
-   {key:"b2_rom_elbow",n:"AROM/PROM: elbow flex–ext",rx:"5 reps",type:"reps"},
-   {key:"b2_rom_pron",n:"AROM/PROM: pronation–supination",rx:"5 reps",type:"reps"},
-   {key:"b2_levator",n:"Levator scap stretch (seated, on wall)",rx:"3–4×/day · ⚠️ if warming into fingertips, back off",type:"timed",note:HEP_LEVATOR_NOTE},
-   {key:"b2_bicep",n:"Standing bicep stretch at wall",rx:"3–4×/day · palm UP",type:"timed",dormant:true,reason:HEP_BICEP_DORMANT_REASON},
-   {key:"b2_wristdev",n:"Wrist AROM: radial–ulnar deviation",rx:"3×/day · 7×/week · 3 sets of 10 reps · stop on any neural symptoms",type:"reps",unit:" sets"},
-   {key:"b2_finkelstein",n:"Finkelstein stretch",rx:HEP_FINKELSTEIN_RX,type:"timed"},
-   {key:"b2_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
-   {key:"b2_pronechest",n:"Prone chest stretch on chair",rx:"3×/day · no aggravation",type:"timed"},
-   {key:"b2_lat",n:"Lat stretch",rx:HEP_LAT_RX,type:"timed"}]},
- {label:"Block 3 · 2:00 PM (Work)", hepIdx:2, ex:[
-   {key:"b3_rom_elbow",n:"AROM/PROM: elbow flex–ext",rx:"5 reps",type:"reps"},
-   {key:"b3_rom_pron",n:"AROM/PROM: pronation–supination",rx:"5 reps",type:"reps"},
-   {key:"b3_levator",n:"Levator scap stretch (seated, on wall)",rx:"3–4×/day · ⚠️ if warming into fingertips, back off",type:"timed",note:HEP_LEVATOR_NOTE},
-   {key:"b3_bicep",n:"Standing bicep stretch at wall",rx:"3–4×/day · palm UP",type:"timed",dormant:true,reason:HEP_BICEP_DORMANT_REASON},
-   {key:"b3_cupping",n:"Tennis elbow self massage (silicone cupping)",rx:"5–10 min gentle · shared 2–3×/day radial-nerve dose w/ Block 1 vibration desensitization · light pressure only, no hard friction/trigger point work",type:"timed"},
-   {key:"b3_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
-   {key:"b3_finkelstein",n:"Finkelstein stretch",rx:HEP_FINKELSTEIN_RX,type:"timed"},
-   {key:"b3_pronechest",n:"Prone chest stretch on chair",rx:"3×/day · no aggravation",type:"timed"},
-   {key:"b3_lat",n:"Lat stretch",rx:HEP_LAT_RX,type:"timed"},
-   {key:"b3_doorway",n:"Doorway stretch",rx:"3×/day · progressive · no forward head",type:"timed"}]},
- {label:"Block 4 · 5:30 PM (Home)", hepIdx:3, ex:[
-   {key:"b4_rom_elbow",n:"AROM/PROM: elbow flex–ext",rx:"5 reps",type:"reps"},
-   {key:"b4_rom_pron",n:"AROM/PROM: pronation–supination",rx:"5 reps",type:"reps"},
-   {key:"b4_levator",n:"Levator scap stretch (seated, on wall)",rx:"3–4×/day · ⚠️ if warming into fingertips, back off",type:"timed",note:HEP_LEVATOR_NOTE},
-   {key:"b4_bicep",n:"Standing bicep stretch at wall",rx:"3–4×/day · palm UP",type:"timed",dormant:true,reason:HEP_BICEP_DORMANT_REASON},
-   {key:"b4_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
-   {key:"b4_elbowdist",n:"Elbow distraction self mobilization",rx:"1–2×/day · 7×/week · 3 sets of 10 oscillations or 10-sec holds · stop on any neural symptoms",type:"reps",unit:" sets"},
-   {key:"b4_wristdev",n:"Wrist AROM: radial–ulnar deviation",rx:"3×/day · 7×/week · 3 sets of 10 reps · stop on any neural symptoms",type:"reps",unit:" sets"},
-   {key:"b4_pronechest",n:"Prone chest stretch on chair",rx:"3×/day · no aggravation",type:"timed"},
-   {key:"b4_lat",n:"Lat stretch",rx:HEP_LAT_RX,type:"timed"}]},
- // Float has no hepIdx — anytime bouts, not counted toward the 4-block daily compliance score.
+   {key:"b1_toothbrush",n:"Vibration desensitization (electric toothbrush)",rx:"along radial distribution · shared 2–3×/day dose w/ the Float self-massage",type:"timed"},
+   // NB: no lat stretch here — it lives in Float. See the note on that entry.
+   // DORMANT — retained with reasons rather than deleted, same convention as the training pool.
+   {key:"b1_pushups",n:"Wall push-ups",rx:"max pain-free reps · progress toward 5-pushup goal",type:"reps",dormant:true,reason:HEP_PUSHUP_DORMANT_REASON},
+   {key:"b1_bicep",n:"Standing bicep stretch at wall",rx:"3–4×/day · palm UP",type:"timed",dormant:true,reason:HEP_BICEP_DORMANT_REASON}]},
+ // Float has no hepIdx — anytime bouts, so its box is ticked by hand and never auto-completed.
  {label:"Float · anytime", ex:[
-   {key:"float_arom5th",n:"AROM/PROM — 5th daily dose (elbow flex–ext + pronation–supination)",rx:"5 reps · as needed · completes the 5×/day prescription",type:"reps"},
+   // One consolidated item replacing the per-block b1_rom_* … b4_rom_* pairs and float_arom5th.
+   // max:5 rather than the default 3 so the full 5×/day prescription is actually loggable.
+   // The 90° in each is the position held, not the joint moved (7/14 OT source). Earlier labels
+   // here said only "elbow flex–ext", and the schedule/glossary said "shoulder flex–ext"; both
+   // were reading the set-up position as the movement.
+   {key:"float_arom",n:"AROM/PROM: elbow flex–ext (supine, shoulder at 90°) + pronation–supination (seated, elbow at 90°)",rx:"5 reps per bout · log each bout toward the 5×/day prescription",type:"reps",unit:" done",max:5},
+   // Deliberately NOT in B1 — don't pre-load radial tissue before lifting.
+   {key:"float_finkelstein",n:"Finkelstein stretch",rx:HEP_FINKELSTEIN_RX,type:"timed"},
+   {key:"float_cupping",n:"Tennis elbow self massage (silicone cupping)",rx:"5–10 min gentle · shared 2–3×/day radial-nerve dose w/ the B1 vibration desensitization · light pressure only, no hard friction/trigger point work",type:"timed"},
+   {key:"float_doorway",n:"Doorway stretch",rx:"3×/day · progressive · no forward head",type:"timed"},
+   // Deliberately NOT in B1 — stretching the lat before pulling works against the deadlift firing
+   // cue. The rule was written after the right-lat firing gap was documented, and Meso 02's Rack
+   // Pull and Deadlift entries both call for lat *activation* immediately pre-lift. New key, so
+   // the old b2/b3/b4_lat history is orphaned — harmless, hepDetail is day-scoped.
+   {key:"float_lat",n:"Lat stretch",rx:HEP_LAT_RX,type:"timed"},
    {key:"float_calf",n:"Calf stretching",rx:"daily · plantar fasciitis",type:"reps",unit:" done"},
    {key:"float_kt",n:"KT taping",rx:"as needed · plantar fasciitis",type:"reps",unit:" done"},
    {key:"float_diagonal",n:"Diagonal / fascial line stretch",rx:"daily · plantar fasciitis, trial both sides",type:"reps",unit:" done"},
@@ -1172,7 +1174,7 @@ function autoCheckHepBlocks(detail){
     if(arr[b.hepIdx]) return;
     if(b.ex.filter(ex=>!ex.dormant).every(ex=>(detail[ex.key]||[]).length>0)){ arr[b.hepIdx]=true; changed=true; }
   });
-  if(changed){ saveHep(arr); const el=document.getElementById("hepStatus"); if(el) el.innerHTML=hepRowHtml(arr.filter(Boolean).length); }
+  if(changed){ saveHep(arr); const el=document.getElementById("hepStatus"); if(el) el.innerHTML=hepRowHtml(hepCount(arr)); }
 }
 /* ---- shared stopwatch: Date.now()-diff based, start-only reset (no separate reset control) ---- */
 let hepClockRunning=false, hepClockStart=null, hepClockAcc=0, hepClockInt=null;
@@ -1197,14 +1199,25 @@ function syncHepClockUI(){
   el.classList.toggle("paused",!hepClockRunning);
   btn.textContent=hepClockRunning?"Stop":"Start";
 }
+/* Entries per item per day. Default 3; an item may raise it via `max` — the consolidated
+   AROM/PROM bout is 5, matching its 5×/day prescription. */
+const HEP_ENTRY_CAP=3;
+function hepCapFor(key){
+  for(let i=0;i<HEP_BLOCKS.length;i++){
+    const ex=HEP_BLOCKS[i].ex.filter(e=>e.key===key)[0];
+    if(ex) return ex.max||HEP_ENTRY_CAP;
+  }
+  return HEP_ENTRY_CAP;
+}
 function logHepEntry(key){
   const inp=document.getElementById("hepIn_"+key); if(!inp) return;
   if(inp.value==="") return;
   const v=Number(inp.value);
   if(!Number.isFinite(v)||v<=0) return;
+  const cap=hepCapFor(key);
   const detail=loadHepDetail();
-  const arr=(detail[key]||[]).slice(0,3);
-  if(arr.length>=3) return;
+  const arr=(detail[key]||[]).slice(0,cap);
+  if(arr.length>=cap) return;
   arr.push(v); detail[key]=arr;
   saveHepDetail(detail);
   autoCheckHepBlocks(detail);
@@ -1222,12 +1235,13 @@ function renderHepTab(m){
       const unit=ex.unit!=null?ex.unit:(ex.type==="timed"?"s":" reps");
       h+=`<div class="ex"><div class="ex-name">${ex.n}</div><div class="ex-rx">${ex.rx}</div>${ex.note?`<div class="ex-note">${ex.note}</div>`:""}<div class="sets">`;
       entries.forEach((v,i)=>{ h+=`<div class="set"><span class="n">${i+1}</span><span style="font-family:var(--mono)">${v}${unit}</span></div>`; });
-      if(entries.length<3){
+      const cap=ex.max||HEP_ENTRY_CAP;
+      if(entries.length<cap){
         h+=`<div class="set"><span class="n">${entries.length+1}</span>
           <input inputmode="decimal" placeholder="${ex.type==="timed"?"sec":"reps"}" id="hepIn_${ex.key}">
           <button class="btn2" onclick="logHepEntry('${ex.key}')">Log</button></div>`;
       } else {
-        h+=`<div class="ex-rx">3/3 logged</div>`;
+        h+=`<div class="ex-rx">${cap}/${cap} logged</div>`;
       }
       h+=`</div></div>`;
     });
@@ -2250,7 +2264,9 @@ function importLogs(){
           Object.keys(v).forEach(exKey=>{
             const a=v[exKey];
             if(!Array.isArray(a)) return;
-            const nums=a.slice(0,3).map(Number).filter(n=>Number.isFinite(n)&&n>0);
+            /* 5, not HEP_ENTRY_CAP — the largest per-item cap, so a full AROM/PROM day
+               survives an export/import round-trip rather than being truncated to 3. */
+            const nums=a.slice(0,5).map(Number).filter(n=>Number.isFinite(n)&&n>0);
             if(nums.length) clean[exKey]=nums;
           });
           const k="hepDetail_"+date; if(storageOK) localStorage.setItem(k,JSON.stringify(clean)); else hepDetailMem[k]=clean;
