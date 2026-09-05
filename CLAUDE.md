@@ -44,7 +44,8 @@
 - Say **"don't edit anything yet"** explicitly when the intent is to stay in strategy/discussion mode
 - Default rhythm: **show the diff → commit → push as separate steps.** Don't chain commit+push.
 - UI must work on touch (Bluefy/iPad) — no hover-only interactions
-- No build step and no test runner. Pure-logic changes (`blockFor`, medal tiers, draft lifecycle) can be exercised with macOS JavaScriptCore: `/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc`
+- No build step. **`./test/run.sh` runs the logic tests** — run it before committing anything logic-shaped. It covers block/week identity, the scoring curves and medal tiers, weekly-totals grouping, the durable-draft lifecycle, Finish stamping + the duplicate guard, and the PR grid. It uses macOS JavaScriptCore (`jsc`), reads `index.html` and extracts regions **by source anchor** rather than duplicating logic, so a moved anchor fails loudly instead of testing a stale copy. Anything DOM-, Bluetooth- or timing-shaped is out of scope and still needs a real device.
+- Gotcha: `jsc`'s `quit(n)` ignores its argument and always exits 0, and an uncaught throw exits 3 — so `test/run.sh` gates on a `RESULT:` sentinel line instead. Use the wrapper, not bare `jsc`, if you need the exit code.
 
 ## localStorage / GitHub Pages Facts
 - Data persists by **URL origin**, not file contents — redeploying to the same Pages URL never risks saved data
@@ -76,8 +77,8 @@
 - **Wake lock** is reference-counted — the block timer and interval timer can both hold it independently.
 
 ## Known Gaps (as of 2026-09-06)
-- **Form Reference is badly out of date** — `FORM_GLOSSARY` covers 7 exercises, only 2 of Meso 02's 12. Missing: Rack Pull, Chest Press, Neutral-Grip Row, Triceps Extension, Scapular Wall Slide, Prone Y-Raises, Bulgarian SS, Pallof, Bird Dog, RDL. Source of record is `RKD_Exercise_Glossary_v1.md`.
-- **PR grid has 7 orphan tiles** (Back Squat, Weighted Pull-Up, Bench Press, OHP, BB Row, Dead Hang, Hip Thrust) that no current template can produce — several are on the named-exclusion list, so they render a permanent dash.
-- **`Wall Push-Up Progression` key vs `Floor Push-Ups` label** — the key was kept for PR-history continuity, but the wall ladder is retired. Needs resolving.
+- **Four Form Reference holes remain**, all needing authored content rather than transcription: `Chest Press` — deliberately empty, because the glossary records it *only* as a named aggravator from the 7/14 eval, so it needs a clinical line before it gets an entry — plus Meso 01's `Chest-Supported Row`, `Single-Arm DB Row` and `Neutral-Grip Cable Row`. The last is nearly free: same movement as the drafted `Neutral-Grip Row`, so a one-line alias.
+- **Six `FORM_GLOSSARY` entries are drafted, not clinical** — Rack Pull, Bulgarian SS, Pallof, Neutral-Grip Row, Romanian Deadlift (DB), Bird Dog. Each ends with an italic provenance line naming where its clinical language came from; the mechanics are not clinician-reviewed. Worth a review pass with Bhupinder/OT.
+- **`Goblet Squat` is not PR-tracked** despite being the squat-pattern default at 3×10 under real load — it isn't in `PR_KEYS`, so it can never produce a tile. Four other Meso 02 movements are also untracked (Pallof, Scapular Wall Slide, Prone Y-Raises, Bird Dog), which looks deliberate since they're light or positional.
+- **"Strength Endurance"** appears in older notes but has never existed in `PTS`/`MODEL_DESC`. Build it or drop the idea.
 - **Block 1 retirement is deferred, not decided.** `weekSel`, `DL`/`OHP`/`ROW`, and the `upper`/`lower`/`mixed` templates stay until it's called closed.
-- No committed tests.
