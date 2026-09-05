@@ -110,14 +110,35 @@ main{padding:12px 14px}
 .btn2{padding:10px 14px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--text); font-weight:600; font-size:14px}
 .btn2.acc{background:var(--blue); border-color:var(--blue); color:#fff}
 .dock{position:fixed; bottom:0; left:0; right:0; z-index:30; background:#101A31; border-top:2px solid var(--line); padding:10px 14px 16px}
-.dock-idle{color:var(--muted); font-size:13px; text-align:center; padding:8px 0}
+.dock-idle{color:var(--muted); font-size:13px; padding:8px 0; display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:10px; text-align:center}
 .dock-run{display:flex; align-items:center; gap:14px}
+.ivt-launch{padding:7px 10px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--text); font-size:12px; font-weight:700; white-space:nowrap; font-family:var(--mono); flex-shrink:0}
+.ivt-launch.live{border-color:var(--green); color:var(--green)}
 .d-block{font-family:var(--disp); font-weight:700; font-size:30px; color:var(--amber); background:rgba(245,166,35,.12); border:1px solid rgba(245,166,35,.4); border-radius:10px; padding:4px 14px}
 .d-mid{flex:1}
 .d-set{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em}
 .d-time{font-family:var(--disp); font-weight:700; font-size:52px; line-height:1; font-variant-numeric:tabular-nums; color:var(--text)}
 .d-time.warn{color:var(--amber)}
 .d-stop{width:52px; height:52px; border-radius:10px; border:1px solid var(--red); background:transparent; color:var(--red); font-size:20px; font-weight:800}
+.ivt-overlay{position:fixed; inset:0; z-index:60; background:rgba(6,10,20,.75); display:flex; align-items:center; justify-content:center; padding:16px}
+.ivt-modal{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; width:100%; max-width:360px; max-height:88vh; overflow-y:auto}
+.ivt-h{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px}
+.ivt-h .t{font-family:var(--disp); font-weight:700; font-size:18px; letter-spacing:.05em; text-transform:uppercase}
+.ivt-close{width:36px; height:36px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--muted); font-size:16px; font-weight:800; flex-shrink:0}
+.ivt-modal .fieldrow input[type=number]{background:var(--surface); border:1px solid var(--line); border-radius:8px; color:var(--text); padding:9px; font-size:15px; width:90px; text-align:center; font-family:var(--mono)}
+.ivt-row{display:flex; gap:10px; align-items:center; margin-top:8px}
+.ivt-mute-btn{width:44px; height:44px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--text); font-size:18px; flex:0 0 44px}
+.ivt-mute-btn.on{border-color:var(--amber); color:var(--amber)}
+.ivt-phase{border-radius:12px; padding:22px 12px; text-align:center; margin:10px 0 4px; transition:background-color .3s ease, border-color .3s ease, opacity .3s ease}
+.ivt-phase.idle{background:var(--surface); border:1px solid var(--line)}
+.ivt-phase.work{background:rgba(52,199,123,.14); border:1px solid var(--green)}
+.ivt-phase.rest{background:rgba(92,168,255,.14); border:1px solid var(--blue)}
+.ivt-phase.paused{opacity:.55}
+.ivt-phase .lbl{font-family:var(--disp); font-weight:700; font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+.ivt-phase.work .lbl{color:var(--green)}
+.ivt-phase.rest .lbl{color:var(--blue)}
+.ivt-phase .time{font-family:var(--disp); font-weight:700; font-size:58px; line-height:1; font-variant-numeric:tabular-nums; margin:4px 0}
+.ivt-phase .rd{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em}
 .hist-card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px}
 .hist-card .h{display:flex; justify-content:space-between; align-items:center; font-weight:700; margin-bottom:4px; gap:8px}
 .hist-card .sub{color:var(--muted); font-size:13px}
@@ -206,8 +227,9 @@ main{padding:12px 14px}
   <button class="tab" id="tabHep" onclick="setView('hep')">HEP</button>
 </div>
 <main id="main"></main>
-<div class="dock" id="dock"><div class="dock-idle">Reach your equipment → press ▶ on that block. Bell = start your set. Rest until the next bell.</div></div>
+<div class="dock" id="dock"><div class="dock-idle">Reach your equipment → press ▶ on that block. Bell = start your set. Rest until the next bell.<button class="ivt-launch" id="ivtDockBtn" onclick="openIvt()" title="Interval timer">⏱</button></div></div>
 <div class="toast" id="toast"></div>
+<div class="ivt-overlay" id="ivtOverlay" style="display:none"><div class="ivt-modal" id="ivtModal"></div></div>
 
 <script>
 /* ================= PROGRAM DATA ================= */
@@ -956,14 +978,138 @@ function updateCompliance(){
 }
 
 /* ================= WAKE LOCK ================= */
-let wakeLock=null, awakeWanted=false;
-async function keepAwake(){
-  awakeWanted=true;
-  if(!("wakeLock" in navigator))return;
+// Reference-counted: the block timer and the standalone interval timer can both want the
+// screen awake at once, independently started/stopped — a plain boolean let either one's
+// stop steal the lock out from under the other.
+let wakeLock=null, awakeWanters=0;
+async function acquireLock(){
+  if(wakeLock||!("wakeLock" in navigator))return;
   try{ wakeLock=await navigator.wakeLock.request("screen"); }catch(e){}
 }
-function releaseAwake(){ awakeWanted=false; if(wakeLock){wakeLock.release().catch(()=>{}); wakeLock=null;} }
-document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&awakeWanted)keepAwake(); });
+function keepAwake(){ awakeWanters++; acquireLock(); }
+function releaseAwake(){ awakeWanters=Math.max(0,awakeWanters-1); if(awakeWanters===0&&wakeLock){wakeLock.release().catch(()=>{}); wakeLock=null;} }
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&awakeWanters>0)acquireLock(); });
+
+/* ================= INTERVAL TIMER (standalone — no session logging) =================
+   Work/rest/rounds are user-set, not tied to any block/day. Never touches loadLogs/saveLogs
+   or the session draft — it's a stopwatch utility, usable on any day including Tue/Thu at
+   the pool. Ticks independently of the modal being open so it keeps running if closed. */
+let ivtCfg=(()=>{ const d={work:30,rest:15,rounds:8,muted:false};
+  if(!storageOK) return d;
+  try{return Object.assign(d,JSON.parse(localStorage.getItem("dtp-ivt")||"{}"));}catch(e){return d;} })();
+const saveIvtCfg=()=>{ if(storageOK) localStorage.setItem("dtp-ivt",JSON.stringify(ivtCfg)); };
+let ivt=null; // {phase:"work"|"rest", round, end, int, paused, pausedLeft, done}
+function openIvt(){ document.getElementById("ivtOverlay").style.display="flex"; renderIvt(); }
+function closeIvt(){ document.getElementById("ivtOverlay").style.display="none"; }
+function ivtApplyCfg(){
+  ivtCfg.work=Math.max(1,+document.getElementById("ivtWork").value||30);
+  ivtCfg.rest=Math.max(0,+document.getElementById("ivtRest").value||0);
+  ivtCfg.rounds=Math.max(1,+document.getElementById("ivtRounds").value||1);
+  saveIvtCfg();
+}
+function ivtToggleMute(){ ivtCfg.muted=!ivtCfg.muted; saveIvtCfg(); renderIvt(); }
+function ivtStart(){
+  ivtApplyCfg();
+  if(ivt&&ivt.int) clearInterval(ivt.int);
+  keepAwake();
+  ivt={phase:"work", round:1, end:Date.now()+ivtCfg.work*1000, paused:false, done:false};
+  ivtTone("work");
+  ivt.int=setInterval(ivtTick,200);
+  renderIvt();
+}
+function ivtTick(){
+  if(!ivt||ivt.paused)return;
+  if(Date.now()>=ivt.end){
+    if(ivt.phase==="work"){
+      if(ivt.round>=ivtCfg.rounds){ ivtFinish(); return; }
+      if(ivtCfg.rest>0){ ivt.phase="rest"; ivt.end=Date.now()+ivtCfg.rest*1000; ivtTone("rest"); }
+      else { ivt.round++; ivt.end=Date.now()+ivtCfg.work*1000; ivtTone("work"); }
+    } else {
+      ivt.round++; ivt.phase="work"; ivt.end=Date.now()+ivtCfg.work*1000; ivtTone("work");
+    }
+  }
+  renderIvt();
+}
+function ivtPauseResume(){
+  if(!ivt||ivt.done)return;
+  if(ivt.paused){
+    ivt.end=Date.now()+ivt.pausedLeft; ivt.paused=false;
+    ivt.int=setInterval(ivtTick,200); keepAwake();
+  } else {
+    clearInterval(ivt.int); ivt.pausedLeft=Math.max(0,ivt.end-Date.now()); ivt.paused=true;
+    releaseAwake();
+  }
+  renderIvt();
+}
+function ivtFinish(){
+  clearInterval(ivt.int); ivt.done=true; ivt.phase="done";
+  releaseAwake(); ivtChime();
+  renderIvt();
+}
+function ivtReset(){
+  if(ivt){ clearInterval(ivt.int); if(!ivt.paused&&!ivt.done) releaseAwake(); }
+  ivt=null;
+  renderIvt();
+}
+function ivtTone(phase){
+  if(ivtCfg.muted)return;
+  ac(); if(!AC)return;
+  if(phase==="work"){ tone(880,0,.3,.5); if(navigator.vibrate)navigator.vibrate(150); }
+  else { tone(440,0,.3,.45); if(navigator.vibrate)navigator.vibrate([100,80,100]); }
+}
+function ivtChime(){
+  if(ivtCfg.muted)return;
+  ac(); if(!AC)return;
+  tone(660,0,.2,.45); tone(880,.2,.2,.45); tone(1100,.4,.4,.5);
+  if(navigator.vibrate)navigator.vibrate([250,120,250]);
+}
+function ivtDockLabel(){
+  if(!ivt)return "⏱";
+  if(ivt.done)return "⏱ Done";
+  const left=ivt.paused?Math.ceil(ivt.pausedLeft/1000):Math.max(0,Math.ceil((ivt.end-Date.now())/1000));
+  return (ivt.phase==="work"?"W ":"R ")+fmt(left);
+}
+function ivtDockBtnHtml(){
+  const active=ivt&&!ivt.done&&!ivt.paused;
+  return `<button class="ivt-launch${active?" live":""}" id="ivtDockBtn" onclick="openIvt()" title="Interval timer">${ivtDockLabel()}</button>`;
+}
+function updateIvtDockBadge(){ const b=document.getElementById("ivtDockBtn"); if(b) b.textContent=ivtDockLabel(); }
+function renderIvt(){
+  updateIvtDockBadge();
+  const overlay=document.getElementById("ivtOverlay"), el=document.getElementById("ivtModal");
+  if(!overlay||!el||overlay.style.display==="none")return;
+  let h=`<div class="ivt-h"><span class="t">Interval Timer</span><button class="ivt-close" onclick="closeIvt()">✕</button></div>`;
+  h+=`<div class="meta">Standalone — runs on its own, doesn't log to your session. Use it Tue/Thu at the pool or for rest/work timing on any lift day.</div>`;
+  h+=`<div class="meta warn"><b>Heads up:</b> like the existing set timer, this relies on the tab staying open — a locked screen or backgrounded browser can pause the countdown and mute the beeps on some phones. Screen wake lock helps while this panel is open, but isn't guaranteed by iOS/Android.</div>`;
+  if(!ivt){
+    h+=`<div class="fieldrow"><span>Work (sec)</span><input type="number" id="ivtWork" min="1" max="3600" value="${ivtCfg.work}"></div>`;
+    h+=`<div class="fieldrow"><span>Rest (sec)</span><input type="number" id="ivtRest" min="0" max="3600" value="${ivtCfg.rest}"></div>`;
+    h+=`<div class="fieldrow"><span>Rounds</span><input type="number" id="ivtRounds" min="1" max="99" value="${ivtCfg.rounds}"></div>`;
+    h+=`<div class="ivt-row">
+      <button class="ivt-mute-btn${ivtCfg.muted?" on":""}" onclick="ivtToggleMute()" title="${ivtCfg.muted?"Unmute":"Mute"}">${ivtCfg.muted?"🔇":"🔊"}</button>
+      <button class="savebtn" style="flex:1" onclick="ivtStart()">Start</button>
+    </div>`;
+  } else if(ivt.done){
+    h+=`<div class="ivt-phase idle"><div class="lbl">Complete</div><div class="time">✓</div><div class="rd">${ivtCfg.rounds} round${ivtCfg.rounds>1?"s":""} done</div></div>`;
+    h+=`<div class="ivt-row">
+      <button class="ivt-mute-btn${ivtCfg.muted?" on":""}" onclick="ivtToggleMute()" title="${ivtCfg.muted?"Unmute":"Mute"}">${ivtCfg.muted?"🔇":"🔊"}</button>
+      <button class="savebtn" style="flex:1" onclick="ivtReset()">New timer</button>
+    </div>`;
+  } else {
+    const left=ivt.paused?Math.ceil(ivt.pausedLeft/1000):Math.max(0,Math.ceil((ivt.end-Date.now())/1000));
+    h+=`<div class="ivt-phase ${ivt.phase}${ivt.paused?" paused":""}">
+      <div class="lbl">${ivt.paused?"Paused":(ivt.phase==="work"?"Work":"Rest")}</div>
+      <div class="time">${fmt(left)}</div>
+      <div class="rd">Round ${ivt.round} of ${ivtCfg.rounds}</div>
+    </div>`;
+    h+=`<div class="ivt-row">
+      <button class="ivt-mute-btn${ivtCfg.muted?" on":""}" onclick="ivtToggleMute()" title="${ivtCfg.muted?"Unmute":"Mute"}">${ivtCfg.muted?"🔇":"🔊"}</button>
+      <button class="btn2" style="flex:1" onclick="ivtPauseResume()">${ivt.paused?"Resume":"Pause"}</button>
+      <button class="d-stop" onclick="ivtReset()">✕</button>
+    </div>`;
+  }
+  el.innerHTML=h;
+}
 
 /* ================= SESSION CLOCK ================= */
 let sessStart=null, sessAcc=0, sessInt=null;
@@ -989,7 +1135,7 @@ function playBlock(bi){
   highlightSet(bi,1);
 }
 function stopBlock(){ if(!run)return; clearInterval(run.int); markLive(run.bi,false); run=null;
-  if(view==="session") document.getElementById("dock").innerHTML=`<div class="dock-idle">Reach your equipment → press ▶ on that block. Bell = start your set. Rest until the next bell.</div>`;}
+  if(view==="session") document.getElementById("dock").innerHTML=`<div class="dock-idle">Reach your equipment → press ▶ on that block. Bell = start your set. Rest until the next bell.${ivtDockBtnHtml()}</div>`;}
 function tickBlock(){
   const left=Math.ceil((run.end-Date.now())/1000);
   if(left<=0){
@@ -1005,7 +1151,7 @@ function finishBlock(){
   if(card){card.classList.remove("live");card.classList.add("finished");
     const pb=card.querySelector(".playb"); if(pb){pb.classList.remove("live");pb.classList.add("done");pb.textContent="✓";}}
   clearInterval(run.int); const done=run.letter; run=null;
-  if(view==="session") document.getElementById("dock").innerHTML=`<div class="dock-idle"><b style="color:var(--green)">Block ${done} done.</b> Log your numbers, move to the next station, press ▶.</div>`;
+  if(view==="session") document.getElementById("dock").innerHTML=`<div class="dock-idle"><b style="color:var(--green)">Block ${done} done.</b> Log your numbers, move to the next station, press ▶.${ivtDockBtnHtml()}</div>`;
 }
 function updateDock(left){
   if(!run||view!=="session")return;
@@ -1014,6 +1160,7 @@ function updateDock(left){
     <div class="d-block">${run.letter}</div>
     <div class="d-mid"><div class="d-set">SET ${run.setNo} OF ${run.bells} · every ${fmt(run.ivl)}</div>
     <div class="d-time${left<=10?" warn":""}">${fmt(Math.max(0,left))}</div></div>
+    ${ivtDockBtnHtml()}
     <button class="d-stop" onclick="stopBlock()">✕</button></div>`;
 }
 function markLive(bi,on){const card=document.getElementById("blk"+bi); if(!card)return;
@@ -1080,12 +1227,13 @@ function renderDock(){
     dock.innerHTML=`<div class="dock-run" style="justify-content:center">
       <div class="clock paused" id="hepClockEl">0:00</div>
       <button class="btn2 acc" id="hepClockBtn" onclick="toggleHepClock()">Start</button>
+      ${ivtDockBtnHtml()}
     </div>`;
     syncHepClockUI();
     return;
   }
   /* session: leave untouched while a block timer is live — it self-heals via the next tickBlock(); otherwise restore the idle prompt */
-  if(!run) dock.innerHTML=`<div class="dock-idle">Reach your equipment → press ▶ on that block. Bell = start your set. Rest until the next bell.</div>`;
+  if(!run) dock.innerHTML=`<div class="dock-idle">Reach your equipment → press ▶ on that block. Bell = start your set. Rest until the next bell.${ivtDockBtnHtml()}</div>`;
 }
 function render(){
   renderDock();
