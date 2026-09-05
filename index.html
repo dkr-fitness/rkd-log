@@ -907,15 +907,22 @@ function getSession(w,day){
   if(day==="meso02Mon"){
     return {name:"MONDAY — Lower Body / Hinge Lead", type:"lift", blocks:[
      MESO2_PREP,
-     {letter:"A",t:"Hinge",mins:10,bells:4,ex:[
+     // Mirrors Friday's slot. Rack Pull leads here, and its Form Reference entry calls for Band
+     // Pull-Aparts or Prone Y-Raises immediately prior — the right lat under-engagement is a
+     // firing gap, and this is what makes set one behave like set three. Monday opened with a
+     // pull and had no such slot; the HEP lat stretch is deliberately not pre-lift for the
+     // mirror-image reason (see float_lat).
+     {letter:"A",t:"Pre-activation",mins:5,bells:3,ex:[
+       {key:"Prone Y-Raises",n:"Prone Y-Raise or Band Pull-Apart",rx:"3 × 15 · pre-activation, light, first in session",sets:3}]},
+     {letter:"B",t:"Hinge",mins:10,bells:4,ex:[
        {key:"Rack Pull",n:"Rack Pull",rx:"4 × 5 · chiro-approved; monitor grip-side",sets:4}]},
      // Squat-pattern default is Goblet Squat or Leg Press. Back squat is NOT in this pool —
      // it stays on the named-exclusion list — so there is nothing here to mark DORMANT.
-     {letter:"B",t:"Squat",mins:9,bells:3,ex:[
+     {letter:"C",t:"Squat",mins:9,bells:3,ex:[
        {key:"Goblet Squat",n:"Goblet Squat or Leg Press",rx:"3 × 10 · squat-pattern default — back squat stays excluded",sets:3}]},
-     {letter:"C",t:"Unilateral",mins:8,bells:3,ex:[
+     {letter:"D",t:"Unilateral",mins:8,bells:3,ex:[
        {key:"Bulgarian SS",n:"Bulgarian Split Squat",rx:"3 × 8/leg",sets:3}]},
-     {letter:"D",t:"Core",mins:6,bells:3,ex:[
+     {letter:"E",t:"Core",mins:6,bells:3,ex:[
        {key:"Pallof",n:"Pallof Press",rx:"3 × 10/side · anti-rotation core",sets:3}]}]};
   }
   if(day==="meso02Wed"){

@@ -78,6 +78,5 @@ Both are retained in `HEP_BLOCKS` as `dormant:true` with reasons rather than del
 
 ## Open Items
 
-- **Monday lat pre-activation is missing** — Rack Pull leads Meso 02 Monday and its glossary entry calls for Band Pull-Aparts or Prone Y-Raises immediately prior; Friday's template has that slot, Monday's does not, and neither does B1. Tracked for a follow-up change to `MESO2_PREP` in `index.html`, not to this file.
 - **Finkelstein at 2x/day** (down from 3–4x) — self-reduced; aggravates the metacarpals, requiring manual reduction by Dr. Zak. Post-discharge this is a self-managed call, but recurring displacement still speaks to joint stability on that side and is worth raising with ortho.
 - **Doorway Stretch palm-up variation** — overlaps the dormant Standing Bicep Stretch. Self-managed call now.
