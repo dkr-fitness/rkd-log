@@ -133,10 +133,12 @@ main{padding:12px 14px}
 .ivt-phase.idle{background:var(--surface); border:1px solid var(--line)}
 .ivt-phase.work{background:rgba(52,199,123,.14); border:1px solid var(--green)}
 .ivt-phase.rest{background:rgba(92,168,255,.14); border:1px solid var(--blue)}
+.ivt-phase.prep{background:rgba(245,166,35,.14); border:1px solid var(--amber)}
 .ivt-phase.paused{opacity:.55}
 .ivt-phase .lbl{font-family:var(--disp); font-weight:700; font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
 .ivt-phase.work .lbl{color:var(--green)}
 .ivt-phase.rest .lbl{color:var(--blue)}
+.ivt-phase.prep .lbl{color:var(--amber)}
 .ivt-phase .time{font-family:var(--disp); font-weight:700; font-size:58px; line-height:1; font-variant-numeric:tabular-nums; margin:4px 0}
 .ivt-phase .rd{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em}
 .hist-card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px}
@@ -1334,14 +1336,18 @@ document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==
    Work/rest/rounds are user-set, not tied to any block/day. Never touches loadLogs/saveLogs
    or the session draft — it's a stopwatch utility, usable on any day including Tue/Thu at
    the pool. Ticks independently of the modal being open so it keeps running if closed. */
-let ivtCfg=(()=>{ const d={work:30,rest:15,rounds:8,muted:false};
+/* prep is the lead-in before round 1 only — time to reach the equipment or get in the pool.
+   A stored config from before prep existed simply has no `prep` key, so Object.assign leaves
+   the default in place; nothing to migrate. */
+let ivtCfg=(()=>{ const d={prep:15,work:30,rest:15,rounds:8,muted:false};
   if(!storageOK) return d;
   try{return Object.assign(d,JSON.parse(localStorage.getItem("dtp-ivt")||"{}"));}catch(e){return d;} })();
 const saveIvtCfg=()=>{ if(storageOK) localStorage.setItem("dtp-ivt",JSON.stringify(ivtCfg)); };
-let ivt=null; // {phase:"work"|"rest", round, end, int, paused, pausedLeft, done}
+let ivt=null; // {phase:"prep"|"work"|"rest", round, end, int, paused, pausedLeft, done}
 function openIvt(){ document.getElementById("ivtOverlay").style.display="flex"; renderIvt(); }
 function closeIvt(){ document.getElementById("ivtOverlay").style.display="none"; }
 function ivtApplyCfg(){
+  ivtCfg.prep=Math.max(0,+document.getElementById("ivtPrep").value||0); /* 0 skips the lead-in */
   ivtCfg.work=Math.max(1,+document.getElementById("ivtWork").value||30);
   ivtCfg.rest=Math.max(0,+document.getElementById("ivtRest").value||0);
   ivtCfg.rounds=Math.max(1,+document.getElementById("ivtRounds").value||1);
@@ -1352,15 +1358,22 @@ function ivtStart(){
   ivtApplyCfg();
   if(ivt&&ivt.int) clearInterval(ivt.int);
   keepAwake();
-  ivt={phase:"work", round:1, end:Date.now()+ivtCfg.work*1000, paused:false, done:false};
-  ivtTone("work");
+  /* prep:0 starts straight into work, exactly as before it existed */
+  const lead=ivtCfg.prep>0;
+  ivt={phase:lead?"prep":"work", round:1,
+       end:Date.now()+(lead?ivtCfg.prep:ivtCfg.work)*1000, paused:false, done:false};
+  ivtTone(lead?"prep":"work");
   ivt.int=setInterval(ivtTick,200);
   renderIvt();
 }
 function ivtTick(){
   if(!ivt||ivt.paused)return;
   if(Date.now()>=ivt.end){
-    if(ivt.phase==="work"){
+    if(ivt.phase==="prep"){
+      /* Nothing ever sets phase back to "prep", so the lead-in can only run once — the gaps
+         between rounds are rest's job. */
+      ivt.phase="work"; ivt.end=Date.now()+ivtCfg.work*1000; ivtTone("work");
+    } else if(ivt.phase==="work"){
       if(ivt.round>=ivtCfg.rounds){ ivtFinish(); return; }
       if(ivtCfg.rest>0){ ivt.phase="rest"; ivt.end=Date.now()+ivtCfg.rest*1000; ivtTone("rest"); }
       else { ivt.round++; ivt.end=Date.now()+ivtCfg.work*1000; ivtTone("work"); }
@@ -1395,6 +1408,9 @@ function ivtTone(phase){
   if(ivtCfg.muted)return;
   ac(); if(!AC)return;
   if(phase==="work"){ tone(880,0,.3,.5); if(navigator.vibrate)navigator.vibrate(150); }
+  /* prep start is a low, soft blip — enough to confirm the tap without reading as "go". The
+     cue that matters is the normal work tone when prep ends and round 1 begins. */
+  else if(phase==="prep"){ tone(330,0,.22,.3); if(navigator.vibrate)navigator.vibrate(70); }
   else { tone(440,0,.3,.45); if(navigator.vibrate)navigator.vibrate([100,80,100]); }
 }
 function ivtChime(){
@@ -1407,7 +1423,7 @@ function ivtDockLabel(){
   if(!ivt)return "⏱";
   if(ivt.done)return "⏱ Done";
   const left=ivt.paused?Math.ceil(ivt.pausedLeft/1000):Math.max(0,Math.ceil((ivt.end-Date.now())/1000));
-  return (ivt.phase==="work"?"W ":"R ")+fmt(left);
+  return (ivt.phase==="prep"?"P ":ivt.phase==="work"?"W ":"R ")+fmt(left);
 }
 function ivtDockBtnHtml(){
   const active=ivt&&!ivt.done&&!ivt.paused;
@@ -1422,6 +1438,7 @@ function renderIvt(){
   h+=`<div class="meta">Standalone — runs on its own, doesn't log to your session. Use it Tue/Thu at the pool or for rest/work timing on any lift day.</div>`;
   h+=`<div class="meta warn"><b>Heads up:</b> like the existing set timer, this relies on the tab staying open — a locked screen or backgrounded browser can pause the countdown and mute the beeps on some phones. Screen wake lock helps while this panel is open, but isn't guaranteed by iOS/Android.</div>`;
   if(!ivt){
+    h+=`<div class="fieldrow"><span>Prep (sec)</span><input type="number" id="ivtPrep" min="0" max="600" value="${ivtCfg.prep}"></div>`;
     h+=`<div class="fieldrow"><span>Work (sec)</span><input type="number" id="ivtWork" min="1" max="3600" value="${ivtCfg.work}"></div>`;
     h+=`<div class="fieldrow"><span>Rest (sec)</span><input type="number" id="ivtRest" min="0" max="3600" value="${ivtCfg.rest}"></div>`;
     h+=`<div class="fieldrow"><span>Rounds</span><input type="number" id="ivtRounds" min="1" max="99" value="${ivtCfg.rounds}"></div>`;
@@ -1438,9 +1455,9 @@ function renderIvt(){
   } else {
     const left=ivt.paused?Math.ceil(ivt.pausedLeft/1000):Math.max(0,Math.ceil((ivt.end-Date.now())/1000));
     h+=`<div class="ivt-phase ${ivt.phase}${ivt.paused?" paused":""}">
-      <div class="lbl">${ivt.paused?"Paused":(ivt.phase==="work"?"Work":"Rest")}</div>
+      <div class="lbl">${ivt.paused?"Paused":(ivt.phase==="prep"?"Get ready":ivt.phase==="work"?"Work":"Rest")}</div>
       <div class="time">${fmt(left)}</div>
-      <div class="rd">Round ${ivt.round} of ${ivtCfg.rounds}</div>
+      <div class="rd">${ivt.phase==="prep"?`Round 1 of ${ivtCfg.rounds} up next`:`Round ${ivt.round} of ${ivtCfg.rounds}`}</div>
     </div>`;
     h+=`<div class="ivt-row">
       <button class="ivt-mute-btn${ivtCfg.muted?" on":""}" onclick="ivtToggleMute()" title="${ivtCfg.muted?"Unmute":"Mute"}">${ivtCfg.muted?"🔇":"🔊"}</button>
