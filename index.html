@@ -711,8 +711,97 @@ const FORM_GLOSSARY={
   injuryNotes:[
    "<b>Prefer the dead bug.</b> Bird dog is a quadruped position that puts bodyweight through an extended wrist, and loaded full wrist extension is a standing caution for you — the same reason the Meso 01 yoga guidance calls for forearm variations on anything weight-bearing.",
    `If you do use bird dog, drop to the <b>forearm</b> on the support side rather than the palm. Meso 02 says "Dead Bug or similar" precisely so this stays a choice.`,
-   "<i>Drafted for this panel. The wrist-extension caution is carried from the Rope Triceps Pressdown entry and the Meso 01 yoga guidance.</i>"]}
+   "<i>Drafted for this panel. The wrist-extension caution is carried from the Rope Triceps Pressdown entry and the Meso 01 yoga guidance.</i>"]},
+ /* ---- Mesocycle 01 pool. All transcribed verbatim from RKD_Exercise_Glossary_v1.md — these
+    were written up long ago and simply never wired in. Leg Press and Glute Bridges have no
+    "Injury notes" section in the glossary, so injuryNotes is omitted rather than invented;
+    formRefSection() skips any absent section. ---- */
+ "Safety Bar Squat":{
+  status:"✅ CLEARED · Back squat substitute",
+  setup:[
+   "Bar centered on the traps, handles in front. Hands on the handles or crossed on the chest — <b>not</b> reaching back to grip a straight bar.",
+   "Unrack with a full brace, walk out in two or three steps, plant.",
+   "Feet set as with goblet; ribs down, brace."],
+  execution:[
+   "Same descent mechanics as a back squat — hips back and down, knees tracking.",
+   "The camber pulls you forward: actively resist with upper back tension, drive the chest up out of the hole.",
+   "Ascend hips-and-chest together; don't let the hips beat the shoulders up."],
+  checkpoints:[
+   "✅ You never grip a bar behind your back; ✅ upper back stays engaged against the forward pull",
+   "❌ Torso folding forward = the camber is winning; reduce load"],
+  injuryNotes:[
+   "This is cleared <b>specifically because</b> the handle position removes the shoulder external rotation + wrist extension demand that makes a traditional back squat a problem for you. If you ever find yourself reaching back for a bar, you're doing the excluded version."]},
+ "Leg Press":{
+  status:"✅ CLEARED · Back squat substitute — zero upper-limb demand",
+  setup:[
+   "Back and hips flush against the pad, no gap in the low back.",
+   "Feet shoulder-width, mid-platform, whole foot in contact.",
+   "Hands on the handles lightly — <b>do not death-grip.</b> This is the one lower-body movement with no reason to load the right forearm."],
+  execution:[
+   "Lower under control until the knees reach roughly 90°, or the point just before the pelvis tucks off the pad.",
+   "Press through the whole foot. Stop just short of knee lockout — don't slam it out.",
+   "Slow eccentric is where the value is; don't let the sled ride you down."],
+  checkpoints:[
+   "✅ Low back stays flat against the pad the whole rep; ✅ knees track over toes",
+   "❌ Butt lifting off the pad at the bottom = too deep for your current range",
+   "❌ White-knuckle grip on the handles = unnecessary right-arm loading"]},
+ "Band Pull-Aparts":{
+  status:"✅ CLEARED · Also serves as deadlift pre-activation",
+  setup:[
+   "Light band, hands shoulder-width or slightly wider, palms down or neutral.",
+   "Arms extended straight out at chest height. Slight tension in the band at the start.",
+   "Stand tall, ribs down, glutes lightly on."],
+  execution:[
+   "Pull the band apart by driving the shoulder blades together — <b>arms stay long the whole time.</b>",
+   "Band travels toward the chest as the hands separate.",
+   "Pause at end-range with the blades squeezed.",
+   "Return slowly under control. The eccentric is where this one actually does its work."],
+  checkpoints:[
+   "✅ Elbows stay locked-ish; ✅ blades do the moving; ✅ no rib flare",
+   "❌ Bending the elbows = it's become a row",
+   "❌ Leaning back or flaring the ribs to get more range = compensation"],
+  injuryNotes:[
+   "<b>This targets rear delts and scapular retraction — it is not a lat-firing drill.</b> Don't substitute it for Y-raises expecting the same deadlift carryover; they prime different things. Using both before deadlifts is fine and arguably better.",
+   "Keep the band genuinely light. Heavy bands turn this into a movement your right side will find a way around."]},
+ "Glute Bridges":{
+  status:"✅ CLEARED · Zero upper-limb demand",
+  setup:[
+   "Supine, knees bent, feet flat and hip-width, heels close enough that the fingertips nearly brush them.",
+   "Ribs down, low back gently flattened toward the floor — posterior pelvic tilt before you lift.",
+   "Arms relaxed at the sides."],
+  execution:[
+   "Drive through the heels, squeeze the glutes, lift the hips until torso and thighs form a straight line.",
+   "<b>Stop at the straight line.</b> Going higher means arching the low back, not extending the hip.",
+   "Hold the squeeze briefly at the top.",
+   "Lower under control; don't just drop."],
+  checkpoints:[
+   "✅ Glutes doing the work; ✅ neutral spine at lockout",
+   "❌ Low back arching at the top = hyperextension replacing hip extension",
+   "❌ Hamstrings cramping = heels too far out, walk the feet closer"]},
+ "Backward Walking Lunges":{
+  status:"✅ · Closest sled-drag substitute at Equinox (no sled on-site) · Pairs with Broad Jump in superset",
+  setup:[
+   "Stand tall, feet hip-width, hands on hips or holding light DBs at the sides.",
+   "Ribs down, brace, eyes forward."],
+  execution:[
+   "Step <b>backward</b> with one leg, landing on the ball of the foot.",
+   "Lower until the back knee is just above the floor and the front thigh is roughly parallel.",
+   "Front shin stays close to vertical; the front knee shouldn't travel far forward.",
+   "Drive through the <b>front</b> heel to return to standing. The front leg does the work — that's what makes this the sled analog.",
+   "Alternate legs, or complete one side then switch."],
+  checkpoints:[
+   "✅ Torso upright; ✅ front heel stays planted; ✅ controlled step back, not a drop",
+   "❌ Leaning forward = the front leg isn't driving",
+   "❌ Crashing the back knee = descending too fast"],
+  injuryNotes:[
+   "If loading with DBs, it's the same grip-loading category as the carries. The bodyweight version has zero arm demand — use that on days you want the legs without the forearm."]}
 };
+/* Meso 01 keys this movement "Rope Triceps Pressdown"; Meso 02 keys it "Triceps Extension".
+   Same movement, same glossary entry — aliased rather than duplicated. The Meso 02 entry's
+   third injury note is the overhead-variant caveat, which only applies to Meso 02's
+   "pushdown or overhead" wording, so it is dropped here. */
+FORM_GLOSSARY["Rope Triceps Pressdown"]=Object.assign({},FORM_GLOSSARY["Triceps Extension"],
+  {injuryNotes:FORM_GLOSSARY["Triceps Extension"].injuryNotes.slice(0,2)});
 function formRefSection(title,items,ordered){
   if(!items||!items.length) return "";
   const tag=ordered?"ol":"ul";
