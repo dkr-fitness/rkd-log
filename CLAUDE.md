@@ -18,7 +18,6 @@
 - **Sat:** capped conditioning, effort cap 7/10. Cardio ramp, reference only — not in `LIFT_DAYS`, so no medal.
 - **Sun:** active recovery. Never scored: `pxi=null`, `medal="Done ✓"`. CS4 by default; Meso 01 substituted gentle yoga, and that swap is date-gated to the Meso 01 window only.
 - **Rest days** (`logRest`): `pxi=0`, `medal="Rest ✓"`.
-- *Not implemented:* a "Strength Endurance" format was previously documented here but has never existed in `PTS`/`MODEL_DESC`. If it's wanted, it needs building.
 
 ## Training Blocks (block/week identity)
 - **`weekSel` is not the source of truth for the week.** It numbers the original 8-week program (start Mon Jul 6 2026, clamped at 8), so it stopped advancing Aug 24 and tagged everything after as "week 8". It survives only as Block 1's load picker (`DL[w-1]`, `OHP(w)`, `ROW(w)`, the `w<=2` rehab variants, the `w<8` finisher) and is hidden unless a legacy day is selected.
@@ -80,5 +79,4 @@
 - **Four Form Reference holes remain**, all needing authored content rather than transcription: `Chest Press` — deliberately empty, because the glossary records it *only* as a named aggravator from the 7/14 eval, so it needs a clinical line before it gets an entry — plus Meso 01's `Chest-Supported Row`, `Single-Arm DB Row` and `Neutral-Grip Cable Row`. The last is nearly free: same movement as the drafted `Neutral-Grip Row`, so a one-line alias.
 - **Six `FORM_GLOSSARY` entries are drafted, not clinical** — Rack Pull, Bulgarian SS, Pallof, Neutral-Grip Row, Romanian Deadlift (DB), Bird Dog. Each ends with an italic provenance line naming where its clinical language came from; the mechanics are not clinician-reviewed. Worth a review pass with Bhupinder/OT.
 - **Four Meso 02 movements are not PR-tracked** — Pallof, Scapular Wall Slide, Prone Y-Raises, Bird Dog. That looks deliberate: they're light or positional, so an e1RM would be meaningless. (`Goblet Squat` was the one real omission here and was added to `PR_KEYS` in 5f5e60d.)
-- **"Strength Endurance"** appears in older notes but has never existed in `PTS`/`MODEL_DESC`. Build it or drop the idea.
 - **Block 1 retirement is deferred, not decided.** `weekSel`, `DL`/`OHP`/`ROW`, and the `upper`/`lower`/`mixed` templates stay until it's called closed.
