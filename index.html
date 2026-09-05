@@ -155,6 +155,13 @@ main{padding:12px 14px}
 .toast{position:fixed; top:64px; left:50%; transform:translateX(-50%); background:var(--green); color:#0E1526; font-weight:700; padding:10px 18px; border-radius:20px; z-index:50; opacity:0; transition:opacity .25s; pointer-events:none}
 .toast.show{opacity:1}
 .warnbar{background:rgba(224,91,91,.12); border:1px solid var(--red); color:#F0B3B3; border-radius:8px; padding:8px 12px; font-size:13px; margin-bottom:10px}
+.draftbar{background:rgba(245,166,35,.12); border:1px solid var(--amber); border-radius:10px; padding:10px 12px; margin-bottom:10px}
+.draftbar .db-t{font-weight:700; font-size:14px; color:var(--amber)}
+.draftbar .db-conflict{font-size:12px; color:#F0B3B3; margin-top:4px}
+.draftbar .db-row{display:flex; gap:8px; margin-top:9px}
+.db-b{flex:1; padding:9px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:14px}
+.db-b.go{background:var(--green); border-color:var(--green); color:#0E1526}
+.db-b.danger{background:var(--red); border-color:var(--red); color:#fff}
 .howto{background:var(--surface); border:1px dashed var(--line); border-radius:8px; padding:10px 12px; font-size:13px; color:var(--muted); margin-bottom:10px}
 .howto b{color:var(--amber)}
 .bigscore{text-align:center; padding:14px 0 6px}
@@ -201,7 +208,7 @@ main{padding:12px 14px}
        options into whichever block is current, in weekday order, and floats that group to the
        top — so the list opens on one complete Mon–Sun week for the block you're training, with
        the other blocks' lifting days below. Each block group carries its date range. -->
-  <select id="daySel" onchange="stopBlock();render()">
+  <select id="daySel" onchange="onDayChange()">
     <optgroup id="ogMeso02" label="Mesocycle 02 · 9/7–10/18">
       <option value="meso02Mon">Mon · Lower/Hinge</option>
       <option value="meso02Wed">Wed · Upper Push</option>
@@ -1000,6 +1007,7 @@ function liveSecond(){
   setBand(z,ZONE_NAMES[z],live.lastBpm,pct);
   if(view==="pxi") renderLiveScore();
   updateCompliance();
+  scheduleDraftSave(10000); /* zone/RKD accrual is session data too — coarser window, it changes every second */
 }
 function setBand(z,label,bpm,pct){
   const band=document.getElementById("hrband");
@@ -1242,19 +1250,166 @@ function captureSessionDraft(){
   const fields={};
   document.querySelectorAll('#main input[id^="w_"], #main input[id^="r_"]').forEach(el=>{ if(el.value!=="") fields[el.id]=el.value; });
   const strainEl=document.getElementById("strain"), noteEl=document.getElementById("note"), actEl=document.getElementById("z2act");
-  sessionDraft={key:draftKey(), fields, rpe:curRPE,
+  /* day is stamped alongside key so a throttled persistDraft() firing after a day switch still
+     files these fields under the day they were typed on, not whatever is selected by then */
+  sessionDraft={key:draftKey(), day:curDay(), fields, rpe:curRPE,
     strain:strainEl?strainEl.value:"", note:noteEl?noteEl.value:"", activity:actEl?actEl.value:null};
 }
 function restoreSessionDraft(){
-  if(!sessionDraft||sessionDraft.key!==draftKey()) return;
+  if(!sessionDraft||sessionDraft.key!==draftKey()){
+    /* BUGFIX (pre-existing): the in-memory buffer holds one day at a time, so switching day and
+       back used to drop everything typed on the first day. Fall back to today's durable draft
+       for the day now selected. */
+    const d=readDraft(DRAFT_PREFIX+todayStr()+"_"+curDay());
+    if(!d) return;
+    sessionDraft={key:draftKey(),day:curDay(),fields:d.fields||{},rpe:d.rpe||0,
+      strain:d.strain||"",note:d.note||"",activity:d.activity==null?null:d.activity};
+  }
   Object.keys(sessionDraft.fields).forEach(id=>{ const el=document.getElementById(id); if(el) el.value=sessionDraft.fields[id]; });
   const strainEl=document.getElementById("strain"); if(strainEl&&sessionDraft.strain!=="") strainEl.value=sessionDraft.strain;
   const noteEl=document.getElementById("note"); if(noteEl&&sessionDraft.note) noteEl.value=sessionDraft.note;
   const actEl=document.getElementById("z2act"); if(actEl&&sessionDraft.activity!=null) actEl.value=sessionDraft.activity;
   if(sessionDraft.rpe) setRPE(sessionDraft.rpe); /* setRPE re-applies the .on button highlight, not just curRPE */
 }
+
+/* ================= DURABLE SESSION DRAFTS =================
+   sessionDraft above is a re-render buffer only — it lives in memory and dies with the tab.
+   This is its durable counterpart: an in-progress session written to localStorage as sets are
+   logged, so a backgrounded tab being killed (or simply never tapping FINISH) doesn't lose the
+   workout. Keyed dtp-draft_<YYYY-MM-DD>_<day>, mirroring the existing hep_<date> pattern, so a
+   stale draft can never be silently clobbered by starting a new session — every discard is an
+   explicit two-tap. Drafts are never auto-expired and never auto-adopted: only Resume binds to
+   an existing record, so fresh work always writes to today's key. */
+const DRAFT_PREFIX="dtp-draft_";
+let draftMem={}; /* storageOK===false fallback, same shape as hepMem */
+let curDraft={id:null,startedAt:null,date:null,day:null,key:null,resumed:false};
+const resetCurDraft=()=>{curDraft={id:null,startedAt:null,date:null,day:null,key:null,resumed:false};};
+const newDraftId=()=>"d"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function readDraft(k){
+  if(!storageOK) return draftMem[k]||null;
+  try{return JSON.parse(localStorage.getItem(k)||"null");}catch(e){return null;}
+}
+function writeDraft(k,o){ if(storageOK) localStorage.setItem(k,JSON.stringify(o)); else draftMem[k]=o; }
+function removeDraft(k){ if(storageOK) localStorage.removeItem(k); else delete draftMem[k]; }
+function allDraftKeys(){
+  if(!storageOK) return Object.keys(draftMem);
+  const out=[];
+  for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.indexOf(DRAFT_PREFIX)===0) out.push(k); }
+  return out;
+}
+/* Which storage slot the current work belongs to. Staying on the same day keeps the same slot
+   (so a resumed draft is written back in place); changing day starts a fresh slot under today. */
+function draftSlot(day){
+  if(curDraft.day===day&&curDraft.key) return curDraft;
+  const date=todayStr(), k=DRAFT_PREFIX+date+"_"+day, prev=readDraft(k);
+  return {id:(prev&&prev.draftId)||newDraftId(),
+          startedAt:(prev&&prev.startedAt)||new Date().toISOString(),
+          date,day,key:k,resumed:false};
+}
+/* Set by logRest(): a rest day logged over an in-progress draft must not quietly delete it.
+   The conflict is surfaced in the banner instead. Cleared as soon as real editing resumes. */
+let draftHold=false;
+function persistDraft(){
+  if(draftHold) return;
+  const day=(sessionDraft&&sessionDraft.day)||curDay();
+  const f=(sessionDraft&&sessionDraft.fields)||{};
+  const rpe=sessionDraft?sessionDraft.rpe:0, note=sessionDraft?sessionDraft.note:"", strain=sessionDraft?sessionDraft.strain:"";
+  const has=Object.keys(f).length>0||rpe>0||(note||"").trim()!==""||(strain||"")!==""||live.secs>0;
+  const slot=draftSlot(day);
+  if(!has){ removeDraft(slot.key); if(curDraft.key===slot.key) resetCurDraft(); return; }
+  curDraft=slot;
+  writeDraft(slot.key,{draftId:slot.id,startedAt:slot.startedAt,savedAt:new Date().toISOString(),
+    date:slot.date,day,week:+document.getElementById("weekSel").value,
+    fields:f,rpe:rpe||0,strain:strain||"",note:note||"",
+    activity:sessionDraft?sessionDraft.activity:null,
+    freeform:freeformNames.map(a=>a.slice()),
+    zoneSecs:live.zoneSecs.slice(),pxi:live.pxi,secs:live.secs,duration:elapsedSec()});
+}
+/* Throttle, not debounce: the first edit in a window guarantees a write within `ms` rather than
+   letting continuous typing defer it indefinitely. */
+let draftTimer=null;
+function scheduleDraftSave(ms){
+  if(draftTimer) return;
+  draftTimer=setTimeout(()=>{draftTimer=null;persistDraft();},ms||400);
+}
+function flushDraft(){ if(draftTimer){clearTimeout(draftTimer);draftTimer=null;} persistDraft(); }
+/* Every set/rpe/note/strain/activity edit. captureSessionDraft() runs synchronously so the
+   in-memory buffer is always current — that alone fixes typed sets being dropped on a day
+   switch — while the localStorage write is throttled. */
+function onSetInput(){ draftHold=false; captureSessionDraft(); scheduleDraftSave(); }
+/* pagehide + visibilitychange are the reliable backgrounding hooks on iOS/Bluefy; beforeunload
+   is not. This is the actual defense against the phone killing the tab mid-session. */
+window.addEventListener("pagehide",flushDraft);
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") flushDraft(); });
+
+/* ---- resume / discard ---- */
+function draftExerciseCount(d){
+  const seen={};
+  Object.keys(d.fields||{}).forEach(id=>{ const m=id.match(/^[wr]_(\d+)_(\d+)_/); if(m) seen[m[1]+"_"+m[2]]=1; });
+  return Object.keys(seen).length;
+}
+/* A rest day already logged for the same slot is a real conflict — surfaced in the banner so the
+   discard decision is informed, never resolved automatically in either direction. */
+function restLoggedFor(d){
+  return loadLogs().some(l=>l.type==="rest"&&l.day===d.day&&String(l.date||"").slice(0,10)===d.date);
+}
+/* Anything started before today and not finished. The active draft is hidden only while it is
+   actually being resumed — not merely because it is the one in hand. Otherwise a tab left open
+   past midnight would suppress the banner for exactly the session you forgot to finish. */
+function pendingDrafts(){
+  const today=todayStr();
+  return allDraftKeys().map(k=>{ const d=readDraft(k); if(d) d._key=k; return d; })
+    .filter(d=>d&&d.date&&d.date<today&&!(curDraft.resumed&&d._key===curDraft.key))
+    .sort((a,b)=>a.date<b.date?1:-1);
+}
+let discardArmKey=null;
+function armDiscard(k){ discardArmKey=k; render(); }
+function cancelDiscard(){ discardArmKey=null; render(); }
+function discardDraft(k){
+  removeDraft(k); if(curDraft.key===k) resetCurDraft();
+  discardArmKey=null; render(); toast("Draft discarded");
+}
+function resumeDraft(k){
+  const d=readDraft(k); if(!d) return;
+  /* daySel must be set before render(): w_<block>_<ex>_<set> ids are positional, so restoring
+     against the wrong day's template would drop values onto the wrong exercises. */
+  document.getElementById("daySel").value=d.day;
+  if(d.week) document.getElementById("weekSel").value=d.week;
+  freeformNames=(d.freeform||[[],[],[]]).map(a=>(a||[]).slice());
+  live.zoneSecs=(d.zoneSecs||[0,0,0,0,0,0]).slice(); live.pxi=d.pxi||0; live.secs=d.secs||0;
+  sessAcc=(d.duration||0)*1000; /* clock picks up where it left off; feeds entry.duration */
+  curDraft={id:d.draftId,startedAt:d.startedAt,date:d.date,day:d.day,key:k,resumed:true};
+  sessionDraft={key:draftKey(),day:d.day,fields:d.fields||{},rpe:d.rpe||0,
+    strain:d.strain||"",note:d.note||"",activity:d.activity==null?null:d.activity};
+  discardArmKey=null; draftHold=false; setView("session");
+  const clk=document.getElementById("clock"); if(clk) clk.textContent=fmt(elapsedSec());
+  toast("Resumed — tap Finish to save it");
+}
+function staleDraftBannerHtml(){
+  const list=pendingDrafts(); if(!list.length) return "";
+  return list.map(d=>{
+    const dt=new Date((d.startedAt&&Date.parse(d.startedAt))?d.startedAt:d.date+"T12:00:00");
+    const n=draftExerciseCount(d), mins=Math.round((d.duration||0)/60);
+    const bits=[dt.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}),
+                n+" exercise"+(n===1?"":"s")];
+    if(mins) bits.push(mins+" min");
+    const conflict=restLoggedFor(d)?`<div class="db-conflict">Rest day already logged for this slot — resuming adds a second entry.</div>`:"";
+    const armed=discardArmKey===d._key;
+    return `<div class="draftbar">
+      <div class="db-t">Unfinished session — ${bits.join(", ")}</div>${conflict}
+      <div class="db-row">${armed
+        ? `<button class="db-b danger" onclick="discardDraft('${d._key}')">Confirm discard</button><button class="db-b" onclick="cancelDiscard()">Keep</button>`
+        : `<button class="db-b go" onclick="resumeDraft('${d._key}')">Resume</button><button class="db-b" onclick="armDiscard('${d._key}')">Discard</button>`}</div>
+    </div>`;
+  }).join("");
+}
+
+/* BUGFIX (pre-existing): changing day rebuilds #main and destroyed anything typed, because only
+   tab switches ever captured. sessionDraft.day still names the outgoing day here, so the flush
+   files this work under the day it was actually typed on. */
+function onDayChange(){ flushDraft(); stopBlock(); render(); }
 function setView(v){
-  if(view==="session"&&v!=="session") captureSessionDraft();
+  if(view==="session"&&v!=="session"){ captureSessionDraft(); flushDraft(); }
   if(view==="hep"&&v!=="hep") stopHepClock();
   view=v;
   document.getElementById("tabS").className="tab"+(v==="session"?" active":"");
@@ -1270,8 +1425,8 @@ function lastFor(key){
 function rpeNoteSaveHtml(){
   let h=`<div class="notecard"><label>Session RPE</label><div class="rpe-row">`;
   for(let i=6;i<=10;i++)h+=`<button class="rpe" id="rpe${i}" onclick="setRPE(${i})">${i}</button>`;
-  h+=`</div><label style="margin-top:10px">WHOOP strain (optional)</label><input type="number" id="strain" min="0" max="21" step="0.1" inputmode="decimal" placeholder="0.0–21.0">`;
-  h+=`<label style="margin-top:10px">Notes (sleep, energy, anything off)</label><textarea id="note" rows="2"></textarea></div>`;
+  h+=`</div><label style="margin-top:10px">WHOOP strain (optional)</label><input type="number" id="strain" min="0" max="21" step="0.1" inputmode="decimal" placeholder="0.0–21.0" oninput="onSetInput()">`;
+  h+=`<label style="margin-top:10px">Notes (sleep, energy, anything off)</label><textarea id="note" rows="2" oninput="onSetInput()"></textarea></div>`;
   h+=`<button class="savebtn" onclick="saveSession()">Finish</button>`;
   return h;
 }
@@ -1305,6 +1460,7 @@ function render(){
   document.getElementById("title").textContent=blockTag(blockFor())+" · "+s.name.split(" — ")[0];
   let h="";
   if(!storageOK) h+=`<div class="warnbar">Preview mode: saving is in-memory only here. Hosted on GitHub Pages (or opened locally / in Bluefy), your log persists on this device.</div>`;
+  h+=staleDraftBannerHtml(); /* above everything else — an unfinished session outranks today's plan */
   h+=hepPanelHtml();
   h+=formReferenceHtml(s);
 
@@ -1387,9 +1543,9 @@ function blockHtml(s,bi){
       for(let i=0;i<ex.sets;i++){
         const pw=last&&last[i]?last[i].w:"", pr=last&&last[i]?last[i].r:"";
         h+=`<div class="set" data-set="${i+1}"><span class="n">${i+1}</span>
-          <input inputmode="decimal" placeholder="${pw||'wt'}" id="w_${bi}_${ei}_${i}">
+          <input inputmode="decimal" placeholder="${pw||'wt'}" id="w_${bi}_${ei}_${i}" oninput="onSetInput()">
           <span class="x">×</span>
-          <input inputmode="numeric" placeholder="${pr||'reps'}" id="r_${bi}_${ei}_${i}"></div>`;
+          <input inputmode="numeric" placeholder="${pr||'reps'}" id="r_${bi}_${ei}_${i}" oninput="onSetInput()"></div>`;
       }
       h+=`</div>`;
     }
@@ -1425,13 +1581,13 @@ function removeFreeformEx(si,ei){
 function updateFreeformName(si,ei,val){ freeformNames[si][ei]=val; }
 function zone2ActivityHtml(){
   return `<div class="notecard"><label>Activity</label>
-    <select id="z2act" style="width:100%">
+    <select id="z2act" style="width:100%" onchange="onSetInput()">
       <option>Peloton class</option><option>Jog</option><option>Ski erg</option>
       <option>Row</option><option>Assault runner</option><option>Bike</option>
       <option>Lap swimming (breaststroke)</option><option>Other</option>
     </select></div>`;
 }
-function setRPE(v){curRPE=v;for(let i=6;i<=10;i++)document.getElementById("rpe"+i).className="rpe"+(i===v?" on":"");}
+function setRPE(v){curRPE=v;for(let i=6;i<=10;i++)document.getElementById("rpe"+i).className="rpe"+(i===v?" on":"");onSetInput();}
 
 function saveSession(){
   const w=+document.getElementById("weekSel").value, day=curDay();
@@ -1458,16 +1614,34 @@ function saveSession(){
   }
   const strainEl=document.getElementById("strain");
   const strain=strainEl&&strainEl.value!==""?Math.min(21,Math.max(0,Math.round(+strainEl.value*10)/10)):null;
+  /* A resumed session keeps the timestamp it was actually trained at, so blockFor() files it in
+     the block/week it happened in rather than under whenever it got finished. */
+  const resumed=curDraft.day===day&&curDraft.startedAt?curDraft:null;
+  const startedAt=resumed?resumed.startedAt:new Date().toISOString();
   /* week:w kept for backward compatibility with already-saved logs; block/blockWeek are what
      the label and weeklyTotals() grouping actually read now */
-  const bk=blockFor();
-  const entry={date:new Date().toISOString(),week:w,block:bk.id,blockLabel:bk.label,blockWeek:bk.week,
+  const bk=blockFor(startedAt);
+  const entry={date:startedAt,week:w,block:bk.id,blockLabel:bk.label,blockWeek:bk.week,
+    draftId:resumed?resumed.id:null,
     day,name:s.name,type:s.type,entries,rpe:curRPE,
     note:document.getElementById("note").value,strain,duration:elapsedSec(),
     pxi,zoneMins,pxiModel:pxi!=null?model:null,medal,
     target:medal==null?null:(s.type==="zone2"?100:pxiSet.target)};
   const actEl=document.getElementById("z2act"); if(actEl)entry.activity=actEl.value;
-  const logs=loadLogs(); logs.push(entry); saveLogs(logs);
+  const logs=loadLogs();
+  /* Resuming then finishing must never append twice — draftId is the identity that survives a
+     reload, so a second Finish for the same draft is refused rather than duplicated. */
+  if(entry.draftId&&logs.some(l=>l.draftId===entry.draftId)){ toast("Already saved — see History"); return; }
+  logs.push(entry); saveLogs(logs);
+  /* Only after the log is durably written: a throw above leaves the draft intact rather than
+     dropping the session on the floor. */
+  if(draftTimer){ clearTimeout(draftTimer); draftTimer=null; }
+  /* Only this session's own slot. Never both — a resumed older draft and a same-day draft for
+     the same weekday are two different sessions, and clearing the untouched one would be
+     exactly the silent loss this whole change exists to prevent. */
+  if(curDraft.key) removeDraft(curDraft.key);
+  else removeDraft(DRAFT_PREFIX+todayStr()+"_"+day);
+  resetCurDraft(); draftHold=false;
   live.zoneSecs=[0,0,0,0,0,0]; live.pxi=0; live.secs=0; pendingManual=null; sessionDraft=null;
   freeformNames=[[],[],[]];
   setBand(0,live.tick?"Tracking reset — new session":"HR not connected",live.lastBpm,null);
@@ -1481,7 +1655,9 @@ function logRest(){
   logs.push({date:new Date().toISOString(),week:w,block:bk.id,blockLabel:bk.label,blockWeek:bk.week,
     day,name:"REST",type:"rest",entries:[],rpe:0,
     note:(document.getElementById("note")||{value:""}).value,duration:0,pxi:0,zoneMins:null,medal:"Rest ✓"});
-  saveLogs(logs); sessionDraft=null; toast("Rest day logged — good call");
+  /* Any in-progress draft for this slot is deliberately left on disk — the banner reports the
+     conflict ("rest day already logged") so the call is yours, not the app's. */
+  saveLogs(logs); draftHold=true; sessionDraft=null; toast("Rest day logged — good call");
 }
 function toast(t){const el=document.getElementById("toast");el.textContent=t;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2200);}
 
@@ -1815,6 +1991,18 @@ daySel.value=["sun","upper","tue","lower","thu","mixed","sat"][now.getDay()];
 const mesoDefaultDay=inMeso01Window()?{1:"fullBodyA",3:"fullBodyB",5:"fullBodyC"}[now.getDay()]
                     :inMeso02Window()?{1:"meso02Mon",3:"meso02Wed",5:"meso02Fri"}[now.getDay()]:null;
 if(mesoDefaultDay) daySel.value=mesoDefaultDay;
+/* Same-day draft (tab was killed mid-session, reopened the same day): adopt it silently — that's
+   continuity, not a decision worth prompting over. Only previous-day drafts get the banner.
+   render() -> restoreSessionDraft() then refills the inputs from it. */
+(function adoptTodayDraft(){
+  const k=DRAFT_PREFIX+todayStr()+"_"+daySel.value, d=readDraft(k);
+  if(!d) return;
+  freeformNames=(d.freeform||[[],[],[]]).map(a=>(a||[]).slice());
+  live.zoneSecs=(d.zoneSecs||[0,0,0,0,0,0]).slice(); live.pxi=d.pxi||0; live.secs=d.secs||0;
+  sessAcc=(d.duration||0)*1000;
+  curDraft={id:d.draftId,startedAt:d.startedAt,date:d.date,day:d.day,key:k,resumed:false};
+  const clk=document.getElementById("clock"); if(clk) clk.textContent=fmt(elapsedSec());
+})();
 render();
 </script>
 </body>
