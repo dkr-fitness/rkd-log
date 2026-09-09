@@ -1574,6 +1574,13 @@ function restoreSessionDraft(){
     /* BUGFIX (pre-existing): the in-memory buffer holds one day at a time, so switching day and
        back used to drop everything typed on the first day. Fall back to today's durable draft
        for the day now selected. */
+    /* ...but never while draftHold is set. A session was just closed out (saveSession/logRest)
+       and the render that follows must leave an empty form. Adopting here would be a HALF
+       adoption anyway — unlike adoptTodayDraft()/resumeDraft() this restores fields but not
+       zoneSecs/pxi/secs/duration/freeform, so the next edit would persist a zeroed live block
+       over that draft's accrued zone time and RKD. It also reaches setRPE() below, which calls
+       onSetInput() and would clear the hold. First real edit lifts this. */
+    if(draftHold) return;
     const d=readDraft(DRAFT_PREFIX+todayStr()+"_"+curDay());
     if(!d) return;
     sessionDraft={key:draftKey(),day:curDay(),fields:d.fields||{},rpe:d.rpe||0,
@@ -1595,6 +1602,9 @@ function restoreSessionDraft(){
    explicit two-tap. Drafts are never auto-expired and never auto-adopted: only Resume binds to
    an existing record, so fresh work always writes to today's key. */
 const DRAFT_PREFIX="dtp-draft_";
+/* How much bare tracked time (no typed sets, no rpe/note/strain) counts as a session worth
+   autosaving — see persistDraft(). Below this it reads as an idle strap, not a workout. */
+const DRAFT_MIN_SECS=120;
 let draftMem={}; /* storageOK===false fallback, same shape as hepMem */
 let curDraft={id:null,startedAt:null,date:null,day:null,key:null,resumed:false};
 const resetCurDraft=()=>{curDraft={id:null,startedAt:null,date:null,day:null,key:null,resumed:false};};
@@ -1628,7 +1638,14 @@ function persistDraft(){
   const day=(sessionDraft&&sessionDraft.day)||curDay();
   const f=(sessionDraft&&sessionDraft.fields)||{};
   const rpe=sessionDraft?sessionDraft.rpe:0, note=sessionDraft?sessionDraft.note:"", strain=sessionDraft?sessionDraft.strain:"";
-  const has=Object.keys(f).length>0||rpe>0||(note||"").trim()!==""||(strain||"")!==""||live.secs>0;
+  /* Typed content counts outright. Bare tracked time does not: live.secs ticks for every second
+     the strap is streaming, session or not, so leaving a strap connected while merely browsing
+     days wrote "0 exercises" drafts that nag as stale the next morning — and once
+     adoptTodayDraft() restored live.secs>0, the removeDraft() branch below could never fire
+     again for that day, so a draft emptied by hand could not be cleared. A pure-HR session
+     (Tue/Thu Z2, nothing typed) is still real work, so tracked time stays a signal — it just has
+     to amount to a session rather than an idle connection. */
+  const has=Object.keys(f).length>0||rpe>0||(note||"").trim()!==""||(strain||"")!==""||live.secs>=DRAFT_MIN_SECS;
   const slot=draftSlot(day);
   if(!has){ removeDraft(slot.key); if(curDraft.key===slot.key) resetCurDraft(); return; }
   curDraft=slot;
@@ -1943,6 +1960,11 @@ function saveSession(){
     target:medal==null?null:(s.type==="zone2"?100:pxiSet.target)};
   const actEl=document.getElementById("z2act"); if(actEl)entry.activity=actEl.value;
   const logs=loadLogs();
+  /* A fresh (never-resumed) session carries no draftId, so the check below cannot catch a second
+     Finish on the same work. draftHold is set on save and cleared by the first real edit, so it
+     reads exactly "closed out, nothing touched since" — the state where Finish must be a no-op.
+     resumeDraft() clears it, so resuming a draft over a logged rest day still finishes normally. */
+  if(draftHold){ toast("Already saved — see History"); return; }
   /* Resuming then finishing must never append twice — draftId is the identity that survives a
      reload, so a second Finish for the same draft is refused rather than duplicated. */
   if(entry.draftId&&logs.some(l=>l.draftId===entry.draftId)){ toast("Already saved — see History"); return; }
@@ -1955,11 +1977,22 @@ function saveSession(){
      exactly the silent loss this whole change exists to prevent. */
   if(curDraft.key) removeDraft(curDraft.key);
   else removeDraft(DRAFT_PREFIX+todayStr()+"_"+day);
-  resetCurDraft(); draftHold=false;
+  /* draftHold, not false: the DOM still holds every typed set at this point, and the very next
+     captureSessionDraft() — setView() runs one on the way to History — would scrape them back
+     into a brand-new draft under today's key, which then nags as a stale draft tomorrow. The HR
+     tick does the same via live.secs. Hold until onSetInput() sees a real edit. */
+  resetCurDraft(); draftHold=true;
   live.zoneSecs=[0,0,0,0,0,0]; live.pxi=0; live.secs=0; pendingManual=null; sessionDraft=null;
   freeformNames=[[],[],[]];
+  /* The session clock kept running across Finish, so elapsedSec() carried on climbing and a
+     second Finish would have stamped a full duration onto a phantom entry. Close it out. */
+  stopBlock(); if(sessInt){ clearInterval(sessInt); sessInt=null; } sessStart=null; sessAcc=0;
   setBand(0,live.tick?"Tracking reset — new session":"HR not connected",live.lastBpm,null);
   releaseAwake();
+  /* Rebuild the form empty. Without this the finished session's sets stay in the DOM, where a
+     later capture can resurrect them as a draft and a second Finish can re-log them. render()
+     re-zeroes curRPE itself; set it here too since the history/RKD views don't. */
+  curRPE=0; render();
   toast("Saved"+(pxi!=null?" · RKD "+pxi+(medal?" · "+medal:""):"")+(storageOK?"":" (in-memory)"));
 }
 function logRest(){

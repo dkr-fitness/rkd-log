@@ -55,13 +55,36 @@ var localStorage={
 var storageOK=true;
 var clearTimeout=function(){};                      /* jsc has setTimeout but not clearTimeout */
 var window={addEventListener:function(){}};
-var DOM={};                                          /* id -> element stub */
-function resetDOM(){ DOM={weekSel:{value:"8"},daySel:{value:"meso02Wed"},clock:{textContent:"0:00"},note:{value:""}}; }
+var DOM={};                                          /* id -> element stub; elements carry their own id */
+function resetDOM(){ DOM={weekSel:{id:"weekSel",value:"8"},daySel:{id:"daySel",value:"meso02Wed"},
+                          clock:{id:"clock",textContent:"0:00"},note:{id:"note",value:""}}; }
 resetDOM();
 var document={
   addEventListener:function(){},
-  getElementById:function(id){ return DOM[id]||null; }
+  getElementById:function(id){ return DOM[id]||null; },
+  /* captureSessionDraft() is the only caller, always with the w_/r_ session-input selector.
+     Matching on the id prefix is enough to model it — "weekSel" is not caught, the underscore
+     is part of the pattern. */
+  querySelectorAll:function(sel){
+    return Object.keys(DOM).filter(function(id){ return /^[wr]_/.test(id); })
+                           .map(function(id){ return DOM[id]; });
+  }
 };
+/* Put a session's typed values into the form the way the app would have them sitting there. */
+function fillForm(fields,extra){
+  Object.keys(fields).forEach(function(id){ DOM[id]={id:id,value:fields[id]}; });
+  extra=extra||{};
+  DOM.strain={id:"strain",value:extra.strain||""};
+  DOM.note={id:"note",value:extra.note||""};
+  if(extra.activity!=null) DOM.z2act={id:"z2act",value:extra.activity};
+}
+/* What the form looks like after render() rebuilds it: the day's inputs are all present, all
+   empty. Not the same as having no inputs at all — restoreSessionDraft() only writes into
+   elements that exist, so the distinction decides whether a draft can repopulate the form. */
+function emptyForm(ids){
+  var f={}; ids.forEach(function(id){ f[id]=""; });
+  fillForm(f); curRPE=0;
+}
 
 /* App globals the extracted regions read. Tests set these directly. */
 var pxiSet={maxHr:185,restingHr:46,target:105,model:"auto"};
@@ -79,17 +102,23 @@ function saveLogs(l){LOGS=l;}
 function toast(m){TOASTS.push(m);}
 function render(){}
 function setView(){}
-function setRPE(){}
-function captureSessionDraft(){}
+/* Real enough to matter: the source setRPE() ends in onSetInput(), which clears draftHold. That
+   side effect is load-bearing — it is how restoreSessionDraft() could undo the post-Finish hold. */
+function setRPE(v){ curRPE=v; onSetInput(); }
+/* captureSessionDraft() and restoreSessionDraft() are NOT stubbed — they are loaded from source
+   below. Stubbing captureSessionDraft() to a no-op is precisely what hid the post-Finish draft
+   resurrection from a fully green suite: it is the function that scrapes the live form, so with
+   it stubbed no test could ever observe the form being scraped after a save. */
 function elapsedSec(){return 2460;}                  /* 41:00 */
 function fmt(s){return Math.floor(s/60)+":"+String(s%60);}
 function draftKey(){return "8|"+DAY;}
 function resetState(){
   LS={}; LOGS=[]; TOASTS=[]; sessionDraft=null; freeformNames=[[],[],[]]; resetDOM();
   live={zoneSecs:[0,0,0,0,0,0],pxi:0,lastBpm:null,secs:0,tick:null};
-  sessAcc=0; TODAY="2026-09-20"; DAY="meso02Wed";
+  sessAcc=0; curRPE=0; TODAY="2026-09-20"; DAY="meso02Wed";
   if(typeof resetCurDraft==="function") resetCurDraft();
   if(typeof draftHold!=="undefined") draftHold=false;
+  if(typeof draftTimer!=="undefined") draftTimer=null;
 }
 
 /* ---------------------------------------------------------------- assertions */
@@ -110,6 +139,8 @@ loadRegions(
   region("const PTS=","const LIFT_DAYS="),                          /* curves, medals, zones */
   region("function weeklyTotals(logs){","function renderHistory(m){"),
   region("const e1rm=","const DAY_LABEL="),                         /* PR_KEYS + PR_LABEL    */
+  region("function captureSessionDraft(){","function restoreSessionDraft(){"),
+  region("function restoreSessionDraft(){","/* ================= DURABLE SESSION DRAFTS"),
   region("const DRAFT_PREFIX=","function setView(v){")              /* durable drafts        */
 );
 /* The PR grid lives inside renderHistory(); wrap the tile-building slice as a function. */
@@ -291,20 +322,117 @@ eq(LOGS[0].blockWeek,1,"...and the week it happened in, not the week it was fini
 eq(blockFor(D(2026,9,20)).week,2,"(finishing in wk 2 would have misfiled it — the bug avoided)");
 eq(LOGS[0].draftId,"dABC","the entry carries its draftId");
 ok(!LS[DKEY],"the draft is cleared only after saveLogs() succeeded");
-curDraft=resumedDraft();                    /* Finish tapped a second time for the same draft */
+eq(draftHold,true,"a completed Finish leaves the hold set");
+/* Drop the hold so this still exercises the draftId path specifically — the hold would refuse
+   the second Finish one guard earlier, which is tested on its own further down. */
+curDraft=resumedDraft(); draftHold=false;   /* Finish tapped a second time for the same draft */
 saveEntry();
 eq(LOGS.length,1,"a second Finish for the same draft does not append a duplicate");
 ok(/Already saved/.test(TOASTS[TOASTS.length-1]),"...and the refusal is explained");
-resetCurDraft(); LOGS=[];
+resetCurDraft(); LOGS=[]; draftHold=false;
 saveEntry();
 eq(LOGS[0].draftId,null,"a fresh session carries no draftId");
 ok(LOGS[0].date!=="2026-09-09T18:30:00.000Z","...and is stamped now, unchanged from before");
+
+/* A fresh session has no draftId, so the guard above cannot catch a double-tap on it. This is
+   the case that actually reached the log: the form stayed populated after Finish, so a second
+   tap re-saved the same work as a brand-new entry. */
+section("Finish — double-tap on a fresh (never-resumed) session");
+resetState();
+fillForm({"w_1_0_0":"135","r_1_0_0":"5"});
+curRPE=7; onSetInput();                      /* a real edit: writes a draft, clears any hold */
+eq(draftHold,false,"editing clears the hold");
+saveEntry();
+eq(LOGS.length,1,"the session is saved");
+eq(LOGS[0].draftId,null,"...with no draftId to dedupe on");
+saveEntry();                                 /* Finish tapped again, nothing edited in between */
+eq(LOGS.length,1,"a second Finish on a fresh session does not append a duplicate either");
+ok(/Already saved/.test(TOASTS[TOASTS.length-1]),"...and says so rather than saving silently");
+/* The hold is not a permanent lock — a genuinely new session must still be finishable. */
+fillForm({"w_1_0_0":"145","r_1_0_0":"5"});
+onSetInput();
+eq(draftHold,false,"a real edit lifts the hold");
+saveEntry();
+eq(LOGS.length,2,"...so a genuinely new session still saves");
 
 section("Durable drafts — empty drafts are not left behind");
 resetState();
 sessionDraft={key:draftKey(),day:DAY,fields:{},rpe:0,strain:"",note:"",activity:null};
 persistDraft();
 eq(Object.keys(LS).length,0,"nothing logged and no live time -> no husk record written");
+
+/* THE REGRESSION. saveSession() deletes the draft correctly, but it does not clear the form, so
+   every typed set is still sitting in the DOM afterwards. setView() runs captureSessionDraft()
+   on the way to any other tab — going to History to read the session you just saved is the most
+   natural next tap there is — and that scrape used to rebuild the whole draft under today's key.
+   It stayed silent that day (pendingDrafts() only surfaces dates before today) and then nagged
+   every morning after, one fresh record per finished session, forever. */
+section("Finish — the form must not resurrect the draft it just saved");
+resetState();
+fillForm({"w_1_0_0":"135","r_1_0_0":"5"},{strain:"14.2",note:"felt strong"});
+curRPE=8; onSetInput(); flushDraft();
+var LKEY="dtp-draft_2026-09-20_meso02Wed";
+ok(!!LS[LKEY],"precondition: the in-progress session has a draft");
+saveEntry();
+ok(!LS[LKEY],"Finish clears the draft");
+/* Tab switch. The form is still full — saveSession()'s render() has not run in this harness,
+   which is the harsher case and exactly the state setView() captured from. */
+captureSessionDraft(); flushDraft();
+eq(Object.keys(LS).length,0,"a tab switch after Finish does not write the session back as a draft");
+eq(pendingDrafts().length,0,"...so nothing is queued to nag tomorrow");
+TODAY="2026-09-21";
+eq(pendingDrafts().length,0,"...not the next morning either — this is the banner that kept firing");
+
+/* Second resurrection path, independent of any tab switch: the HR strap keeps streaming after
+   Finish (live.tick is not cleared there), so liveSecond() ticks live.secs and schedules a save. */
+section("Finish — a still-connected strap does not resurrect it either");
+resetState();
+fillForm({"w_1_0_0":"135","r_1_0_0":"5"});
+onSetInput(); flushDraft();
+saveEntry();
+live.secs=600;                               /* strap still on, ticking after the save */
+flushDraft();
+eq(Object.keys(LS).length,0,"post-Finish HR accrual alone does not write a draft");
+
+section("Durable drafts — bare tracked time is not content");
+resetState();
+sessionDraft={key:draftKey(),day:DAY,fields:{},rpe:0,strain:"",note:"",activity:null};
+live.secs=30;                                /* strap connected while browsing days */
+persistDraft();
+eq(Object.keys(LS).length,0,"a briefly-connected strap with nothing logged writes no draft");
+live.secs=DRAFT_MIN_SECS;
+persistDraft();
+eq(Object.keys(LS).length,1,"a real pure-HR session (Z2, nothing typed) is still autosaved");
+eq(JSON.parse(LS["dtp-draft_2026-09-20_meso02Wed"]).secs,DRAFT_MIN_SECS,"...with its tracked time");
+/* Regression: adoptTodayDraft() restores live.secs on boot, which used to pin has=true forever
+   and made an emptied draft impossible to clear. */
+live.secs=30;
+persistDraft();
+eq(Object.keys(LS).length,0,"an emptied draft can still be cleared once live.secs is restored");
+
+/* restoreSessionDraft()'s fallback adopts today's durable draft for the selected day. It restores
+   fields but NOT zoneSecs/pxi/secs/duration/freeform, so adopting right after a save would let
+   the next edit persist a zeroed live block over another session's accrued zone time and RKD.
+   It also calls setRPE() -> onSetInput(), which would clear the hold the fix depends on. */
+section("Finish — the render that follows does not adopt a same-day draft");
+resetState();
+var OTHER="dtp-draft_2026-09-20_meso02Wed";
+LS[OTHER]=JSON.stringify({draftId:"dOTHER",startedAt:"2026-09-20T09:00:00.000Z",date:"2026-09-20",
+  day:DAY,fields:{"w_1_0_0":"225"},rpe:9,strain:"",note:"other session",activity:null,
+  freeform:[[],[],[]],zoneSecs:[0,0,1200,0,0,0],pxi:88,secs:1200,duration:1200});
+/* the state saveSession() leaves behind: form redrawn empty, buffer nulled, hold set */
+emptyForm(["w_1_0_0","r_1_0_0"]); sessionDraft=null; draftHold=true;
+restoreSessionDraft();
+eq(sessionDraft,null,"the post-Finish render does not adopt an unrelated same-day draft");
+eq(DOM.w_1_0_0.value,"","...so the form stays empty");
+eq(draftHold,true,"...and the hold survives (setRPE would have cleared it)");
+eq(JSON.parse(LS[OTHER]).pxi,88,"...leaving that draft's accrued RKD intact");
+/* The fallback still does its real job once editing resumes — this is the day-switch bugfix it
+   was added for, and the fix must not have cost it. */
+draftHold=false;
+restoreSessionDraft();
+eq(DOM.w_1_0_0.value,"225","the day-switch fallback still restores a draft when not held");
+eq(curRPE,9,"...including its session RPE");
 
 /* ---------------------------------------------------------------- result */
 print("\n"+(FAILED?"FAILED — "+FAILED+" of "+CHECKS+" checks":"OK — all "+CHECKS+" checks passed"));
