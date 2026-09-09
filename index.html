@@ -151,6 +151,22 @@ body.ivt-amb .selects, body.ivt-amb .tabs{background:transparent}
 .ivt-h{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px}
 .ivt-h .t{font-family:var(--disp); font-weight:700; font-size:18px; letter-spacing:.05em; text-transform:uppercase}
 .ivt-panel .fieldrow input[type=number]{background:var(--surface); border:1px solid var(--line); border-radius:8px; color:var(--text); padding:9px; font-size:15px; width:90px; text-align:center; font-family:var(--mono)}
+/* Presets. Built-ins and custom saves share one list; the Built-in tag and the absence of a ✕
+   are what separate them. The whole name is the load target so it's a big touch area. */
+.ivt-presets{margin-top:14px; padding-top:12px; border-top:1px solid var(--line)}
+.ivt-p-h{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:4px}
+.ivt-preset{display:flex; align-items:center; gap:8px; min-height:40px}
+.ivt-p-load{flex:1; min-width:0; text-align:left; background:transparent; border:none; color:var(--text); font-size:15px; font-weight:600; font-family:var(--body); padding:8px 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.ivt-preset .pd{font-size:11px; color:var(--muted); font-family:var(--mono); white-space:nowrap; flex-shrink:0}
+.ivt-preset .tag{font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:3px 7px; flex-shrink:0}
+.ivt-p-del{width:32px; height:32px; flex:0 0 32px; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--red); font-size:14px; font-weight:800}
+/* Armed state, mirroring the draft banner's Confirm discard / Keep pair. */
+.ivt-preset .pn{flex:1; min-width:0; font-size:14px; font-weight:600; color:var(--red); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.ivt-p-confirm{flex:0 0 auto; padding:8px 12px; border-radius:8px; border:1px solid var(--red); background:var(--red); color:#fff; font-weight:700; font-size:13px}
+.ivt-p-keep{flex:0 0 auto; padding:8px 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:13px}
+.ivt-saverow{display:flex; gap:8px; margin-top:8px}
+.ivt-saverow input{flex:1; min-width:0; background:var(--surface); border:1px solid var(--line); border-radius:8px; color:var(--text); padding:9px; font-size:15px; font-family:var(--body)}
+.ivt-saverow .btn2{flex:0 0 auto}
 /* Collapsed by default and below the timer — reference text, not something to read every round. */
 .ivt-about{margin-top:12px; border-top:1px solid var(--line); padding-top:10px}
 .ivt-about summary{cursor:pointer; list-style:none; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); padding:6px 0}
@@ -1393,10 +1409,92 @@ document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==
 /* prep is the lead-in before round 1 only — time to reach the equipment or get in the pool.
    A stored config from before prep existed simply has no `prep` key, so Object.assign leaves
    the default in place; nothing to migrate. */
-let ivtCfg=(()=>{ const d={prep:15,work:30,rest:15,rounds:8,muted:false};
+const IVT_DEFAULTS={prep:15,work:30,rest:15,rounds:8,muted:false};
+let ivtCfg=(()=>{ const d=Object.assign({},IVT_DEFAULTS);
   if(!storageOK) return d;
   try{return Object.assign(d,JSON.parse(localStorage.getItem("dtp-ivt")||"{}"));}catch(e){return d;} })();
 const saveIvtCfg=()=>{ if(storageOK) localStorage.setItem("dtp-ivt",JSON.stringify(ivtCfg)); };
+
+/* ---- presets ----
+   Two sources, one list in the UI. Built-ins are load-only: no rename, no delete, no overwrite,
+   so they're always there to fall back on. They take prep from IVT_DEFAULTS rather than a
+   literal, so moving the default lead-in moves the presets with it.
+   dtp-ivt-presets holds only the user's own saves and is deliberately a separate key from
+   dtp-ivt, which stays what it was: the single last-used config. */
+const IVT_BUILTINS=[
+  {name:"Tabata",     work:20, rest:10, rounds:8},
+  {name:"EMOM",       work:60, rest:0,  rounds:10},
+  {name:"30/30 HIIT", work:30, rest:30, rounds:10}
+].map(p=>Object.assign({prep:IVT_DEFAULTS.prep,builtin:true},p));
+const IVT_PRESET_KEY="dtp-ivt-presets";
+let ivtPresetMem=[]; /* storageOK===false fallback, same pattern as draftMem/hepMem */
+function loadIvtPresets(){
+  if(!storageOK) return ivtPresetMem;
+  try{ const a=JSON.parse(localStorage.getItem(IVT_PRESET_KEY)||"[]"); return Array.isArray(a)?a:[]; }
+  catch(e){ return []; }
+}
+function saveIvtPresets(list){
+  if(storageOK) localStorage.setItem(IVT_PRESET_KEY,JSON.stringify(list)); else ivtPresetMem=list;
+}
+/* Writes the four fields into ivtCfg and re-renders, which repopulates the inputs — the same end
+   state as typing them by hand. Deliberately does NOT start the timer. */
+function ivtApplyPreset(p){
+  ivtCfg.prep=p.prep; ivtCfg.work=p.work; ivtCfg.rest=p.rest; ivtCfg.rounds=p.rounds;
+  saveIvtCfg(); renderIvt(); toast(`Loaded "${p.name}"`);
+}
+/* Indices, not names, in the onclick handlers: every mutation re-renders, so they're never
+   stale, and a preset name can hold quotes without any escaping to get wrong. */
+function ivtLoadBuiltin(i){ const p=IVT_BUILTINS[i]; if(p) ivtApplyPreset(p); }
+function ivtLoadCustom(i){ const p=loadIvtPresets()[i]; if(p) ivtApplyPreset(p); }
+/* Two-tap delete, same shape as the draft banner's armDiscard/cancelDiscard: the first tap arms
+   the row, which swaps its controls for Delete/Keep. Armed by index, which is safe because the
+   only two things that mutate the list — save and delete — both clear the arm. */
+let ivtArmDel=null;
+function ivtArmDelete(i){ ivtArmDel=i; renderIvt(); }
+function ivtCancelDelete(){ ivtArmDel=null; renderIvt(); }
+function ivtDeleteCustom(i){
+  const list=loadIvtPresets(), p=list[i];
+  ivtArmDel=null;
+  if(!p){ renderIvt(); return; }
+  list.splice(i,1); saveIvtPresets(list); renderIvt(); toast(`Deleted "${p.name}"`);
+}
+function ivtSavePreset(){
+  const el=document.getElementById("ivtPresetName");
+  const name=(el?el.value:"").trim();
+  if(!name){ toast("Name the preset first"); return; }
+  ivtApplyCfg(); /* whatever is in the fields right now is what gets stored */
+  ivtArmDel=null; /* the list is about to shift under any armed row */
+  const list=loadIvtPresets();
+  /* Re-saving a name you already used is the intent, so it overwrites in place with no prompt.
+     Case-insensitive, so "Pool set" can't sit alongside "pool set". */
+  const i=list.findIndex(p=>String(p.name).toLowerCase()===name.toLowerCase());
+  const rec={name,prep:ivtCfg.prep,work:ivtCfg.work,rest:ivtCfg.rest,rounds:ivtCfg.rounds};
+  if(i>=0) list[i]=rec; else list.push(rec);
+  saveIvtPresets(list); renderIvt();
+  toast(i>=0?`Updated "${name}"`:`Saved "${name}"`);
+}
+const ivtPresetSummary=p=>`${p.work}s/${p.rest}s ×${p.rounds}`+(p.prep?` · ${p.prep}s prep`:"");
+function ivtPresetsHtml(){
+  const custom=loadIvtPresets();
+  let h=`<div class="ivt-presets"><div class="ivt-p-h">Presets</div>`;
+  h+=IVT_BUILTINS.map((p,i)=>`<div class="ivt-preset">
+    <button class="ivt-p-load" onclick="ivtLoadBuiltin(${i})">${escAttr(p.name)}</button>
+    <span class="pd">${ivtPresetSummary(p)}</span><span class="tag">Built-in</span>
+  </div>`).join("");
+  h+=custom.map((p,i)=>`<div class="ivt-preset">${ivtArmDel===i
+    ? `<span class="pn armed">Delete “${escAttr(p.name)}”?</span>
+       <button class="ivt-p-confirm" onclick="ivtDeleteCustom(${i})">Delete</button>
+       <button class="ivt-p-keep" onclick="ivtCancelDelete()">Keep</button>`
+    : `<button class="ivt-p-load" onclick="ivtLoadCustom(${i})">${escAttr(p.name)}</button>
+       <span class="pd">${ivtPresetSummary(p)}</span>
+       <button class="ivt-p-del" onclick="ivtArmDelete(${i})" title="Delete preset" aria-label="Delete preset">✕</button>`}
+  </div>`).join("");
+  h+=`<div class="ivt-saverow">
+    <input id="ivtPresetName" placeholder="Name this setup" maxlength="40" autocomplete="off">
+    <button class="btn2" onclick="ivtSavePreset()">Save</button>
+  </div></div>`;
+  return h;
+}
 let ivt=null; // {phase:"prep"|"work"|"rest", round, end, int, paused, pausedLeft, done}
 /* The timer lives inline on the RKD tab and nowhere else. That tab is the interval screen — it
    already carries the live score and the HR/zone readout you watch mid-effort — so there is no
@@ -1535,6 +1633,10 @@ function renderIvt(){
       <button class="ivt-mute-btn${ivtCfg.muted?" on":""}" onclick="ivtToggleMute()" title="${ivtCfg.muted?"Unmute":"Mute"}">${ivtCfg.muted?"🔇":"🔊"}</button>
       <button class="savebtn" style="flex:1" onclick="ivtStart()">Start</button>
     </div>`;
+    /* Below the fields and Start: the timer itself is what you came for, and presets are the
+       shortcut you reach past it for. Loading one writes the fields above, so the effect of a
+       tap is still on screen. */
+    h+=ivtPresetsHtml();
   } else if(ivt.done){
     h+=`<div class="ivt-phase idle"><div class="lbl">Complete</div><div class="time">✓</div><div class="rd">${ivtCfg.rounds} round${ivtCfg.rounds>1?"s":""} done</div></div>`;
     h+=`<div class="ivt-row">

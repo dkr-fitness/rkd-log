@@ -109,6 +109,16 @@ function setRPE(v){ curRPE=v; onSetInput(); }
    below. Stubbing captureSessionDraft() to a no-op is precisely what hid the post-Finish draft
    resurrection from a fully green suite: it is the function that scrapes the live form, so with
    it stubbed no test could ever observe the form being scraped after a save. */
+function renderIvt(){}
+var view="pxi";
+/* Display-only escape helper the preset list uses; not the logic under test here. */
+var escAttr=function(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");};
+/* Put the four config inputs on screen the way the idle timer panel renders them. */
+function ivtFields(prep,work,rest,rounds){
+  DOM.ivtPrep={id:"ivtPrep",value:String(prep)}; DOM.ivtWork={id:"ivtWork",value:String(work)};
+  DOM.ivtRest={id:"ivtRest",value:String(rest)}; DOM.ivtRounds={id:"ivtRounds",value:String(rounds)};
+}
+function ivtNameField(v){ DOM.ivtPresetName={id:"ivtPresetName",value:v}; }
 function elapsedSec(){return 2460;}                  /* 41:00 */
 function fmt(s){return Math.floor(s/60)+":"+String(s%60);}
 function draftKey(){return "8|"+DAY;}
@@ -139,6 +149,7 @@ loadRegions(
   region("const PTS=","const LIFT_DAYS="),                          /* curves, medals, zones */
   region("function weeklyTotals(logs){","function renderHistory(m){"),
   region("const e1rm=","const DAY_LABEL="),                         /* PR_KEYS + PR_LABEL    */
+  region("const IVT_DEFAULTS=","function ivtToggleMute(){"),            /* timer presets */
   region("function captureSessionDraft(){","function restoreSessionDraft(){"),
   region("function restoreSessionDraft(){","/* ================= DURABLE SESSION DRAFTS"),
   region("const DRAFT_PREFIX=","function setView(v){")              /* durable drafts        */
@@ -433,6 +444,92 @@ draftHold=false;
 restoreSessionDraft();
 eq(DOM.w_1_0_0.value,"225","the day-switch fallback still restores a draft when not held");
 eq(curRPE,9,"...including its session RPE");
+
+section("Interval timer — built-in presets");
+resetState(); ivtPresetMem=[];
+eq(IVT_BUILTINS.length,3,"three built-ins ship");
+eq(IVT_BUILTINS.map(function(p){return p.name;}).join("|"),"Tabata|EMOM|30/30 HIIT","named as specified");
+eq(IVT_BUILTINS[0].work+"/"+IVT_BUILTINS[0].rest+"x"+IVT_BUILTINS[0].rounds,"20/10x8","Tabata 20/10 x8");
+eq(IVT_BUILTINS[1].work+"/"+IVT_BUILTINS[1].rest+"x"+IVT_BUILTINS[1].rounds,"60/0x10","EMOM 60/0 x10");
+eq(IVT_BUILTINS[2].work+"/"+IVT_BUILTINS[2].rest+"x"+IVT_BUILTINS[2].rounds,"30/30x10","30/30 HIIT 30/30 x10");
+ok(IVT_BUILTINS.every(function(p){return p.prep===IVT_DEFAULTS.prep;}),"all three take the timer's default prep, not a literal");
+/* Loading writes the fields and the last-used config, and must not start anything. */
+ivt=null; ivtCfg={prep:1,work:1,rest:1,rounds:1,muted:false};
+ivtLoadBuiltin(0);
+eq(ivtCfg.work+"/"+ivtCfg.rest+"x"+ivtCfg.rounds+"p"+ivtCfg.prep,"20/10x8p15","loading a built-in populates the four fields");
+eq(ivt,null,"...and does not start the timer");
+eq(JSON.parse(LS["dtp-ivt"]).work,20,"...and persists as the last-used config");
+ok(!LS["dtp-ivt-presets"],"loading a built-in writes nothing to the custom-preset key");
+
+section("Interval timer — custom presets");
+resetState(); ivtPresetMem=[]; ivtCfg=Object.assign({},IVT_DEFAULTS);
+ivtFields(10,45,15,6); ivtNameField("Pool set");
+ivtSavePreset();
+var P=function(){ return JSON.parse(LS["dtp-ivt-presets"]||"[]"); };
+eq(P().length,1,"a custom preset is saved");
+eq(P()[0].name,"Pool set","...under its given name");
+eq(P()[0].work+"/"+P()[0].rest+"x"+P()[0].rounds+"p"+P()[0].prep,"45/15x6p10","...storing the full config incl. prep");
+ok(!!LS["dtp-ivt"],"the last-used config key still exists alongside it");
+ok(!("name" in JSON.parse(LS["dtp-ivt"])),"...and is not where presets got written");
+/* Overwrite by name, no prompt, case-insensitive, in place rather than appended. */
+ivtFields(20,30,30,12); ivtNameField("pool set");
+ivtSavePreset();
+eq(P().length,1,"re-saving a name that exists overwrites rather than appending");
+eq(P()[0].work+"/"+P()[0].rest+"x"+P()[0].rounds,"30/30x12","...with the new numbers");
+eq(P()[0].name,"pool set","...taking the name exactly as typed");
+ok(/Updated/.test(TOASTS[TOASTS.length-1]),"...and says it updated, not saved");
+ivtNameField("  Sprints  ");
+ivtSavePreset();
+eq(P().length,2,"a genuinely new name appends");
+eq(P()[1].name,"Sprints","...trimmed");
+ivtNameField("   ");
+ivtSavePreset();
+eq(P().length,2,"a blank name saves nothing");
+ok(/Name the preset/.test(TOASTS[TOASTS.length-1]),"...and asks for one");
+/* Load + delete. */
+ivtCfg={prep:0,work:0,rest:0,rounds:0,muted:false};
+ivtLoadCustom(1);
+eq(ivtCfg.work+"/"+ivtCfg.rest+"x"+ivtCfg.rounds+"p"+ivtCfg.prep,"30/30x12p20","a custom preset loads into the fields");
+/* Two-tap delete, same convention as the draft banner's armDiscard. */
+ivtArmDelete(0);
+eq(ivtArmDel,0,"the first tap arms the row rather than deleting");
+eq(P().length,2,"...and nothing is removed yet");
+ivtCancelDelete();
+eq(ivtArmDel,null,"Keep disarms it");
+eq(P().length,2,"...still nothing removed");
+ivtArmDelete(0); ivtDeleteCustom(0);
+eq(P().length,1,"the confirming tap removes one");
+eq(P()[0].name,"Sprints","...and only the one named");
+eq(ivtArmDel,null,"...and clears the arm");
+ivtArmDelete(0);
+ivtNameField("   "); ivtSavePreset();
+eq(ivtArmDel,0,"a refused save leaves the arm alone — nothing shifted");
+ivtNameField("Ladder"); ivtSavePreset();
+eq(ivtArmDel,null,"a real save clears any armed row — the list is about to shift under it");
+eq(P().length,2,"...and the new preset is there");
+ivtDeleteCustom(9);
+eq(P().length,2,"deleting a missing index is a no-op");
+/* Survives a reload: the list is read back from storage, not held in a variable. */
+eq(loadIvtPresets()[0].name,"Sprints","presets are re-read from localStorage");
+LS["dtp-ivt-presets"]="{not an array}";
+eq(loadIvtPresets().length,0,"a corrupt preset record degrades to empty rather than throwing");
+
+section("Interval timer — preset list rendering");
+resetState(); ivtPresetMem=[]; LS={};
+ivtFields(15,30,15,8); ivtNameField("Mine"); ivtSavePreset();
+var HTML=ivtPresetsHtml();
+eq((HTML.match(/ivt-p-del/g)||[]).length,1,"only the custom preset gets a delete control");
+eq((HTML.match(/class="tag"/g)||[]).length,3,"all three built-ins are tagged as such");
+ok(HTML.indexOf("Tabata")>=0&&HTML.indexOf("Mine")>=0,"built-ins and custom saves share one list");
+ok(HTML.indexOf("20s/10s ×8")>=0,"each row summarises its own work/rest/rounds");
+ok(HTML.indexOf("ivtArmDelete(0)")>=0,"the ✕ arms rather than calling delete straight off");
+ok(HTML.indexOf("ivtDeleteCustom(")<0,"...so an unarmed list has no one-tap delete anywhere in it");
+ivtArmDelete(0);
+var ARMED=ivtPresetsHtml();
+ok(ARMED.indexOf("ivtDeleteCustom(0)")>=0&&ARMED.indexOf("ivtCancelDelete()")>=0,"the armed row offers Delete and Keep");
+ok(ARMED.indexOf("Delete “Mine”?")>=0,"...naming what is about to go");
+eq((ARMED.match(/ivt-p-load/g)||[]).length,3,"...and drops that row's Load, so the armed tap can't be a mis-hit");
+ivtCancelDelete();
 
 /* ---------------------------------------------------------------- result */
 print("\n"+(FAILED?"FAILED — "+FAILED+" of "+CHECKS+" checks":"OK — all "+CHECKS+" checks passed"));
