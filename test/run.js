@@ -90,6 +90,13 @@ function emptyForm(ids){
 var pxiSet={maxHr:185,restingHr:46,target:105,model:"auto"};
 var live={zoneSecs:[0,0,0,0,0,0],pxi:0,lastBpm:null,secs:0,tick:null};
 var sessionDraft=null, freeformNames=[[],[],[]], curRPE=0, sessAcc=0;
+/* extraSets/setKey/extraFor are loaded from source below, NOT stubbed — setKey is what scopes an
+   extra set to its day, and a stub here would have quietly tested itself instead of it. Nor is
+   blockHtml: which function the "− Set" button is wired to is only visible in the markup, so
+   asserting on the handlers alone would let a one-tap regression through. */
+var extraSets={};
+function interval(b){return 90;}                     /* blockHtml only prints this */
+function lastFor(key){return null;}                  /* no previous-session placeholders */
 var LOGS=[], TODAY="2026-09-20", DAY="meso02Wed", TOASTS=[];
 /* saveSession() locals the extracted save-path slice closes over. Its own `const w=..., day=...`
    line sits above the slice, so they're supplied here instead. */
@@ -134,6 +141,7 @@ function fmt(s){return Math.floor(s/60)+":"+String(s%60);}
 function draftKey(){return "8|"+DAY;}
 function resetState(){
   LS={}; LOGS=[]; TOASTS=[]; sessionDraft=null; freeformNames=[[],[],[]]; resetDOM(); SESSIONS={};
+  extraSets={};
   live={zoneSecs:[0,0,0,0,0,0],pxi:0,lastBpm:null,secs:0,tick:null};
   sessAcc=0; curRPE=0; TODAY="2026-09-20"; DAY="meso02Wed";
   if(typeof resetCurDraft==="function") resetCurDraft();
@@ -159,6 +167,9 @@ loadRegions(
   region("const PTS=","const LIFT_DAYS="),                          /* curves, medals, zones */
   region("function weeklyTotals(logs){","function renderHistory(m){"),
   region("const e1rm=","const DAY_LABEL="),                         /* PR_KEYS + PR_LABEL    */
+  region("const setKey=(bi,ei)=>","/* ================= HEP"),           /* extra-set keying */
+  region("function blockHtml(s,bi){","/* ---- Extra sets ---- */"),      /* set rows + controls */
+  region("/* ---- Extra sets ---- */","/* ---- Freeform (strengthFree)"),/* add/remove sets   */
   region("const IVT_DEFAULTS=","function ivtToggleMute(){"),            /* timer presets */
   region("function captureSessionDraft(){","function restoreSessionDraft(){"),
   region("function restoreSessionDraft(){","/* ================= DURABLE SESSION DRAFTS"),
@@ -168,6 +179,9 @@ loadRegions(
 loadRegions("function prGrid(logs){\n"+region("  const prs={};","  const totals=weeklyTotals(logs);")+"\n  return h;\n}");
 /* The weekly-RKD block that follows it: bar scaling and the current-block/earlier split. */
 loadRegions("function weeklyBlock(logs){\n  let h=\"\";\n"+region("  const totals=weeklyTotals(logs);","  if(!logs.length)h+=")+"\n  return h;\n}");
+/* The entry-collection half of saveSession(): how many set rows get read, and how an extra set
+   beyond the prescription is recorded. */
+loadRegions("function collectEntries(s){\n  const entries=[];\n"+region("  s.blocks.forEach((b,bi)=>b.ex.forEach((ex,ei)=>{","  /* RKD: live wins; else attached manual entry */")+"\n  return entries;\n}");
 /* Likewise the stamping/dedupe half of saveSession(), which is what the no-duplicates and
    correct-block guarantees actually live in. */
 loadRegions("function saveEntry(){\n"+region("  /* A resumed session keeps the timestamp","\n  live.zoneSecs=[0,0,0,0,0,0];")+"\n}");
@@ -508,6 +522,113 @@ draftHold=false;
 restoreSessionDraft();
 eq(DOM.w_1_0_0.value,"225","the day-switch fallback still restores a draft when not held");
 eq(curRPE,9,"...including its session RPE");
+
+section("Extra sets — beyond the prescription");
+resetState();
+/* An added set is content in its own right: tapping "+ Set" before typing anything must not be
+   swept away by the husk cleanup. */
+sessionDraft={key:draftKey(),day:DAY,fields:{},rpe:0,strain:"",note:"",activity:null};
+extraSets[setKey(1,0)]=1;
+persistDraft();
+var XKEY="dtp-draft_2026-09-20_meso02Wed";
+ok(!!LS[XKEY],"an added set alone is enough to write a draft");
+/* Parsed defensively so a regression that writes no draft at all fails this check cleanly
+   instead of throwing and taking the rest of the run down with it. */
+function parseLS(k){ try{ return JSON.parse(LS[k]||"null")||{}; }catch(e){ return {}; } }
+eq((parseLS(XKEY).extra||{})["meso02Wed|1_0"],1,"...and the count is persisted");
+/* Scoped per day: the key carries the day, so Monday's extra set can't attach itself to
+   Wednesday's exercise 0 — the w_/r_ ids are positional and would otherwise collide. */
+DAY="meso02Mon";
+eq(extraFor(1,0),0,"an extra set does not leak to the same position on another day");
+sessionDraft={key:draftKey(),day:DAY,fields:{},rpe:0,strain:"",note:"",activity:null};
+persistDraft();
+ok(!LS["dtp-draft_2026-09-20_meso02Mon"],"...and does not make another day's empty slot look occupied");
+DAY="meso02Wed";
+eq(extraFor(1,0),1,"...but is still there on the day it was added");
+/* Round-trip through resume: the count has to come back or the extra rows never render and the
+   values captured against them are orphaned. */
+extraSets={};
+resumeDraft(XKEY);
+eq(extraFor(1,0),1,"resume restores the extra-set count");
+/* Finish records it structurally rather than leaving it to the notes. */
+resetState();
+var SESS={blocks:[{ex:[{key:"Rack Pull",n:"Rack Pull",rx:"3 × 5",sets:3}]}]};
+fillForm({"w_0_0_0":"225","r_0_0_0":"5","w_0_0_1":"225","r_0_0_1":"5","w_0_0_2":"235","r_0_0_2":"5"});
+var e0=collectEntries(SESS)[0];
+eq(e0.sets.length,3,"no extras -> the programmed set count is read");
+eq(e0.extra,undefined,"...and nothing is stamped about extras");
+eq(e0.programmed,undefined,"...at all");
+/* Add a fourth. */
+extraSets[setKey(0,0)]=1;
+DOM.w_0_0_3={id:"w_0_0_3",value:"245"}; DOM.r_0_0_3={id:"r_0_0_3",value:"3"};
+var e1=collectEntries(SESS)[0];
+eq(e1.sets.length,4,"an extra set is collected alongside the programmed ones");
+eq(e1.sets[3].w+"x"+e1.sets[3].r,"245x3","...with its own weight and reps");
+eq(e1.extra,1,"the entry records how many were extra");
+eq(e1.programmed,3,"...and what was programmed");
+eq(e1.rx,"3 × 5","...leaving the prescription string untouched");
+/* A row the DOM hasn't rendered yet must read as empty, not throw — this loop used to assume
+   every id existed. */
+extraSets[setKey(0,0)]=2;
+var e2=collectEntries(SESS)[0];
+eq(e2.sets.length,5,"a count ahead of the DOM still collects");
+eq(e2.sets[4].w,"","...with the missing row empty rather than throwing");
+
+section("Extra sets — two-tap removal");
+resetState();
+emptyForm(["w_0_0_0","r_0_0_0","w_0_0_1","r_0_0_1","w_0_0_2","r_0_0_2"]);
+addSet(0,0);
+eq(extraFor(0,0),1,"a set is added");
+eq(setArmDel,null,"...unarmed");
+/* First tap arms, it does not remove — same convention as armDiscard and the preset delete. */
+armRemoveSet(0,0);
+eq(setArmDel,"meso02Wed|0_0","the first tap arms this exercise");
+eq(extraFor(0,0),1,"...and removes nothing yet");
+cancelRemoveSet();
+eq(setArmDel,null,"Keep disarms");
+eq(extraFor(0,0),1,"...still nothing removed");
+armRemoveSet(0,0); removeSet(0,0,3);
+eq(extraFor(0,0),0,"the confirming tap removes the set");
+eq(setArmDel,null,"...and clears the arm");
+/* Adding elsewhere while armed disarms — the armed row was pointing at a set number that just
+   moved underneath it. */
+addSet(0,0); armRemoveSet(0,0); addSet(0,0);
+eq(setArmDel,null,"adding a set clears an armed removal");
+eq(extraFor(0,0),2,"...and still adds");
+/* The removed row's typed values go with it, so re-adding comes back blank rather than
+   resurrecting numbers from a set that was deliberately deleted. */
+DOM.w_0_0_4={id:"w_0_0_4",value:"999"}; DOM.r_0_0_4={id:"r_0_0_4",value:"9"};
+captureSessionDraft();
+eq(sessionDraft.fields.w_0_0_4,"999","precondition: the extra row's value is captured");
+removeSet(0,0,3);
+eq(sessionDraft.fields.w_0_0_4,undefined,"removing a set drops its weight from the draft");
+eq(sessionDraft.fields.r_0_0_4,undefined,"...and its reps");
+/* Removing with nothing to remove is a no-op, not a negative count. */
+resetState();
+removeSet(0,0,3);
+eq(extraFor(0,0),0,"removing with no extras leaves the count at zero");
+
+section("Extra sets — the rendered controls");
+resetState();
+var BLK={blocks:[{letter:"A",t:"Main",mins:12,bells:4,
+  ex:[{key:"Rack Pull",n:"Rack Pull",rx:"3 × 5",sets:3}]}]};
+var bh=blockHtml(BLK,0);
+eq((bh.match(/class="set /g)||[]).length+(bh.match(/class="set"/g)||[]).length,3,"programmed sets render");
+ok(/addSet\(0,0\)/.test(bh),"every exercise offers + Set");
+ok(!/armRemoveSet/.test(bh),"...and no removal control until there is an extra");
+extraSets[setKey(0,0)]=1;
+bh=blockHtml(BLK,0);
+eq((bh.match(/class="set extra"/g)||[]).length,1,"the added row is marked as extra");
+ok(/\+1 over 3/.test(bh),"...and the count over the prescription is stated");
+/* The wiring itself: − Set must arm, never remove outright. */
+ok(/armRemoveSet\(0,0\)/.test(bh),"− Set arms rather than removing");
+ok(!/removeSet\(0,0/.test(bh),"...so an unarmed exercise has no one-tap remove in its markup");
+setArmDel=setKey(0,0);
+var armed=blockHtml(BLK,0);
+ok(/removeSet\(0,0,3\)/.test(armed)&&/cancelRemoveSet\(\)/.test(armed),"the armed row offers Remove and Keep");
+ok(/Remove set 4\?/.test(armed),"...naming which set goes");
+ok(!/addSet\(0,0\)/.test(armed),"...and + Set steps aside so the confirming tap can't mis-hit");
+setArmDel=null;
 
 section("Interval timer — built-in presets");
 resetState(); ivtPresetMem=[];

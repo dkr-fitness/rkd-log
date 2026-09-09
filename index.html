@@ -88,6 +88,16 @@ main{padding:12px 14px}
 .sets{display:flex; flex-direction:column; gap:6px}
 .set{display:flex; align-items:center; gap:8px}
 .set .n{font-family:var(--disp); font-weight:700; color:var(--muted); width:20px; font-size:15px}
+/* Sets added beyond the prescription — marked so the programmed block is still legible at a
+   glance, without hiding that the extra work happened. */
+.set.extra .n{color:var(--amber)}
+.set.extra input{border-color:rgba(245,166,35,.45)}
+.setctl{display:flex; align-items:center; gap:8px; margin-top:8px}
+.setbtn{padding:7px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--muted); font-size:13px; font-weight:700}
+.setbtn.del{color:var(--red); border-color:rgba(224,91,91,.4)}
+.setbtn.confirm{background:var(--red); border-color:var(--red); color:#fff}
+.setx{font-size:11px; color:var(--amber); text-transform:uppercase; letter-spacing:.08em; font-weight:700}
+.setx.del{color:var(--red); flex:1}
 .set.now .n{color:var(--amber)}
 .set input{width:80px; background:var(--surface); border:1px solid var(--line); border-radius:7px; color:var(--text); font-family:var(--mono); font-size:15px; padding:8px; text-align:center}
 .set input:focus{outline:none; border-color:var(--amber)}
@@ -1143,6 +1153,13 @@ let pendingManual=null;
 // of user-typed exercise names. Position (section index, exercise index) is identity —
 // see getSession's "freeform_"+si+"_"+ei keys. Reset on save.
 let freeformNames=[[],[],[]];
+/* Sets logged beyond what a block prescribes, so an extra set is structural data rather than a
+   line in the notes. Keyed day|block_exercise: the w_/r_ field ids are positional, so an entry
+   keyed only by position would silently apply Monday's extra set to Wednesday's exercise 0.
+   Threads through the durable draft exactly like freeformNames does. */
+let extraSets={};
+const setKey=(bi,ei)=>curDay()+"|"+bi+"_"+ei;
+const extraFor=(bi,ei)=>extraSets[setKey(bi,ei)]||0;
 
 /* ================= HEP TRACKER (compliance only — no RKD scoring) =================
    Discharged from OT — this is self-managed maintenance, not a prescribed 4-block program.
@@ -1842,7 +1859,12 @@ function persistDraft(){
      again for that day, so a draft emptied by hand could not be cleared. A pure-HR session
      (Tue/Thu Z2, nothing typed) is still real work, so tracked time stays a signal — it just has
      to amount to a session rather than an idle connection. */
-  const has=Object.keys(f).length>0||rpe>0||(note||"").trim()!==""||(strain||"")!==""||live.secs>=DRAFT_MIN_SECS;
+  /* An added set counts as content even before anything is typed into it — tapping "+ Set" is a
+     deliberate edit, and losing it to the husk-cleanup below would be the same silent loss as
+     dropping a typed value. Scoped to the day being written, so adding a set on Monday doesn't
+     make Tuesday's empty slot look occupied. */
+  const hasExtra=Object.keys(extraSets).some(k=>k.indexOf(day+"|")===0);
+  const has=Object.keys(f).length>0||rpe>0||(note||"").trim()!==""||(strain||"")!==""||hasExtra||live.secs>=DRAFT_MIN_SECS;
   const slot=draftSlot(day);
   if(!has){ removeDraft(slot.key); if(curDraft.key===slot.key) resetCurDraft(); return; }
   curDraft=slot;
@@ -1851,6 +1873,7 @@ function persistDraft(){
     fields:f,rpe:rpe||0,strain:strain||"",note:note||"",
     activity:sessionDraft?sessionDraft.activity:null,
     freeform:freeformNames.map(a=>a.slice()),
+    extra:Object.assign({},extraSets),
     zoneSecs:live.zoneSecs.slice(),pxi:live.pxi,secs:live.secs,duration:elapsedSec()});
 }
 /* Throttle, not debounce: the first edit in a window guarantees a write within `ms` rather than
@@ -1904,6 +1927,7 @@ function resumeDraft(k){
   document.getElementById("daySel").value=d.day;
   if(d.week) document.getElementById("weekSel").value=d.week;
   freeformNames=(d.freeform||[[],[],[]]).map(a=>(a||[]).slice());
+  extraSets=Object.assign({},d.extra||{});
   live.zoneSecs=(d.zoneSecs||[0,0,0,0,0,0]).slice(); live.pxi=d.pxi||0; live.secs=d.secs||0;
   sessAcc=(d.duration||0)*1000; /* clock picks up where it left off; feeds entry.duration */
   curDraft={id:d.draftId,startedAt:d.startedAt,date:d.date,day:d.day,key:k,resumed:true};
@@ -2088,19 +2112,62 @@ function blockHtml(s,bi){
     if(ex.note)h+=`<div class="ex-note">${ex.note}</div>`;
     if(ex.sets>0){
       const last=lastFor(ex.key);
+      /* Rows past ex.sets are the ones you added — same ids, same positional scheme, so the
+         draft captures them without knowing anything about extras. */
+      const extra=extraFor(bi,ei), total=ex.sets+extra;
       h+=`<div class="sets">`;
-      for(let i=0;i<ex.sets;i++){
+      for(let i=0;i<total;i++){
         const pw=last&&last[i]?last[i].w:"", pr=last&&last[i]?last[i].r:"";
-        h+=`<div class="set" data-set="${i+1}"><span class="n">${i+1}</span>
+        h+=`<div class="set${i>=ex.sets?" extra":""}" data-set="${i+1}"><span class="n">${i+1}</span>
           <input inputmode="decimal" placeholder="${pw||'wt'}" id="w_${bi}_${ei}_${i}" oninput="onSetInput()">
           <span class="x">×</span>
           <input inputmode="numeric" placeholder="${pr||'reps'}" id="r_${bi}_${ei}_${i}" oninput="onSetInput()"></div>`;
+      }
+      h+=`</div>`;
+      h+=`<div class="setctl">`;
+      if(setArmDel===setKey(bi,ei)){
+        /* Armed: + Set steps aside too, so the confirming tap can't land on the wrong control. */
+        h+=`<span class="setx del">Remove set ${total}?</span>
+          <button class="setbtn confirm" onclick="removeSet(${bi},${ei},${ex.sets})">Remove</button>
+          <button class="setbtn" onclick="cancelRemoveSet()">Keep</button>`;
+      } else {
+        h+=`<button class="setbtn" onclick="addSet(${bi},${ei})">+ Set</button>`;
+        if(extra) h+=`<button class="setbtn del" onclick="armRemoveSet(${bi},${ei})">− Set</button><span class="setx">+${extra} over ${ex.sets}</span>`;
       }
       h+=`</div>`;
     }
     h+=`</div>`;
   });
   return h+`</div>`;
+}
+/* ---- Extra sets ---- */
+/* Two-tap removal, same convention as the draft banner's armDiscard and the timer presets:
+   the first tap arms this exercise, which swaps its controls for Remove/Keep. */
+let setArmDel=null;
+function armRemoveSet(bi,ei){ setArmDel=setKey(bi,ei); render(); }
+function cancelRemoveSet(){ setArmDel=null; render(); }
+function addSet(bi,ei){
+  captureSessionDraft(); /* the DOM is about to be rebuilt — keep what's typed */
+  setArmDel=null; /* adding shifts which set the armed row was pointing at */
+  extraSets[setKey(bi,ei)]=extraFor(bi,ei)+1;
+  scheduleDraftSave(); render();
+}
+/* `programmed` comes from the caller rather than being re-derived: blockHtml already had
+   ex.sets in hand, and getSession() is not cheap to call for one number. */
+function removeSet(bi,ei,programmed){
+  captureSessionDraft();
+  const k=setKey(bi,ei), n=extraSets[k]||0;
+  setArmDel=null;
+  if(!n){ render(); return; }
+  /* Drop the removed row's typed values along with the row. Otherwise they sit in the draft and
+     reappear the moment the set is added back — against a set you had deliberately deleted. */
+  const idx=programmed+n-1;
+  if(sessionDraft&&sessionDraft.fields){
+    delete sessionDraft.fields["w_"+bi+"_"+ei+"_"+idx];
+    delete sessionDraft.fields["r_"+bi+"_"+ei+"_"+idx];
+  }
+  if(n>1) extraSets[k]=n-1; else delete extraSets[k];
+  scheduleDraftSave(); render();
 }
 /* ---- Freeform (strengthFree) section editing ---- */
 function addFreeformEx(si){
@@ -2143,8 +2210,16 @@ function saveSession(){
   const s=getSession(w,day); const entries=[];
   s.blocks.forEach((b,bi)=>b.ex.forEach((ex,ei)=>{
     if(ex.sets>0&&ex.n){const sets=[];
-      for(let i=0;i<ex.sets;i++){sets.push({w:document.getElementById(`w_${bi}_${ei}_${i}`).value,r:document.getElementById(`r_${bi}_${ei}_${i}`).value});}
-      entries.push({key:ex.key,name:ex.n,rx:ex.rx||"",sets});}}));
+      /* Sets you added beyond the prescription are saved with the rest — the entry records how
+         many were extra and what was programmed, so "did a 4th set" survives as data instead of
+         living in the notes. */
+      const extra=extraFor(bi,ei);
+      for(let i=0;i<ex.sets+extra;i++){
+        const wEl=document.getElementById(`w_${bi}_${ei}_${i}`), rEl=document.getElementById(`r_${bi}_${ei}_${i}`);
+        sets.push({w:wEl?wEl.value:"",r:rEl?rEl.value:""});}
+      const rec={key:ex.key,name:ex.n,rx:ex.rx||"",sets};
+      if(extra>0){ rec.extra=extra; rec.programmed=ex.sets; }
+      entries.push(rec);}}));
   /* RKD: live wins; else attached manual entry */
   let pxi=null, zoneMins=null, model=curModel(), medal=null;
   if(live.secs>0){ pxi=Math.round(live.pxi); zoneMins=live.zoneSecs.map(x=>Math.round(x/6)/10); }
@@ -2201,7 +2276,7 @@ function saveSession(){
      tick does the same via live.secs. Hold until onSetInput() sees a real edit. */
   resetCurDraft(); draftHold=true;
   live.zoneSecs=[0,0,0,0,0,0]; live.pxi=0; live.secs=0; pendingManual=null; sessionDraft=null;
-  freeformNames=[[],[],[]];
+  freeformNames=[[],[],[]]; extraSets={};
   /* The session clock kept running across Finish, so elapsedSec() carried on climbing and a
      second Finish would have stamped a full duration onto a phantom entry. Close it out. */
   stopBlock(); if(sessInt){ clearInterval(sessInt); sessInt=null; } sessStart=null; sessAcc=0;
@@ -2466,7 +2541,10 @@ function exerciseSummaryLine(logs,idx,e){
     if(e.key in PR_KEYS&&val!=null&&(best==null||val>best)){pr=true;best=val;}
     return `${s.w||""}×${s.r||""}`+(pr?" PR":"");
   });
-  return `- ${e.name}: prescribed ${e.rx||"—"}\n  actual: ${parts.join(", ")}`;
+  /* Extra sets are the whole point of tracking them structurally — the summary is what drives
+     programming feedback, so it has to say the prescription was exceeded and by how much. */
+  const over=e.extra>0?`  (+${e.extra} set${e.extra===1?"":"s"} over the programmed ${e.programmed})\n`:"";
+  return `- ${e.name}: prescribed ${e.rx||"—"}\n${over}  actual: ${parts.join(", ")}`;
 }
 function buildSummary(logs,idx){
   const l=logs[idx];
@@ -2632,6 +2710,7 @@ if(mesoDefaultDay) daySel.value=mesoDefaultDay;
   const k=DRAFT_PREFIX+todayStr()+"_"+daySel.value, d=readDraft(k);
   if(!d) return;
   freeformNames=(d.freeform||[[],[],[]]).map(a=>(a||[]).slice());
+  extraSets=Object.assign({},d.extra||{});
   live.zoneSecs=(d.zoneSecs||[0,0,0,0,0,0]).slice(); live.pxi=d.pxi||0; live.secs=d.secs||0;
   sessAcc=(d.duration||0)*1000;
   curDraft={id:d.draftId,startedAt:d.startedAt,date:d.date,day:d.day,key:k,resumed:false};
