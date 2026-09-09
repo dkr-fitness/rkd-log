@@ -198,6 +198,21 @@ body.ivt-amb .selects, body.ivt-amb .tabs{background:transparent}
 .note-ic{color:var(--muted); vertical-align:middle; flex-shrink:0}
 .note-full{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-top:8px; font-size:13px; white-space:pre-wrap}
 .pr-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px}
+/* PR grid grouping: what the active block programmes leads, the rest folds away. */
+.pr-h{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:7px}
+.pr-rest{padding:10px 12px}
+.pr-rest .formref-label{margin-bottom:0}
+.pr-rest:not(.collapsed) .formref-label{margin-bottom:10px}
+/* Weekly RKD: one compact bar row per week, scaled to the best week on record. */
+.wk-row{display:flex; align-items:center; gap:9px; padding:5px 0}
+.wk-l{flex:0 0 106px; font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.wk-bar{flex:1; min-width:0; height:9px; border-radius:5px; background:rgba(255,255,255,.07); overflow:hidden}
+.wk-fill{display:block; height:100%; border-radius:5px; background:var(--z4); transition:width .3s ease}
+.wk-v{flex:0 0 auto; min-width:42px; text-align:right; font-family:var(--disp); font-weight:700; font-size:17px; font-variant-numeric:tabular-nums}
+.wk-rest{border-top:1px solid var(--line); margin-top:8px; padding-top:4px}
+.wk-rest-h{cursor:pointer; display:flex; align-items:center; justify-content:space-between; font-size:12px; color:var(--muted); padding:8px 0}
+.wk-rest.collapsed .formref-ind{transform:rotate(-90deg)}
+.wk-rest.collapsed .wk-rest-body{display:none}
 .pr{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px}
 .pr .l{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em}
 .pr .v{font-family:var(--disp); font-weight:700; font-size:26px; color:var(--amber)}
@@ -2294,6 +2309,26 @@ function weeklyTotals(logs){
   });
   return totals;
 }
+/* Which tracked movements the active block actually programmes. Read straight off the day
+   templates through getSession() rather than kept as a second list, so a Meso 03 needs nothing
+   added here. Tue/Thu/Sat/Sun are shared by every block and fold in the same way the day
+   selector folds them. */
+function currentBlockPrKeys(){
+  const id=blockFor().id, out={};
+  const days=(BLOCK_LIFTS[id]||[]).concat(["tue","thu","sat","sun"]);
+  const w=+document.getElementById("weekSel").value;
+  days.forEach(d=>{
+    let s; try{ s=getSession(w,d); }catch(e){ return; }
+    (s.blocks||[]).forEach(b=>(b.ex||[]).forEach(ex=>{ if(ex.key&&ex.key in PR_KEYS) out[ex.key]=1; }));
+  });
+  return out;
+}
+function togglePrRest(){
+  const el=document.getElementById("prRestPanel"); if(el) el.classList.toggle("collapsed");
+}
+function toggleWeeklyRest(){
+  const el=document.getElementById("wkRestPanel"); if(el) el.classList.toggle("collapsed");
+}
 function renderHistory(m){
   document.getElementById("title").textContent="History & PRs";
   const logs=loadLogs();
@@ -2313,12 +2348,25 @@ function renderHistory(m){
      PR_KEYS entry is still scored, and its tile appears the moment one is logged. */
   const prKeys=Object.keys(PR_KEYS).filter(k=>prs[k]);
   let h="";
+  /* Export/Import first: it used to sit past the whole PR grid, the weekly totals and every
+     history card, which is a long scroll to reach the one control you want when moving devices. */
+  h+=`<div class="row2" style="margin-bottom:14px"><button onclick="exportLogs()">Export JSON</button><button onclick="importLogs()">Import JSON</button></div>`;
+  const prTile=k=>{const p=prs[k];
+    const unit=PR_KEYS[k]==="sec"?"s":PR_KEYS[k]==="+lb"?" lb":PR_KEYS[k]==="kg"?" kg":PR_KEYS[k]==="reps"?" reps":"";
+    return `<div class="pr"><div class="l">${PR_LABEL[k]||k}${PR_KEYS[k]==="lb"?" · e1RM":""}</div><div class="v">${Math.round(p.v)+unit}</div>${p.raw?`<div class="sub" style="font-size:12px;color:var(--muted)">${p.raw}</div>`:""}</div>`;};
   if(prKeys.length){
-    h+=`<div class="pr-grid">`;
-    prKeys.forEach(k=>{const p=prs[k];
-      const unit=PR_KEYS[k]==="sec"?"s":PR_KEYS[k]==="+lb"?" lb":PR_KEYS[k]==="kg"?" kg":PR_KEYS[k]==="reps"?" reps":"";
-      h+=`<div class="pr"><div class="l">${PR_LABEL[k]||k}${PR_KEYS[k]==="lb"?" · e1RM":""}</div><div class="v">${Math.round(p.v)+unit}</div>${p.raw?`<div class="sub" style="font-size:12px;color:var(--muted)">${p.raw}</div>`:""}</div>`;});
-    h+=`</div>`;
+    /* Split, not filtered: what you're training now leads, everything else is still one tap
+       away. Nothing is dropped — a movement with a best always has a tile somewhere. */
+    const inBlock=currentBlockPrKeys();
+    const cur=prKeys.filter(k=>inBlock[k]), rest=prKeys.filter(k=>!inBlock[k]);
+    if(cur.length){
+      h+=`<div class="pr-h">${blockFor().label} — current block</div>`;
+      h+=`<div class="pr-grid">${cur.map(prTile).join("")}</div>`;
+    }
+    if(rest.length){
+      h+=`<div class="notecard collapsed pr-rest" id="prRestPanel"><label class="formref-label" onclick="togglePrRest()">Everything else · ${rest.length}<span class="formref-ind">▾</span></label>
+        <div class="formref-body"><div class="pr-grid" style="margin-bottom:0">${rest.map(prTile).join("")}</div></div></div>`;
+    }
   } else if(logs.length){
     h+=`<div class="meta">No PRs yet — log weight × reps against a tracked movement and its best lands here.</div>`;
   }
@@ -2326,11 +2374,26 @@ function renderHistory(m){
   /* newest block first, then newest week within it — the old numeric sort can't order across blocks */
   const keys=Object.keys(totals).sort((a,b)=>totals[b].ord-totals[a].ord||totals[b].week-totals[a].week);
   if(keys.length){
+    /* Bars scale to the all-time best week, not to whichever group they're in — otherwise a
+       collapsed group would rescale itself and a week would look different depending on where
+       it was read. Negative weeks (a rest-heavy week can go under) get no bar, just the red
+       number, since there's no meaningful length to draw. */
+    const peak=Math.max(1,...keys.map(k=>totals[k].sum));
+    const wkRow=k=>{
+      const t=totals[k], pct=t.sum>0?Math.max(2,Math.round(t.sum/peak*100)):0;
+      return `<div class="wk-row"><span class="wk-l">${t.label}</span>
+        <span class="wk-bar"><span class="wk-fill" style="width:${pct}%"></span></span>
+        <span class="wk-v"${t.sum<0?' style="color:var(--red)"':''}>${t.sum}</span></div>`;};
+    /* Current block expanded, everything before it collapsed — same disclosure as the PR grid
+       above, so the page has one idiom rather than two. */
+    const curId=blockFor().id;
+    const cur=keys.filter(k=>k.split("|")[0]===curId), rest=keys.filter(k=>k.split("|")[0]!==curId);
     h+=`<div class="notecard"><label>Weekly RKD (Mon–Sun · Sat excluded)</label>`;
-    keys.forEach(k=>{
-      const t=totals[k];
-      h+=`<div class="fieldrow"><span>${t.label}</span><span style="font-family:var(--disp);font-weight:700;font-size:18px;color:${t.sum<0?"var(--red)":"var(--text)"}">${t.sum}</span></div>`;
-    });
+    h+=cur.map(wkRow).join("");
+    if(rest.length){
+      h+=`<div class="wk-rest collapsed" id="wkRestPanel"><div class="wk-rest-h" onclick="toggleWeeklyRest()">Earlier blocks · ${rest.length} week${rest.length===1?"":"s"}<span class="formref-ind">▾</span></div>
+        <div class="wk-rest-body">${rest.map(wkRow).join("")}</div></div>`;
+    }
     h+=`</div>`;
   }
   if(!logs.length)h+=`<div class="meta">No sessions logged yet. Your first save lands here — with PRs and RKD computed automatically.</div>`;
@@ -2345,7 +2408,6 @@ function renderHistory(m){
     <div class="sub">${l.duration?fmt(l.duration)+" · ":""}${l.rpe?"RPE "+l.rpe:""}${l.activity?" · "+l.activity:""}${l.zoneMins?" · "+l.zoneMins.map((z,i)=>i>0&&z>=0.5?"Z"+i+" "+Math.round(z)+"m":null).filter(Boolean).join(" "):""}</div>
     ${l.note?`<div class="note-full" id="noteFull${idx}" style="display:none">${escAttr(l.note)}</div>`:""}
     <div class="row2"><button onclick="copySummary(${idx})">Copy summary</button></div></div>`;});
-  h+=`<div class="row2"><button onclick="exportLogs()">Export JSON</button><button onclick="importLogs()">Import JSON</button></div>`;
   m.innerHTML=h;
 }
 function priorBestValue(logs,uptoIdx,key){

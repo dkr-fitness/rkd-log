@@ -111,6 +111,16 @@ function setRPE(v){ curRPE=v; onSetInput(); }
    it stubbed no test could ever observe the form being scraped after a save. */
 function renderIvt(){}
 var view="pxi";
+/* The PR grid now groups by what the active block programmes, which it reads off the day
+   templates. BLOCK_LIFTS is copied from source (it is data, not logic); getSession is stubbed,
+   since what's under test is the grouping, not the 1,500 lines of program templates. */
+var BLOCK_LIFTS={legacy:["upper","lower","mixed"],
+                 meso01:["fullBodyA","fullBodyB","fullBodyC"],
+                 meso02:["meso02Mon","meso02Wed","meso02Fri"]};
+var SESSIONS={};                                     /* day -> [exercise key, ...] */
+function getSession(w,day){
+  return {blocks:[{ex:(SESSIONS[day]||[]).map(function(k){return {key:k,n:k};})}]};
+}
 /* Display-only escape helper the preset list uses; not the logic under test here. */
 var escAttr=function(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");};
 /* Put the four config inputs on screen the way the idle timer panel renders them. */
@@ -123,7 +133,7 @@ function elapsedSec(){return 2460;}                  /* 41:00 */
 function fmt(s){return Math.floor(s/60)+":"+String(s%60);}
 function draftKey(){return "8|"+DAY;}
 function resetState(){
-  LS={}; LOGS=[]; TOASTS=[]; sessionDraft=null; freeformNames=[[],[],[]]; resetDOM();
+  LS={}; LOGS=[]; TOASTS=[]; sessionDraft=null; freeformNames=[[],[],[]]; resetDOM(); SESSIONS={};
   live={zoneSecs:[0,0,0,0,0,0],pxi:0,lastBpm:null,secs:0,tick:null};
   sessAcc=0; curRPE=0; TODAY="2026-09-20"; DAY="meso02Wed";
   if(typeof resetCurDraft==="function") resetCurDraft();
@@ -156,6 +166,8 @@ loadRegions(
 );
 /* The PR grid lives inside renderHistory(); wrap the tile-building slice as a function. */
 loadRegions("function prGrid(logs){\n"+region("  const prs={};","  const totals=weeklyTotals(logs);")+"\n  return h;\n}");
+/* The weekly-RKD block that follows it: bar scaling and the current-block/earlier split. */
+loadRegions("function weeklyBlock(logs){\n  let h=\"\";\n"+region("  const totals=weeklyTotals(logs);","  if(!logs.length)h+=")+"\n  return h;\n}");
 /* Likewise the stamping/dedupe half of saveSession(), which is what the no-duplicates and
    correct-block guarantees actually live in. */
 loadRegions("function saveEntry(){\n"+region("  /* A resumed session keeps the timestamp","\n  live.zoneSecs=[0,0,0,0,0,0];")+"\n}");
@@ -242,6 +254,33 @@ ok(t["legacy"]===undefined&&!("meso01|3" in t),"no phantom buckets");
 ok(Object.keys(t).every(function(k){return k.indexOf("sat")<0;}),"Sat still excluded");
 eq(t["meso01|2"].ord,1,"ord present for cross-block sorting");
 
+section("Weekly RKD — compact bars");
+resetState();
+/* Two blocks so there is something to fold. blockFor() decides which is "current" from the wall
+   clock, so assert on the split's shape rather than on which block lands where. */
+var wl=[{date:"2026-08-19T18:00:00Z",day:"fullBodyA",pxi:100},   /* Meso 1 wk 1 */
+        {date:"2026-08-26T18:00:00Z",day:"fullBodyB",pxi:200},   /* Meso 1 wk 2 — the peak */
+        {date:"2026-09-09T18:00:00Z",day:"meso02Wed",pxi:50}];   /* Meso 2 wk 1 */
+var wk=weeklyBlock(wl);
+eq((wk.match(/class="wk-row"/g)||[]).length,3,"one row per week, all weeks present");
+ok(/width:100%/.test(wk),"the best week fills the bar");
+ok(/width:25%/.test(wk),"...and the others scale against it, not against their own group");
+ok(/width:50%/.test(wk),"...proportionally");
+ok(/wk-rest collapsed/.test(wk),"earlier blocks are folded, closed by default");
+ok(/Earlier blocks · \d+ week/.test(wk),"...with the count named");
+/* A single-block history has nothing to fold. */
+var wk1=weeklyBlock([{date:"2026-09-09T18:00:00Z",day:"meso02Wed",pxi:103}]);
+eq((wk1.match(/class="wk-row"/g)||[]).length,1,"one week -> one row");
+/* Negative weeks: no bar to draw, and the number goes red. */
+var wkNeg=weeklyBlock([{date:"2026-09-09T18:00:00Z",day:"meso02Wed",pxi:-20}]);
+ok(/width:0%/.test(wkNeg),"a negative week draws no bar rather than a backwards one");
+ok(/var\(--red\)/.test(wkNeg),"...and reads red");
+eq(weeklyBlock([]),"","no sessions -> no weekly block at all");
+/* Sat is still excluded and pxi:null still ignored — the move must not change what's counted. */
+var wkSat=weeklyBlock([{date:"2026-09-12T18:00:00Z",day:"sat",pxi:120},
+                       {date:"2026-09-10T18:00:00Z",day:"thu",pxi:null}]);
+eq(wkSat,"","Sat and unscored days still contribute nothing");
+
 section("PR grid");
 resetState();
 var h=prGrid([{entries:[
@@ -258,7 +297,32 @@ ok(/245×5/.test(h),"best set shown for a tracked lift");
 ok(/12 reps/.test(h),"rep-based PR carries its unit");
 eq((h.match(/class="pr"/g)||[]).length,2,"only logged movements get a tile");
 ok(/No PRs yet/.test(prGrid([{entries:[]}])),"sessions but no PRs -> explanatory line");
-eq(prGrid([]),"","no sessions -> nothing (the no-sessions line covers it)");
+/* Export/Import moved to the top of the page, so it is the one thing this slice always emits —
+   including on a device with nothing logged yet, which is exactly when you reach for Import. */
+ok(/exportLogs\(\)/.test(prGrid([])),"export/import renders even with no sessions");
+ok(!/class="pr"/.test(prGrid([])),"...and no sessions still means no tiles");
+
+section("PR grid — current block leads, the rest folds away");
+resetState();
+/* "tue" is shared by every block, so this pins the grouping without the wall clock deciding
+   which mesocycle is current on the day the suite happens to run. */
+SESSIONS.tue=["Rack Pull"];
+var g=prGrid([{entries:[
+  {key:"Rack Pull",     sets:[{w:"225",r:"5"}]},   /* programmed now  */
+  {key:"Goblet Squat",  sets:[{w:"70",r:"8"}]}     /* not programmed  */
+]}]);
+ok(g.indexOf("current block")>=0,"the active block gets its own heading");
+ok(g.indexOf("Everything else · 1")>=0,"...and the untrained movement folds into a counted group");
+ok(/id="prRestPanel"/.test(g),"the fold has a panel to toggle");
+ok(/notecard collapsed pr-rest/.test(g),"...closed by default");
+eq((g.match(/class="pr"/g)||[]).length,2,"every movement with a best still has a tile somewhere");
+/* Order matters: current block must come before the fold. */
+ok(g.indexOf("current block")<g.indexOf("Everything else"),"current block is rendered first");
+/* Nothing programmed -> no current-block heading at all, rather than an empty one. */
+resetState();
+var g2=prGrid([{entries:[{key:"Goblet Squat",sets:[{w:"70",r:"8"}]}]}]);
+ok(g2.indexOf("current block")<0,"no heading when the block programmes none of them");
+ok(/Everything else · 1/.test(g2),"...everything just folds");
 
 section("Durable drafts — autosave");
 resetState();
