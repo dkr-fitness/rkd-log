@@ -229,6 +229,14 @@ body.ivt-amb .selects, body.ivt-amb .tabs{background:transparent}
 .db-b.go{background:var(--green); border-color:var(--green); color:#0E1526}
 .db-b.danger{background:var(--red); border-color:var(--red); color:#fff}
 .howto{background:var(--surface); border:1px dashed var(--line); border-radius:8px; padding:10px 12px; font-size:13px; color:var(--muted); margin-bottom:10px}
+/* Collapsible day-header info boxes. The .meta/.howto variant classes still carry the accent
+   colour and border, so a collapsed box reads as the same object, just shut. */
+.infobox .ib-h{cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:8px}
+.ib-ind{display:inline-block; transition:transform .15s ease; flex-shrink:0; opacity:.7}
+.infobox.collapsed .ib-ind{transform:rotate(-90deg)}
+.infobox.collapsed .ib-b{display:none}
+.infobox .ib-b{margin-top:7px}
+.infobox.collapsed{margin-bottom:6px}
 .howto b{color:var(--amber)}
 .bigscore{text-align:center; padding:14px 0 6px}
 .bigscore .v{font-family:var(--disp); font-weight:700; font-size:64px; line-height:1; color:var(--z4)}
@@ -1967,6 +1975,24 @@ function renderDock(){
   /* session: leave untouched while a block timer is live — it self-heals via the next tickBlock(); otherwise restore the idle prompt */
   if(!run) dock.innerHTML=`<div class="dock-idle">Reach your equipment → press ▶ on that block. Bell = start your set. Rest until the next bell.${ivtDockBtnHtml()}</div>`;
 }
+/* Day-header info boxes. Collapsed to just their label by default — they're reference you read
+   once and then scroll past every session to reach the actual work. Open state is held here
+   rather than on the DOM because render() rebuilds #main wholesale on any day or tab change,
+   which would otherwise snap an open box shut under you. Keyed by id, not position, so the set
+   survives the boxes changing order. */
+let infoOpen={};
+function toggleInfoBox(id){
+  infoOpen[id]=!infoOpen[id];
+  const el=document.getElementById(id); if(el) el.classList.toggle("collapsed",!infoOpen[id]);
+}
+/* `label` is the lead-in that stays visible; `body` is what folds away. cls carries the existing
+   .meta/.howto variant so each box keeps its own accent colour. */
+function infoBox(id,cls,label,body){
+  return `<div class="infobox ${cls}${infoOpen[id]?"":" collapsed"}" id="${id}">
+    <div class="ib-h" onclick="toggleInfoBox('${id}')"><b>${label}</b><span class="ib-ind">▾</span></div>
+    <div class="ib-b">${body}</div>
+  </div>`;
+}
 function render(){
   renderDock();
   ivtSyncChrome(); /* leaving the RKD tab has to drop the ambient wash and the enlarged readout */
@@ -2035,12 +2061,13 @@ function render(){
   }
 
   /* ---- Lifting days ---- */
-  h+=`<div class="howto"><b>How it runs:</b> press ▶ when you reach the block's equipment. <b>Bell = start your set.</b> Rest for the remainder of the interval. Link WHOOP up top and RKD scores itself while you follow the bells.</div>`;
-  h+=`<div class="meta"><b>HR target:</b> ${hrText(day,w)}</div>`;
-  h+=day==="strengthFree"
-    ?`<div class="meta px"><b>Scoring:</b> ${MODEL_DESC[curModel()]} RKD reference only — no target/medal, nothing prescribed to grade against.</div>`
-    :`<div class="meta px"><b>Scoring:</b> ${MODEL_DESC[curModel()]} Target ${pxiSet.target} · Gold ±5%.</div>`;
-  h+=`<div class="meta eq"><b>Equipment:</b> ${EQ[day]}</div>`;
+  h+=infoBox("ibHow","howto","How it runs",
+    `press ▶ when you reach the block's equipment. <b>Bell = start your set.</b> Rest for the remainder of the interval. Link WHOOP up top and RKD scores itself while you follow the bells.`);
+  h+=infoBox("ibHr","meta","HR target",hrText(day,w));
+  h+=infoBox("ibScore","meta px","Scoring", day==="strengthFree"
+    ? `${MODEL_DESC[curModel()]} RKD reference only — no target/medal, nothing prescribed to grade against.`
+    : `${MODEL_DESC[curModel()]} Target ${pxiSet.target} · Gold ±5%.`);
+  h+=infoBox("ibEq","meta eq","Equipment",EQ[day]);
   s.blocks.forEach((b,bi)=>{ h+=blockHtml(s,bi);
     if(day==="strengthFree") h+=`<div class="row2" style="margin:-6px 0 14px"><button class="btn2" onclick="addFreeformEx(${bi})">+ Add exercise — ${b.t}</button></div>`;
   });
