@@ -252,7 +252,7 @@ body.ivt-amb .selects, body.ivt-amb .tabs{background:transparent}
 .bigscore .v{font-family:var(--disp); font-weight:700; font-size:64px; line-height:1; color:var(--z4)}
 .bigscore .sub{color:var(--muted); font-size:13px; margin-top:4px}
 .bigscore .medal{font-family:var(--disp); font-weight:700; font-size:16px; letter-spacing:.12em; text-transform:uppercase; margin-top:6px}
-.zGrid{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:10px 0}
+.zGrid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:10px 0}
 .zGrid label{display:flex; flex-direction:column; gap:5px; font-size:10px; text-transform:uppercase; letter-spacing:.06em; text-align:center; color:var(--muted)}
 .zGrid input{width:100%; background:var(--surface); border:1px solid var(--line); border-radius:7px; color:var(--text); font-family:var(--mono); font-size:15px; padding:8px; text-align:center}
 .zDot{width:100%; height:5px; border-radius:3px}
@@ -265,7 +265,7 @@ body.ivt-amb .selects, body.ivt-amb .tabs{background:transparent}
 .zc-row .zr{flex:1; color:var(--muted); font-size:12px}
 .zc-row .zv{font-family:var(--disp); font-weight:700; font-size:20px; font-variant-numeric:tabular-nums; min-width:64px; text-align:right}
 .zc-row.ok .zv{color:var(--green)} .zc-row.warn .zv{color:var(--amber)} .zc-row.bad .zv{color:var(--red)}
-@media(min-width:700px){ main{max-width:640px; margin:0 auto} .dock{max-width:640px; margin:0 auto; left:50%; transform:translateX(-50%); border-radius:14px 14px 0 0} }
+@media(min-width:700px){ main{max-width:640px; margin:0 auto} .dock{max-width:640px; margin:0 auto; left:50%; transform:translateX(-50%); border-radius:14px 14px 0 0} .zGrid{grid-template-columns:repeat(5,1fr)} }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
