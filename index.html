@@ -2605,7 +2605,7 @@ function manualScore(){
 
 /* ================= HISTORY / PRS ================= */
 const e1rm=(w,r)=>w*(1+r/30);
-const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Supported Row":"lb","DB Shoulder Press":"lb","DB Row":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec","SKB RDL":"kg","Hip Thrust":"lb","Wall Push-Up Progression":"reps","Rope Triceps Pressdown":"lb","Bulgarian SS":"lb","Cable Pullover":"lb","Single-Arm DB Row":"lb","Neutral-Grip Cable Row":"lb","Romanian Deadlift (DB)":"lb","Rack Pull":"lb","Chest Press":"lb","Triceps Extension":"lb","Neutral-Grip Row":"lb","Goblet Squat":"lb"};
+const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Supported Row":"lb","DB Shoulder Press":"lb","DB Row":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec","SKB RDL":"kg","Hip Thrust":"lb","Wall Push-Up Progression":"reps","Rope Triceps Pressdown":"lb","Bulgarian SS":"lb","Cable Pullover":"lb","Single-Arm DB Row":"lb","Neutral-Grip Cable Row":"lb","Romanian Deadlift (DB)":"lb","Rack Pull":"lb","Chest Press":"lb","Triceps Extension":"lb","Neutral-Grip Row":"lb","Goblet Squat":"lb","SA Chest Press":"lb","SA RDL":"lb"};
 /* User-facing labels where the internal key has gone stale. The key itself never changes — it's
    the identity every saved log entry and PR history is keyed on, same backward-compat rule as
    the pxi/dtp-* internals. Only the label moves on. The wall ladder is retired; the movement has
@@ -2901,6 +2901,9 @@ function importLogs(){
    uncapped/unscored finisher even natively), so it falls back to the untracked placeholder,
    same as always. */
 const PASTE_WORKOUT_EXERCISES=["Scapular Wall Isometric","Band Pull-Aparts","Prone Y-Raises","Deadlift","Chest-Supported DB Row","Goblet Squat","Floor Push-Ups","Single-Arm DB Row","Suitcase Carry","Neutral-Grip Cable Row","Romanian Deadlift (DB)","DB Shoulder Press","Cable Pullover","Leg Press","Rope Triceps Pressdown","Glute Bridges","Broad Jump","Backward Walking Lunges","Rack Pull","Bulgarian Split Squat","Pallof Press","Chest Press","Scapular Wall Slide","Triceps Extension (pushdown or overhead)","Neutral-Grip Row (cable or DB)","Core (Dead Bug or similar)","Scapular Wall Slides x5","Pillowcase Wall Isometric x5","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)","Box Jump","DB Step-Up","Sled Push","Single-KB RDL","Conventional Deadlift","Single-Leg RDL","Band Row","Band Face Pull","Bird Dog / Dead Bug","Sled Drag","Cardio Ramp","Farmer Carry","Neutral-Grip DB Row","Safety Bar Squat","Hip Thrust"];
+/* Exercises with their own PR_KEYS entry but no Mon/Wed/Fri day template to inherit a key from —
+   self-keyed (name === key) rather than needing a PASTE_WORKOUT_KEYS mapping. Grows over time. */
+const EXTRA_EXERCISES=["SA Chest Press","SA RDL"];
 const PASTE_WORKOUT_KEYS={"Scapular Wall Isometric":"Scapular Wall Isometric","Band Pull-Aparts":"Band Pull-Aparts","Prone Y-Raises":"Prone Y-Raises","Deadlift":"Deadlift","Chest-Supported DB Row":"Chest-Supported Row","Goblet Squat":"Goblet Squat","Floor Push-Ups":"Wall Push-Up Progression","Single-Arm DB Row":"Single-Arm DB Row","Suitcase Carry":"Suitcase Carry","Neutral-Grip Cable Row":"Neutral-Grip Cable Row","Romanian Deadlift (DB)":"Romanian Deadlift (DB)","DB Shoulder Press":"DB Shoulder Press","Cable Pullover":"Cable Pullover","Leg Press":"Leg Press","Rope Triceps Pressdown":"Rope Triceps Pressdown","Glute Bridges":"Glute Bridges","Broad Jump":"Broad Jump","Backward Walking Lunges":"Backward Walking Lunges","Rack Pull":"Rack Pull","Bulgarian Split Squat":"Bulgarian SS","Pallof Press":"Pallof","Chest Press":"Chest Press","Scapular Wall Slide":"Scapular Wall Slide","Triceps Extension (pushdown or overhead)":"Triceps Extension","Neutral-Grip Row (cable or DB)":"Neutral-Grip Row","Core (Dead Bug or similar)":"Bird Dog","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)":"DB Shoulder Press","Box Jump":"Jump","DB Step-Up":"Step-Up","Single-KB RDL":"SKB RDL","Conventional Deadlift":"Deadlift","Single-Leg RDL":"SL RDL","Band Row":"Band Row","Band Face Pull":"Face Pull","Bird Dog / Dead Bug":"Bird Dog","Neutral-Grip DB Row":"DB Row","Safety Bar Squat":"Safety Bar Squat","Hip Thrust":"Hip Thrust"};
 function parsePastedSets(setsReps){
   const m=String(setsReps).trim().match(/^(\d+)/);
@@ -2928,7 +2931,7 @@ function parsePastedWorkout(raw){
     const parts=line.split("|").map(p=>p.trim());
     if(parts.length<2||!parts[0]||!parts[1]){ bad.push("Line "+(i+2)+": \""+line+"\" — expected \"Exercise Name | SetsxReps | Cue\""); return; }
     const [name,setsReps,cue]=parts;
-    if(!PASTE_WORKOUT_EXERCISES.includes(name)){ bad.push("Line "+(i+2)+": \""+name+"\" is not a recognized exercise"); return; }
+    if(!PASTE_WORKOUT_EXERCISES.includes(name)&&!EXTRA_EXERCISES.includes(name)){ bad.push("Line "+(i+2)+": \""+name+"\" is not a recognized exercise"); return; }
     exercises.push({name,setsReps,cue:cue||""});
   });
   if(bad.length) return {error:bad.join("\n")};
@@ -2955,7 +2958,8 @@ function confirmPastedWorkout(){
   writeDraft(key,{draftId:newDraftId(),startedAt:new Date(y,mo-1,da,12,0,0).toISOString(),savedAt:new Date().toISOString(),
     date,day:"strengthFree",week:+document.getElementById("weekSel").value,
     fields:{},rpe:0,strain:"",note:"",activity:null,
-    freeform:pastedWorkout.exercises.map(e=>({n:e.name,key:PASTE_WORKOUT_KEYS[e.name],
+    freeform:pastedWorkout.exercises.map(e=>({n:e.name,
+      key:PASTE_WORKOUT_KEYS[e.name]||(EXTRA_EXERCISES.includes(e.name)?e.name:undefined),
       sets:parsePastedSets(e.setsReps),rx:pastedWorkoutRx(e.setsReps,e.cue)})),extra:{},
     zoneSecs:[0,0,0,0,0,0],pxi:0,secs:0,duration:0});
   pastedWorkout=null;
