@@ -89,7 +89,10 @@ function emptyForm(ids){
 /* App globals the extracted regions read. Tests set these directly. */
 var pxiSet={maxHr:185,restingHr:46,target:105,model:"auto"};
 var live={zoneSecs:[0,0,0,0,0,0],pxi:0,lastBpm:null,secs:0,tick:null};
-var sessionDraft=null, freeformNames=[[],[],[]], curRPE=0, sessAcc=0;
+var sessionDraft=null, freeformNames=[], curRPE=0, sessAcc=0;
+/* Mirrors the real one-liner in source (not extracted — it lives outside the durable-drafts
+   region resumeDraft() is sliced from) so that region's normalizeFreeform() call resolves. */
+function normalizeFreeform(f){ return !Array.isArray(f)?[]:Array.isArray(f[0])?[].concat.apply([],f):f; }
 /* extraSets/setKey/extraFor are loaded from source below, NOT stubbed — setKey is what scopes an
    extra set to its day, and a stub here would have quietly tested itself instead of it. Nor is
    blockHtml: which function the "− Set" button is wired to is only visible in the markup, so
@@ -140,7 +143,7 @@ function elapsedSec(){return 2460;}                  /* 41:00 */
 function fmt(s){return Math.floor(s/60)+":"+String(s%60);}
 function draftKey(){return "8|"+DAY;}
 function resetState(){
-  LS={}; LOGS=[]; TOASTS=[]; sessionDraft=null; freeformNames=[[],[],[]]; resetDOM(); SESSIONS={};
+  LS={}; LOGS=[]; TOASTS=[]; sessionDraft=null; freeformNames=[]; resetDOM(); SESSIONS={};
   extraSets={};
   live={zoneSecs:[0,0,0,0,0,0],pxi:0,lastBpm:null,secs:0,tick:null};
   sessAcc=0; curRPE=0; TODAY="2026-09-20"; DAY="meso02Wed";
@@ -508,7 +511,7 @@ resetState();
 var OTHER="dtp-draft_2026-09-20_meso02Wed";
 LS[OTHER]=JSON.stringify({draftId:"dOTHER",startedAt:"2026-09-20T09:00:00.000Z",date:"2026-09-20",
   day:DAY,fields:{"w_1_0_0":"225"},rpe:9,strain:"",note:"other session",activity:null,
-  freeform:[[],[],[]],zoneSecs:[0,0,1200,0,0,0],pxi:88,secs:1200,duration:1200});
+  freeform:[],zoneSecs:[0,0,1200,0,0,0],pxi:88,secs:1200,duration:1200});
 /* the state saveSession() leaves behind: form redrawn empty, buffer nulled, hold set */
 emptyForm(["w_1_0_0","r_1_0_0"]); sessionDraft=null; draftHold=true;
 restoreSessionDraft();

@@ -925,9 +925,18 @@ function toggleFormRefEx(i){
 
 function getSession(w,day){
   if(day==="strengthFree"){
-    const SECTIONS=[{letter:"A",t:"Main"},{letter:"B",t:"Circuit"},{letter:"C",t:"Condition"}];
-    const blocks=SECTIONS.map((sec,si)=>({letter:sec.letter,t:sec.t,mins:0,bells:0,
-      ex:freeformNames[si].map((name,ei)=>({n:name,rx:"",sets:3,key:"freeform_"+si+"_"+ei,editableName:true}))}));
+    /* Freeform items are plain name strings when hand-typed via addFreeformEx(), but a
+       paste-workout import (see PASTE_WORKOUT_KEYS below) stores richer {n,key,sets,rx} objects
+       so an imported exercise gets real PR tracking and its actual prescribed set count instead
+       of the generic untracked freeform_<ei> key and hardcoded 3 sets. Renaming an item inline
+       (updateFreeformName) overwrites it back to a plain string, which is correct — a renamed
+       exercise is no longer the movement it was imported as. */
+    const blocks=[{letter:"A",t:"Main",mins:0,bells:0,
+      ex:freeformNames.map((item,ei)=>{
+        const obj=item&&typeof item==="object";
+        return {n:obj?item.n:item,rx:obj&&item.rx?item.rx:"",sets:obj&&item.sets?item.sets:3,
+                key:obj&&item.key?item.key:"freeform_"+ei,editableName:true};
+      })}];
     return {name:"STRENGTH — Freeform", type:"lift", blocks};
   }
   // Mesocycle 01 — fixed exercise lists/set-rep schemes every week (see MESO01_PHASES for the
@@ -1149,10 +1158,15 @@ let pxiSet=(()=>{ const d={maxHr:185,restingHr:46,target:105,model:"auto"};
 const savePxiSet=()=>{ if(storageOK) localStorage.setItem("dtp-pxi",JSON.stringify(pxiSet)); };
 let view="session", curRPE=0, finishedBlocks=new Set();
 let pendingManual=null;
-// Freeform strength-override day: 3 sections (Main/Circuit/Condition), each an array
-// of user-typed exercise names. Position (section index, exercise index) is identity —
-// see getSession's "freeform_"+si+"_"+ei keys. Reset on save.
-let freeformNames=[[],[],[]];
+// Freeform strength-override day: one flat array of user-typed exercise names (plain string) or
+// paste-imported {n,key,sets,rx} objects (see PASTE_WORKOUT_KEYS). Exercise index is identity —
+// see getSession's "freeform_"+ei keys. Reset on save.
+let freeformNames=[];
+/* A draft written before the Main/Circuit/Condition split was collapsed to one section stored
+   freeform as [[...],[...],[...]] — flatten it on read so an old stored draft still loads
+   instead of getSession() mistaking a sub-array for one exercise item (arrays are objects too,
+   so item.n would silently come back undefined). */
+const normalizeFreeform=f=>!Array.isArray(f)?[]:Array.isArray(f[0])?[].concat.apply([],f):f;
 /* Sets logged beyond what a block prescribes, so an extra set is structural data rather than a
    line in the notes. Keyed day|block_exercise: the w_/r_ field ids are positional, so an entry
    keyed only by position would silently apply Monday's extra set to Wednesday's exercise 0.
@@ -1872,7 +1886,7 @@ function persistDraft(){
     date:slot.date,day,week:+document.getElementById("weekSel").value,
     fields:f,rpe:rpe||0,strain:strain||"",note:note||"",
     activity:sessionDraft?sessionDraft.activity:null,
-    freeform:freeformNames.map(a=>a.slice()),
+    freeform:freeformNames.slice(),
     extra:Object.assign({},extraSets),
     zoneSecs:live.zoneSecs.slice(),pxi:live.pxi,secs:live.secs,duration:elapsedSec()});
 }
@@ -1926,7 +1940,7 @@ function resumeDraft(k){
      against the wrong day's template would drop values onto the wrong exercises. */
   document.getElementById("daySel").value=d.day;
   if(d.week) document.getElementById("weekSel").value=d.week;
-  freeformNames=(d.freeform||[[],[],[]]).map(a=>(a||[]).slice());
+  freeformNames=normalizeFreeform(d.freeform).slice();
   extraSets=Object.assign({},d.extra||{});
   live.zoneSecs=(d.zoneSecs||[0,0,0,0,0,0]).slice(); live.pxi=d.pxi||0; live.secs=d.secs||0;
   sessAcc=(d.duration||0)*1000; /* clock picks up where it left off; feeds entry.duration */
@@ -2093,7 +2107,7 @@ function render(){
     : `${MODEL_DESC[curModel()]} Target ${pxiSet.target} · Gold ±5%.`);
   h+=infoBox("ibEq","meta eq","Equipment",EQ[day]);
   s.blocks.forEach((b,bi)=>{ h+=blockHtml(s,bi);
-    if(day==="strengthFree") h+=`<div class="row2" style="margin:-6px 0 14px"><button class="btn2" onclick="addFreeformEx(${bi})">+ Add exercise — ${b.t}</button></div>`;
+    if(day==="strengthFree") h+=`<div class="row2" style="margin:-6px 0 14px"><button class="btn2" onclick="addFreeformEx()">+ Add exercise</button></div>`;
   });
   h+=rpeNoteSaveHtml();
   m.innerHTML=h; curRPE=0; restoreSessionDraft();
@@ -2106,7 +2120,7 @@ function blockHtml(s,bi){
   b.ex.forEach((ex,ei)=>{
     h+=`<div class="ex">`;
     h+=ex.editableName
-      ?`<div style="display:flex;gap:8px"><input class="ex-name-input" style="flex:1" placeholder="Exercise name" value="${escAttr(ex.n)}" oninput="updateFreeformName(${bi},${ei},this.value)"><button class="btn2" style="flex:0 0 auto" onclick="removeFreeformEx(${bi},${ei})">✕</button></div>`
+      ?`<div style="display:flex;gap:8px"><input class="ex-name-input" style="flex:1" placeholder="Exercise name" value="${escAttr(ex.n)}" oninput="updateFreeformName(${ei},this.value)"><button class="btn2" style="flex:0 0 auto" onclick="removeFreeformEx(${ei})">✕</button></div>`
       :`<div class="ex-name">${ex.n}</div>`;
     if(ex.rx)h+=`<div class="ex-rx">${ex.rx}</div>`;
     if(ex.note)h+=`<div class="ex-note">${ex.note}</div>`;
@@ -2169,13 +2183,13 @@ function removeSet(bi,ei,programmed){
   if(n>1) extraSets[k]=n-1; else delete extraSets[k];
   scheduleDraftSave(); render();
 }
-/* ---- Freeform (strengthFree) section editing ---- */
-function addFreeformEx(si){
+/* ---- Freeform (strengthFree) editing — one flat section, block index is always 0 ---- */
+function addFreeformEx(){
   captureSessionDraft();
-  freeformNames[si].push("");
+  freeformNames.push("");
   render();
 }
-function removeFreeformEx(si,ei){
+function removeFreeformEx(ei){
   captureSessionDraft();
   // Exercise indices after the removed one shift down by one position once we splice —
   // remap their captured w_/r_ field ids to match, or restoreSessionDraft() re-applies
@@ -2186,15 +2200,15 @@ function removeFreeformEx(si,ei){
     const m=id.match(/^([wr])_(\d+)_(\d+)_(\d+)$/);
     if(!m){ shifted[id]=fields[id]; return; }
     const bi=+m[2], exi=+m[3];
-    if(bi!==si||exi<ei) shifted[id]=fields[id];
+    if(bi!==0||exi<ei) shifted[id]=fields[id];
     else if(exi>ei) shifted[`${m[1]}_${bi}_${exi-1}_${m[4]}`]=fields[id];
     // exi===ei: dropped — belonged to the exercise being removed
   });
   sessionDraft.fields=shifted;
-  freeformNames[si].splice(ei,1);
+  freeformNames.splice(ei,1);
   render();
 }
-function updateFreeformName(si,ei,val){ freeformNames[si][ei]=val; }
+function updateFreeformName(ei,val){ freeformNames[ei]=val; }
 function zone2ActivityHtml(){
   return `<div class="notecard"><label>Activity</label>
     <select id="z2act" style="width:100%" onchange="onSetInput()">
@@ -2276,7 +2290,7 @@ function saveSession(){
      tick does the same via live.secs. Hold until onSetInput() sees a real edit. */
   resetCurDraft(); draftHold=true;
   live.zoneSecs=[0,0,0,0,0,0]; live.pxi=0; live.secs=0; pendingManual=null; sessionDraft=null;
-  freeformNames=[[],[],[]]; extraSets={};
+  freeformNames=[]; extraSets={};
   /* The session clock kept running across Finish, so elapsedSec() carried on climbing and a
      second Finish would have stamped a full duration onto a phantom entry. Close it out. */
   stopBlock(); if(sessInt){ clearInterval(sessInt); sessInt=null; } sessStart=null; sessAcc=0;
@@ -2453,6 +2467,15 @@ function renderHistory(m){
   /* Export/Import first: it used to sit past the whole PR grid, the weekly totals and every
      history card, which is a long scroll to reach the one control you want when moving devices. */
   h+=`<div class="row2" style="margin-bottom:14px"><button onclick="exportLogs()">Export JSON</button><button onclick="importLogs()">Import JSON</button></div>`;
+  h+=`<div class="notecard" style="margin-bottom:14px">
+    <label>Paste Workout</label>
+    <textarea id="pasteWorkoutInput" rows="6" placeholder="RKD-WORKOUT
+DATE: YYYY-MM-DD
+Exercise Name | SetsxReps | Cue
+END-WORKOUT"></textarea>
+    <div class="row2" style="margin-top:8px"><button class="btn2 acc" onclick="importPastedWorkout()">Import</button></div>
+    <div id="pasteWorkoutOut"></div>
+  </div>`;
   const prTile=k=>{const p=prs[k];
     const unit=PR_KEYS[k]==="sec"?"s":PR_KEYS[k]==="+lb"?" lb":PR_KEYS[k]==="kg"?" kg":PR_KEYS[k]==="reps"?" reps":"";
     return `<div class="pr"><div class="l">${PR_LABEL[k]||k}${PR_KEYS[k]==="lb"?" · e1RM":""}</div><div class="v">${Math.round(p.v)+unit}</div>${p.raw?`<div class="sub" style="font-size:12px;color:var(--muted)">${p.raw}</div>`:""}</div>`;};
@@ -2664,6 +2687,88 @@ function importLogs(){
   inp.click();
 }
 
+/* ================= PASTE WORKOUT IMPORT =================
+   Lets a workout drafted elsewhere (chat, notes) get parsed straight into the freeform day
+   rather than retyped exercise-by-exercise. Writes a plain object through the existing
+   writeDraft() in exactly the shape persistDraft() already produces, so a pasted workout
+   resumes/adopts/expires through the same tested paths as any other draft: today's date slots
+   straight into the live Freeform session, a future date sits dormant until that day arrives,
+   and a past date surfaces via the existing stale-draft banner.
+   PASTE_WORKOUT_KEYS maps each canonical name to the real `key` its native day template gives
+   it, so an imported exercise gets genuine PR tracking (e1RM, "beat your best") exactly as if it
+   had been logged on its usual day — not the untracked freeform_<si>_<ei> placeholder. A name
+   with no entry here has no key in any getSession() template either (warm-up filler or an
+   uncapped/unscored finisher even natively), so it falls back to the untracked placeholder,
+   same as always. */
+const PASTE_WORKOUT_EXERCISES=["Scapular Wall Isometric","Band Pull-Aparts","Prone Y-Raises","Deadlift","Chest-Supported DB Row","Goblet Squat","Floor Push-Ups","Single-Arm DB Row","Suitcase Carry","Neutral-Grip Cable Row","Romanian Deadlift (DB)","DB Shoulder Press","Cable Pullover","Leg Press","Rope Triceps Pressdown","Glute Bridges","Broad Jump","Backward Walking Lunges","Rack Pull","Bulgarian Split Squat","Pallof Press","Chest Press","Scapular Wall Slide","Triceps Extension (pushdown or overhead)","Neutral-Grip Row (cable or DB)","Core (Dead Bug or similar)","Scapular Wall Slides x5","Pillowcase Wall Isometric x5","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)","Box Jump","DB Step-Up","Sled Push","Single-KB RDL","Conventional Deadlift","Single-Leg RDL","Band Row","Band Face Pull","Bird Dog / Dead Bug","Sled Drag","Cardio Ramp","Farmer Carry","Neutral-Grip DB Row","Safety Bar Squat","Hip Thrust"];
+const PASTE_WORKOUT_KEYS={"Scapular Wall Isometric":"Scapular Wall Isometric","Band Pull-Aparts":"Band Pull-Aparts","Prone Y-Raises":"Prone Y-Raises","Deadlift":"Deadlift","Chest-Supported DB Row":"Chest-Supported Row","Goblet Squat":"Goblet Squat","Floor Push-Ups":"Wall Push-Up Progression","Single-Arm DB Row":"Single-Arm DB Row","Suitcase Carry":"Suitcase Carry","Neutral-Grip Cable Row":"Neutral-Grip Cable Row","Romanian Deadlift (DB)":"Romanian Deadlift (DB)","DB Shoulder Press":"DB Shoulder Press","Cable Pullover":"Cable Pullover","Leg Press":"Leg Press","Rope Triceps Pressdown":"Rope Triceps Pressdown","Glute Bridges":"Glute Bridges","Broad Jump":"Broad Jump","Backward Walking Lunges":"Backward Walking Lunges","Rack Pull":"Rack Pull","Bulgarian Split Squat":"Bulgarian SS","Pallof Press":"Pallof","Chest Press":"Chest Press","Scapular Wall Slide":"Scapular Wall Slide","Triceps Extension (pushdown or overhead)":"Triceps Extension","Neutral-Grip Row (cable or DB)":"Neutral-Grip Row","Core (Dead Bug or similar)":"Bird Dog","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)":"DB Shoulder Press","Box Jump":"Jump","DB Step-Up":"Step-Up","Single-KB RDL":"SKB RDL","Conventional Deadlift":"Deadlift","Single-Leg RDL":"SL RDL","Band Row":"Band Row","Band Face Pull":"Face Pull","Bird Dog / Dead Bug":"Bird Dog","Neutral-Grip DB Row":"DB Row","Safety Bar Squat":"Safety Bar Squat","Hip Thrust":"Hip Thrust"};
+function parsePastedSets(setsReps){
+  const m=String(setsReps).trim().match(/^(\d+)/);
+  return m?Math.max(1,parseInt(m[1],10)):3;
+}
+function pastedWorkoutRx(setsReps,cue){
+  const m=String(setsReps).trim().match(/^(\d+)\s*[x×]\s*(\d+.*)$/i);
+  const base=m?m[1]+" × "+m[2]:setsReps;
+  return cue?base+" · "+cue:base;
+}
+let pastedWorkout=null; // staged {date,exercises:[{name,setsReps,cue}]} awaiting confirmation
+function parsePastedWorkout(raw){
+  const startI=raw.indexOf("RKD-WORKOUT"), endI=raw.indexOf("END-WORKOUT");
+  if(startI===-1||endI===-1||endI<startI) return {error:"Missing RKD-WORKOUT / END-WORKOUT markers."};
+  const lines=raw.slice(startI+"RKD-WORKOUT".length,endI).split("\n").map(l=>l.trim()).filter(l=>l!=="");
+  if(!lines.length) return {error:"Nothing between the markers."};
+  const dm=lines[0].match(/^DATE:\s*(\d{4}-\d{2}-\d{2})\s*$/);
+  if(!dm) return {error:"First line must be \"DATE: YYYY-MM-DD\" — got: "+lines[0]};
+  const [y,mo,da]=dm[1].split("-").map(Number), dcheck=new Date(y,mo-1,da);
+  if(dcheck.getFullYear()!==y||dcheck.getMonth()!==mo-1||dcheck.getDate()!==da) return {error:"Not a real calendar date: "+dm[1]};
+  const exLines=lines.slice(1);
+  if(!exLines.length) return {error:"No exercise lines found after DATE."};
+  const exercises=[], bad=[];
+  exLines.forEach((line,i)=>{
+    const parts=line.split("|").map(p=>p.trim());
+    if(parts.length<2||!parts[0]||!parts[1]){ bad.push("Line "+(i+2)+": \""+line+"\" — expected \"Exercise Name | SetsxReps | Cue\""); return; }
+    const [name,setsReps,cue]=parts;
+    if(!PASTE_WORKOUT_EXERCISES.includes(name)){ bad.push("Line "+(i+2)+": \""+name+"\" is not a recognized exercise"); return; }
+    exercises.push({name,setsReps,cue:cue||""});
+  });
+  if(bad.length) return {error:bad.join("\n")};
+  return {date:dm[1],exercises};
+}
+function importPastedWorkout(){
+  const ta=document.getElementById("pasteWorkoutInput"), out=document.getElementById("pasteWorkoutOut");
+  const res=parsePastedWorkout(ta.value||"");
+  pastedWorkout=res.error?null:res;
+  if(res.error){ out.innerHTML=`<div class="meta warn"><b>Import failed:</b><br>${escAttr(res.error).replace(/\n/g,"<br>")}</div>`; return; }
+  const rows=res.exercises.map(e=>`<div class="sub">${escAttr(e.name)} — ${escAttr(e.setsReps)}${e.cue?" · "+escAttr(e.cue):""}</div>`).join("");
+  out.innerHTML=`<div class="meta"><b>Import this workout to ${escAttr(res.date)}?</b>${rows}
+    <div class="row2" style="margin-top:10px"><button class="btn2 acc" onclick="confirmPastedWorkout()">Confirm</button><button class="btn2" onclick="cancelPastedWorkout()">Cancel</button></div></div>`;
+}
+function cancelPastedWorkout(){
+  pastedWorkout=null;
+  const out=document.getElementById("pasteWorkoutOut"); if(out) out.innerHTML="";
+}
+function confirmPastedWorkout(){
+  if(!pastedWorkout) return;
+  const date=pastedWorkout.date, key=DRAFT_PREFIX+date+"_strengthFree";
+  if(readDraft(key)){ toast("A draft already exists for that date — resume or discard it first"); return; }
+  const [y,mo,da]=date.split("-").map(Number);
+  writeDraft(key,{draftId:newDraftId(),startedAt:new Date(y,mo-1,da,12,0,0).toISOString(),savedAt:new Date().toISOString(),
+    date,day:"strengthFree",week:+document.getElementById("weekSel").value,
+    fields:{},rpe:0,strain:"",note:"",activity:null,
+    freeform:pastedWorkout.exercises.map(e=>({n:e.name,key:PASTE_WORKOUT_KEYS[e.name],
+      sets:parsePastedSets(e.setsReps),rx:pastedWorkoutRx(e.setsReps,e.cue)})),extra:{},
+    zoneSecs:[0,0,0,0,0,0],pxi:0,secs:0,duration:0});
+  pastedWorkout=null;
+  document.getElementById("pasteWorkoutInput").value="";
+  document.getElementById("pasteWorkoutOut").innerHTML="";
+  /* adoptTodayDraft() only ever fires once, at page load, against whichever day-of-week template
+     is already selected — never "strengthFree", since Freeform isn't anyone's default day. So a
+     same-day import needs the same hand-off the Resume-banner button already uses, or it would
+     sit written to storage with nothing pulling it into the live session. */
+  if(date===todayStr()) resumeDraft(key);
+  else toast("Imported — will appear as a draft for "+date);
+}
+
 /* ================= INIT ================= */
 const ws=document.getElementById("weekSel");
 /* Labelled "Block 1 · Wk N" — these are the OLD 8-week program's weeks, not the current
@@ -2709,7 +2814,7 @@ if(mesoDefaultDay) daySel.value=mesoDefaultDay;
 (function adoptTodayDraft(){
   const k=DRAFT_PREFIX+todayStr()+"_"+daySel.value, d=readDraft(k);
   if(!d) return;
-  freeformNames=(d.freeform||[[],[],[]]).map(a=>(a||[]).slice());
+  freeformNames=normalizeFreeform(d.freeform).slice();
   extraSets=Object.assign({},d.extra||{});
   live.zoneSecs=(d.zoneSecs||[0,0,0,0,0,0]).slice(); live.pxi=d.pxi||0; live.secs=d.secs||0;
   sessAcc=(d.duration||0)*1000;
