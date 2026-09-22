@@ -1202,12 +1202,44 @@ function getSession(w,day){
      {letter:"E",t:"Finisher",mins:6,bells:2,ex:[
        {key:"Backward Walking Lunges",n:"Backward Walking Lunges",rx:"2 × 20 steps",sets:2}]}]};
   }
-  // Mesocycle 02 — fixed exercise lists/set-rep schemes, progression is 2-week phases (see
-  // MESO02_PHASES, surfaced via hrText, not branched here). True Mon/Wed/Fri split, not a
-  // full-body rotation like Meso01.
+  // Mesocycle 02 — true Mon/Wed/Fri split, not a full-body rotation like Meso01. Exercise
+  // selection is fixed; set/rep/RPE prescriptions for the four main lifts (and accessory set
+  // counts) now branch on phaseForWeek() — see meso2MainRx/meso2RackPullRx/meso2AccRx below.
+  // mesoPhase2()/hrText stays a separate, hand-authored layer of week-by-week guidance text on
+  // top of this, not a replacement for it.
   const MESO2_PREP={letter:"P",t:"Prep",mins:2,bells:1,ex:[
    {key:"Scapular Wall Isometric",n:"Scapular Wall Isometric",rx:"one 6:00 countdown · 5 reps — existing pre-lift gate, unchanged",sets:0}]};
+  /* Effective this week (Wk 3 = Volume) for any session logged from here on — Weeks 1–2 already
+     logged keep their historical rx as-is, since saveSession()/collectEntries() stamps rx onto
+     each entry at save time rather than reading it live, so nothing retroactively rewrites. */
+  const meso2Phase=phaseForWeek(blockFor().week);
+  /* Back Squat, Chest Press, and RDL/Hip Thrust share one progression. suffix carries a clinical
+     caveat (e.g. Chest Press's elbow-flexion cap) that has to survive every phase unchanged. */
+  const meso2MainRx=suffix=>{
+    const o={Baseline:{sets:4,base:"4 × 8–10 @ RPE 6–7"},
+             Volume:{sets:5,base:"5 × 6–8 @ RPE 7–8"},
+             Performance:{sets:3,base:"3 × 3–5 @ RPE 8–9"}}[meso2Phase];
+    return {sets:o.sets, rx:o.base+(suffix?" · "+suffix:"")};
+  };
+  // Rack Pull runs its own scheme, not the shared one above — Volume is deliberately unchanged
+  // from the prior fixed prescription (4 × 5, chiro-approved).
+  const meso2RackPullRx=()=>({Baseline:{sets:4,rx:"4 × 8 · lighter load, technique focus"},
+    Volume:{sets:4,rx:"4 × 5 · chiro-approved; monitor grip-side"},
+    Performance:{sets:3,rx:"3 × 3–5 · heaviest load this cycle · chiro-approved; monitor grip-side"}
+   }[meso2Phase]);
+  /* Every other Meso 02 accessory holds its current fixed prescription through Baseline/Volume;
+     Performance trims sets 3→2 (reps unchanged) to protect recovery for the heavier main-lift
+     work that phase asks for. */
+  const meso2AccRx=(repsText,note)=>{
+    const sets=meso2Phase==="Performance"?2:3;
+    return {sets, rx:sets+" × "+repsText+(note?" · "+note:"")};
+  };
   if(day==="meso02Mon"){
+    const bq=meso2MainRx(), rp=meso2RackPullRx(),
+          py=meso2AccRx("15","pre-activation, light, first in session"),
+          gs=meso2AccRx("10","squat-pattern accessory alongside Back Squat"),
+          bss=meso2AccRx("8/leg"),
+          pf=meso2AccRx("10/side","anti-rotation core");
     return {name:"MONDAY — Lower Body / Hinge Lead", type:"lift", blocks:[
      MESO2_PREP,
      // Mirrors Friday's slot. Rack Pull leads here, and its Form Reference entry calls for Band
@@ -1215,44 +1247,55 @@ function getSession(w,day){
      // firing gap, and this is what makes set one behave like set three. Monday opened with a
      // pull and had no such slot; the HEP lat stretch is deliberately not pre-lift for the
      // mirror-image reason (see float_lat).
-     {letter:"A",t:"Pre-activation",mins:5,bells:3,ex:[
-       {key:"Prone Y-Raises",n:"Prone Y-Raise or Band Pull-Apart",rx:"3 × 15 · pre-activation, light, first in session",sets:3}]},
-     {letter:"B",t:"Hinge",mins:10,bells:4,ex:[
-       {key:"Rack Pull",n:"Rack Pull",rx:"4 × 5 · chiro-approved; monitor grip-side",sets:4}]},
-     // Squat-pattern default is Goblet Squat or Leg Press. Back squat is NOT in this pool —
-     // it stays on the named-exclusion list — so there is nothing here to mark DORMANT.
-     {letter:"C",t:"Squat",mins:9,bells:3,ex:[
-       {key:"Goblet Squat",n:"Goblet Squat or Leg Press",rx:"3 × 10 · squat-pattern default — back squat stays excluded",sets:3}]},
-     {letter:"D",t:"Unilateral",mins:8,bells:3,ex:[
-       {key:"Bulgarian SS",n:"Bulgarian Split Squat",rx:"3 × 8/leg",sets:3}]},
-     {letter:"E",t:"Core",mins:6,bells:3,ex:[
-       {key:"Pallof",n:"Pallof Press",rx:"3 × 10/side · anti-rotation core",sets:3}]}]};
+     {letter:"A",t:"Pre-activation",mins:5,bells:py.sets,ex:[
+       {key:"Prone Y-Raises",n:"Prone Y-Raise or Band Pull-Apart",rx:py.rx,sets:py.sets}]},
+     {letter:"B",t:"Hinge",mins:10,bells:rp.sets,ex:[
+       {key:"Rack Pull",n:"Rack Pull",rx:rp.rx,sets:rp.sets}]},
+     // Back squat cleared — no longer on the named-exclusion list. Added alongside Goblet Squat
+     // rather than replacing it (see chat, 2026-09-22); Goblet Squat's Form Reference entry still
+     // describes it as "Primary back squat substitute", which is now stale and needs a pass.
+     {letter:"C",t:"Squat",mins:10,bells:bq.sets,ex:[
+       {key:"Back Squat",n:"Back Squat",rx:bq.rx,sets:bq.sets}]},
+     {letter:"D",t:"Squat accessory",mins:6,bells:gs.sets,ex:[
+       {key:"Goblet Squat",n:"Goblet Squat or Leg Press",rx:gs.rx,sets:gs.sets}]},
+     {letter:"E",t:"Unilateral",mins:8,bells:bss.sets,ex:[
+       {key:"Bulgarian SS",n:"Bulgarian Split Squat",rx:bss.rx,sets:bss.sets}]},
+     {letter:"F",t:"Core",mins:6,bells:pf.sets,ex:[
+       {key:"Pallof",n:"Pallof Press",rx:pf.rx,sets:pf.sets}]}]};
   }
   if(day==="meso02Wed"){
+    const cp=meso2MainRx("machine or DB, hard stop at 90° elbow flexion, pain-free only"),
+          fp=meso2AccRx("max clean reps","push-pattern default — wall progression retired, log rep count"),
+          sw=meso2AccRx("10"),
+          te=meso2AccRx("12","prioritized per OT guidance");
     return {name:"WEDNESDAY — Upper Push + Scapular Stability", type:"lift", blocks:[
      MESO2_PREP,
-     {letter:"A",t:"Push",mins:9,bells:3,ex:[
-       {key:"Chest Press",n:"Chest Press",rx:"3 × 10 · machine or DB, hard stop at 90° elbow flexion, pain-free only",sets:3}]},
+     {letter:"A",t:"Push",mins:9,bells:cp.sets,ex:[
+       {key:"Chest Press",n:"Chest Press",rx:cp.rx,sets:cp.sets}]},
      // Push-pattern default is Floor Push-Ups — wall push-up ladder retired, goal met.
      // Key stays "Wall Push-Up Progression" for PR-history continuity (see PR_KEYS).
-     {letter:"B",t:"Push",mins:8,bells:3,ex:[
-       {key:"Wall Push-Up Progression",n:"Floor Push-Ups",rx:"3 × max clean reps · push-pattern default — wall progression retired, log rep count",sets:3}]},
-     {letter:"C",t:"Scapular Stability",mins:6,bells:3,ex:[
-       {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"3 × 10",sets:3}]},
-     {letter:"D",t:"Triceps",mins:6,bells:3,ex:[
-       {key:"Triceps Extension",n:"Triceps Extension (pushdown or overhead)",rx:"3 × 12 · prioritized per OT guidance",sets:3}]}]};
+     {letter:"B",t:"Push",mins:8,bells:fp.sets,ex:[
+       {key:"Wall Push-Up Progression",n:"Floor Push-Ups",rx:fp.rx,sets:fp.sets}]},
+     {letter:"C",t:"Scapular Stability",mins:6,bells:sw.sets,ex:[
+       {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:sw.rx,sets:sw.sets}]},
+     {letter:"D",t:"Triceps",mins:6,bells:te.sets,ex:[
+       {key:"Triceps Extension",n:"Triceps Extension (pushdown or overhead)",rx:te.rx,sets:te.sets}]}]};
   }
   if(day==="meso02Fri"){
+    const py=meso2AccRx("15","pre-activation, light, first in session"),
+          ngr=meso2AccRx("10","light load, stop at first sign of pain"),
+          rdl=meso2MainRx(),
+          cd=meso2AccRx("10/side");
     return {name:"FRIDAY — Pull + Lower Accessory", type:"lift", blocks:[
      MESO2_PREP,
-     {letter:"A",t:"Pre-activation",mins:5,bells:3,ex:[
-       {key:"Prone Y-Raises",n:"Prone Y-Raise or Band Pull-Apart",rx:"3 × 15 · pre-activation, light, first in session",sets:3}]},
-     {letter:"B",t:"Pull",mins:9,bells:3,ex:[
-       {key:"Neutral-Grip Row",n:"Neutral-Grip Row (cable or DB)",rx:"3 × 10 · light load, stop at first sign of pain",sets:3}]},
-     {letter:"C",t:"Hinge",mins:9,bells:3,ex:[
-       {key:"Romanian Deadlift (DB)",n:"RDL or Hip Thrust",rx:"3 × 10",sets:3}]},
-     {letter:"D",t:"Core",mins:6,bells:3,ex:[
-       {key:"Bird Dog",n:"Core (Dead Bug or similar)",rx:"3 × 10/side",sets:3}]}]};
+     {letter:"A",t:"Pre-activation",mins:5,bells:py.sets,ex:[
+       {key:"Prone Y-Raises",n:"Prone Y-Raise or Band Pull-Apart",rx:py.rx,sets:py.sets}]},
+     {letter:"B",t:"Pull",mins:9,bells:ngr.sets,ex:[
+       {key:"Neutral-Grip Row",n:"Neutral-Grip Row (cable or DB)",rx:ngr.rx,sets:ngr.sets}]},
+     {letter:"C",t:"Hinge",mins:9,bells:rdl.sets,ex:[
+       {key:"Romanian Deadlift (DB)",n:"RDL or Hip Thrust",rx:rdl.rx,sets:rdl.sets}]},
+     {letter:"D",t:"Core",mins:6,bells:cd.sets,ex:[
+       {key:"Bird Dog",n:"Core (Dead Bug or similar)",rx:cd.rx,sets:cd.sets}]}]};
   }
   if(day==="upper"){
     const o=OHP(w),r=ROW(w);const early=w<=2;
