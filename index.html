@@ -147,10 +147,12 @@ main{padding:12px 14px}
 /* Inline card in the RKD page, not a modal — no scrim dimming the HR/zone band you're training
    against. Same geometry as .notecard so it sits in that page's rhythm. */
 .ivt-panel{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px}
-/* Ambient zone wash on the page behind the panel. Independent of the panel's own phase colour —
-   the box can read red for rest while the screen behind it reads Z2 teal. Painted on <body>
-   exactly the way #hrband paints itself: no background-attachment:fixed, which WebKit/iOS
-   (Bluefy is the target) handles badly enough to cause scroll jank or drop outright. */
+/* Ambient zone wash — full-screen legibility mid-set, when the small band text and progress bar
+   aren't easy to read. Independent of the interval-timer panel's own phase colour — the box can
+   read red for rest while the screen behind it reads Z2 teal. Painted on <body> exactly the way
+   #hrband paints itself: no background-attachment:fixed, which WebKit/iOS (Bluefy is the target)
+   handles badly enough to cause scroll jank or drop outright. Applies on every tab, not just RKD
+   — see ivtSyncChrome() for the gating. */
 body.ivt-amb.z1{background-image:var(--zg1)}
 body.ivt-amb.z2{background-image:var(--zg2)}
 body.ivt-amb.z3{background-image:var(--zg3)}
@@ -1771,11 +1773,17 @@ function ivtPanelHtml(){
      .ivt-amb + zN — ambient zone wash on the page behind the timer. Mirrors whatever class
        setBand() already put on #hrband, so there's no second source of truth for the zone and
        it follows HR live. Deliberately independent of the panel's own phase colour.
+       On the RKD tab itself this shows for any live zone reading, same as always — that page
+       *is* the timer. Everywhere else it's gated to live.secs>=DRAFT_MIN_SECS, the same bar
+       the draft autosave already uses to tell "a session" apart from "the strap happened to be
+       streaming" (see captureSessionDraft) — connectWhoop() starts the session clock the moment
+       WHOOP links, well before a workout, so that alone can't be the signal.
      .ivt-run     — enlarged HR/zone readout, only while a round is actually counting down. */
 function ivtSyncChrome(){
   const band=document.getElementById("hrband"); if(!band) return;
-  const on=ivtOnScreen();
-  const running=on&&!!ivt&&!ivt.done&&!ivt.paused;
+  const onPxi=ivtOnScreen();
+  const on=onPxi||live.secs>=DRAFT_MIN_SECS;
+  const running=onPxi&&!!ivt&&!ivt.done&&!ivt.paused;
   document.body.classList.toggle("ivt-amb",on);
   document.body.classList.toggle("ivt-run",running);
   ["z1","z2","z3","z4","z5"].forEach(z=>document.body.classList.toggle(z,on&&band.classList.contains(z)));
