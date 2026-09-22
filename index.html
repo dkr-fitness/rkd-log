@@ -2611,6 +2611,32 @@ const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Suppor
    the pxi/dtp-* internals. Only the label moves on. The wall ladder is retired; the movement has
    been Floor Push-Ups in every template since 8/12. */
 const PR_LABEL={"Wall Push-Up Progression":"Floor Push-Ups"};
+/* Anatomical grouping for the History PR grid's "everything else" section (see renderHistory) —
+   splits it into Upper / Lower / Core sub-headers instead of one long undifferentiated list.
+   Covers every PR_KEYS entry that isn't guaranteed to already be in the active block: the
+   pre-Meso-02 Block 1 lifts plus every EXTRA_EXERCISES entry (see below). A key with no group
+   here falls into a bare "Other" bucket in renderHistory rather than being silently dropped. */
+const EXERCISE_GROUP={};
+[["Lower",["Deadlift","Leg Press","Back Squat","SKB RDL","Hip Thrust","Bulgarian SS",
+    "Romanian Deadlift (DB)","Rack Pull","Goblet Squat","SA RDL",
+    "BB Floor Hip Extension","BB Floor Hip Extn SL","DB Goblet Squat","BB Fwd Bkwd Contralateral",
+    "DB Bench Step Up alt Legs","KB Deadlift Suitcase SA","KB Static Lunge w Torso Rotation","BB Deadlift",
+    "BB Zercher Squat","KB Squat SA","Slides DB Curtsy Lunge","TB Hip Extension","Arabesque alt Leg",
+    "BB Goodmorning","SB Hamstring Curl Flexed Hip","DB Front Squat","Trapbar Deadlift","KB Swing Double",
+    "KB Swing","KB Deadlift Double","KB Front Squat","DB RDL","DB Backward Lunge","KB Reverse Lunge"]],
+ ["Upper",["Bench Press","Chest-Supported Row","DB Shoulder Press","DB Row","OHP","BB Row",
+    "Weighted Pull-Up","Dead Hang","Wall Push-Up Progression","Rope Triceps Pressdown","Cable Pullover",
+    "Single-Arm DB Row","Neutral-Grip Cable Row","Chest Press","Triceps Extension","Neutral-Grip Row",
+    "SA Chest Press",
+    "KB Bent Over Row alt from Grnd","TRX Rear Delt Fly","DB Bench Press","DB Incline Row DBL Arm",
+    "BB Military Press","Chin Up","KB Tricep Push Up","DB Pull Over","Wall Extensions",
+    "KB Bottoms Up Press SA","PB Straight Arm Pull Down","Shoulder Pass Through","Scapular Roll",
+    "DB Push Up","DB Devil Press","BB Bench Press Medium Grip","KB Renegade Row","KB Clean and Push Press",
+    "KB Clean Double","KB Shoulder Press DBL","KB Bent Over Row Palms In","Plate OVH Tricep Extension",
+    "SB KB Shoulder Press SA","DB Incline Row SA","TRX Supine Back Row SL","KB 3pt Neutral Row"]],
+ ["Core",["Hanging Knee Tuck","SB Hip Rolls","DB Side Bend","DB Psoas March","Plank alt Shoulder Taps",
+    "KB Around The World","SB Back Extension","KB Halo"]]
+].forEach(([g,ks])=>ks.forEach(k=>EXERCISE_GROUP[k]=g));
 const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun",strengthFree:"Freeform",fullBodyA:"FB-A",fullBodyB:"FB-B",fullBodyC:"FB-C",meso02Mon:"Mon",meso02Wed:"Wed",meso02Fri:"Fri"};
 const escAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 /* Keyed by block + week-within-block, so two unrelated blocks never share a bucket.
@@ -2689,8 +2715,14 @@ END-WORKOUT"></textarea>
       h+=`<div class="pr-grid">${cur.map(prTile).join("")}</div>`;
     }
     if(rest.length){
+      /* Upper/Lower/Core sub-grouping (see EXERCISE_GROUP) so "everything else" stays scannable
+         once it's dozens of movements deep. A key with no group lands in a trailing "Other"
+         bucket rather than vanishing. */
+      const sub=["Lower","Upper","Core","Other"].map(g=>({g,ks:rest.filter(k=>(EXERCISE_GROUP[k]||"Other")===g)}))
+        .filter(s=>s.ks.length)
+        .map(s=>`<div class="pr-h" style="margin-top:10px">${s.g}</div><div class="pr-grid" style="margin-bottom:0">${s.ks.map(prTile).join("")}</div>`).join("");
       h+=`<div class="notecard collapsed pr-rest" id="prRestPanel"><label class="formref-label" onclick="togglePrRest()">Everything else · ${rest.length}<span class="formref-ind">▾</span></label>
-        <div class="formref-body"><div class="pr-grid" style="margin-bottom:0">${rest.map(prTile).join("")}</div></div></div>`;
+        <div class="formref-body">${sub}</div></div>`;
     }
   } else if(logs.length){
     h+=`<div class="meta">No PRs yet — log weight × reps against a tracked movement and its best lands here.</div>`;
