@@ -2902,8 +2902,31 @@ function importLogs(){
    same as always. */
 const PASTE_WORKOUT_EXERCISES=["Scapular Wall Isometric","Band Pull-Aparts","Prone Y-Raises","Deadlift","Chest-Supported DB Row","Goblet Squat","Floor Push-Ups","Single-Arm DB Row","Suitcase Carry","Neutral-Grip Cable Row","Romanian Deadlift (DB)","DB Shoulder Press","Cable Pullover","Leg Press","Rope Triceps Pressdown","Glute Bridges","Broad Jump","Backward Walking Lunges","Rack Pull","Bulgarian Split Squat","Pallof Press","Chest Press","Scapular Wall Slide","Triceps Extension (pushdown or overhead)","Neutral-Grip Row (cable or DB)","Core (Dead Bug or similar)","Scapular Wall Slides x5","Pillowcase Wall Isometric x5","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)","Box Jump","DB Step-Up","Sled Push","Single-KB RDL","Conventional Deadlift","Single-Leg RDL","Band Row","Band Face Pull","Bird Dog / Dead Bug","Sled Drag","Cardio Ramp","Farmer Carry","Neutral-Grip DB Row","Safety Bar Squat","Hip Thrust"];
 /* Exercises with their own PR_KEYS entry but no Mon/Wed/Fri day template to inherit a key from —
-   self-keyed (name === key) rather than needing a PASTE_WORKOUT_KEYS mapping. Grows over time. */
-const EXTRA_EXERCISES=["SA Chest Press","SA RDL"];
+   self-keyed (name === key) rather than needing a PASTE_WORKOUT_KEYS mapping. Grows over time.
+   The block below is BFT class-history exercises pulled in wholesale: final names, side/left-
+   right designations already stripped and duplicates already merged upstream, so they're used
+   as-is rather than re-derived. Real PR/e1RM tracking, same as every other EXTRA_EXERCISES entry —
+   see the PR_KEYS registration loop just below. */
+const EXTRA_EXERCISES=["SA Chest Press","SA RDL",
+  // Lower
+  "BB Floor Hip Extension","BB Floor Hip Extn SL","DB Goblet Squat","BB Fwd Bkwd Contralateral",
+  "DB Bench Step Up alt Legs","KB Deadlift Suitcase SA","KB Static Lunge w Torso Rotation","BB Deadlift",
+  "BB Zercher Squat","KB Squat SA","Slides DB Curtsy Lunge","TB Hip Extension","Arabesque alt Leg",
+  "BB Goodmorning","SB Hamstring Curl Flexed Hip","DB Front Squat","Trapbar Deadlift","KB Swing Double",
+  "KB Swing","KB Deadlift Double","KB Front Squat","DB RDL","DB Backward Lunge","KB Reverse Lunge",
+  // Upper
+  "KB Bent Over Row alt from Grnd","TRX Rear Delt Fly","DB Bench Press","DB Incline Row DBL Arm",
+  "BB Military Press","Chin Up","KB Tricep Push Up","DB Pull Over","Wall Extensions",
+  "KB Bottoms Up Press SA","PB Straight Arm Pull Down","Shoulder Pass Through","Scapular Roll",
+  "DB Push Up","DB Devil Press","BB Bench Press Medium Grip","KB Renegade Row","KB Clean and Push Press",
+  "KB Clean Double","KB Shoulder Press DBL","KB Bent Over Row Palms In","Plate OVH Tricep Extension",
+  "SB KB Shoulder Press SA","DB Incline Row SA","TRX Supine Back Row SL","KB 3pt Neutral Row",
+  // Core
+  "Hanging Knee Tuck","SB Hip Rolls","DB Side Bend","DB Psoas March","Plank alt Shoulder Taps",
+  "KB Around The World","SB Back Extension","KB Halo"];
+/* Every EXTRA_EXERCISES entry gets a real, e1RM-tracked PR_KEYS slot (self-keyed to its name) —
+   registered here rather than duplicated into the PR_KEYS literal above. */
+EXTRA_EXERCISES.forEach(n=>{ if(!(n in PR_KEYS)) PR_KEYS[n]="lb"; });
 const PASTE_WORKOUT_KEYS={"Scapular Wall Isometric":"Scapular Wall Isometric","Band Pull-Aparts":"Band Pull-Aparts","Prone Y-Raises":"Prone Y-Raises","Deadlift":"Deadlift","Chest-Supported DB Row":"Chest-Supported Row","Goblet Squat":"Goblet Squat","Floor Push-Ups":"Wall Push-Up Progression","Single-Arm DB Row":"Single-Arm DB Row","Suitcase Carry":"Suitcase Carry","Neutral-Grip Cable Row":"Neutral-Grip Cable Row","Romanian Deadlift (DB)":"Romanian Deadlift (DB)","DB Shoulder Press":"DB Shoulder Press","Cable Pullover":"Cable Pullover","Leg Press":"Leg Press","Rope Triceps Pressdown":"Rope Triceps Pressdown","Glute Bridges":"Glute Bridges","Broad Jump":"Broad Jump","Backward Walking Lunges":"Backward Walking Lunges","Rack Pull":"Rack Pull","Bulgarian Split Squat":"Bulgarian SS","Pallof Press":"Pallof","Chest Press":"Chest Press","Scapular Wall Slide":"Scapular Wall Slide","Triceps Extension (pushdown or overhead)":"Triceps Extension","Neutral-Grip Row (cable or DB)":"Neutral-Grip Row","Core (Dead Bug or similar)":"Bird Dog","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)":"DB Shoulder Press","Box Jump":"Jump","DB Step-Up":"Step-Up","Single-KB RDL":"SKB RDL","Conventional Deadlift":"Deadlift","Single-Leg RDL":"SL RDL","Band Row":"Band Row","Band Face Pull":"Face Pull","Bird Dog / Dead Bug":"Bird Dog","Neutral-Grip DB Row":"DB Row","Safety Bar Squat":"Safety Bar Squat","Hip Thrust":"Hip Thrust"};
 function parsePastedSets(setsReps){
   const m=String(setsReps).trim().match(/^(\d+)/);
