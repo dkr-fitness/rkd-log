@@ -207,8 +207,19 @@ eq(blockFor(D(2026,10,18)).week,6,"Oct 18 -> Meso 2 wk 6 (last day)");
 eq(blockFor(D(2026,10,19)).id,"open","Oct 19 -> off-block");
 eq(blockFor(D(2026,10,19)).week,1,"first off-block week is 1");
 eq(blockFor(D(2026,10,26)).week,2,"off-block keeps counting (never re-freezes)");
-eq(blockTag(blockFor(D(2026,9,5))),"M1·W3","blockTag is the compact form");
-eq(blockText(blockFor(D(2026,9,5))),"Meso 1 · Wk 3","blockText is the verbose form");
+eq(blockTag(blockFor(D(2026,9,5))),"M1·W3·V","blockTag is the compact form, with the phase's initial for a meso block");
+eq(blockText(blockFor(D(2026,9,5))),"Meso 1 · Wk 3 · Volume Phase","blockText is the verbose form, with the phase spelled out");
+
+section("phaseForWeek — generic 2/2/2 split, no per-meso hardcoding");
+eq(phaseForWeek(1),"Baseline","week 1 -> Baseline");
+eq(phaseForWeek(2),"Baseline","week 2 -> Baseline");
+eq(phaseForWeek(3),"Volume","week 3 -> Volume");
+eq(phaseForWeek(4),"Volume","week 4 -> Volume");
+eq(phaseForWeek(5),"Performance","week 5 -> Performance");
+eq(phaseForWeek(6),"Performance","week 6 -> Performance");
+eq(phaseForWeek(9),"Performance","a block that overruns clamps to Performance rather than erroring");
+eq(blockTag(blockFor(D(2026,7,6))),"B1·W1","non-meso blocks (Block 1) carry no phase suffix");
+eq(blockText(blockFor(D(2026,10,19))),"Off-block · Wk 1","off-block carries no phase suffix either");
 
 section("blockOf — stamped identity vs re-derivation");
 eq(blockOf({block:"meso02",blockLabel:"Meso 2",blockWeek:4,date:"2026-07-08T18:00:00Z"}).week,4,

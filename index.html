@@ -431,12 +431,23 @@ function blockFor(when){
 function blockOf(l){
   return (l.block&&l.blockWeek)?{id:l.block,label:l.blockLabel||l.block,week:l.blockWeek}:blockFor(l.date);
 }
+/* Generic 2/2/2 phase split for a 6-week meso block — weeks 1–2 Baseline, 3–4 Volume, 5–6
+   Performance. Pure function of the week number so it applies to any mesocycle (past, current,
+   or a future Meso 03) with no per-meso hardcoding; a block shorter than 6 weeks (Meso 1's 3)
+   or one that overruns just clamps to whichever phase the week number falls into. Distinct from
+   mesoPhase()/mesoPhase2() above, which are hand-authored, per-meso RPE/exercise guidance text —
+   this is the plain display/prescription label. */
+function phaseForWeek(weekNum){
+  return weekNum<=2?"Baseline":weekNum<=4?"Volume":"Performance";
+}
 /* Two display forms off the same identity: blockText for roomy contexts (weekly totals list,
    copy-summary), blockTag for tight ones (top bar, history card headers). Keyed on b.id so it
-   works for reconstructed identities from blockOf() too, which carry no label of their own. */
-const blockText=b=>b.label+" · Wk "+b.week;
+   works for reconstructed identities from blockOf() too, which carry no label of their own.
+   Phase only applies to mesocycle blocks (id "meso*") — Block 1 and off-block have no phase
+   concept — appended verbosely on blockText and as a single-letter suffix on blockTag. */
+const blockText=b=>b.label+" · Wk "+b.week+(b.id.startsWith("meso")?" · "+phaseForWeek(b.week)+" Phase":"");
 const BLOCK_SHORT={pre:"PRE",legacy:"B1",meso01:"M1",meso02:"M2",open:"OFF"};
-const blockTag=b=>(BLOCK_SHORT[b.id]||b.id)+"·W"+b.week;
+const blockTag=b=>(BLOCK_SHORT[b.id]||b.id)+"·W"+b.week+(b.id.startsWith("meso")?"·"+phaseForWeek(b.week)[0]:"");
 function hrText(day,w){
   if(day==="lower"&&w===8) return "Taper: Z1–Z2 only. Save everything for Wednesday's test day.";
   return {
