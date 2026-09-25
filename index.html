@@ -1644,10 +1644,24 @@ async function subscribeHr(){
   const b=document.getElementById("btnConnect");
   b.textContent="WHOOP ✓"; b.classList.add("linked");
 }
+/* Finish drops the strap deliberately. The flag tells onHrDisconnect() this was us, so it skips
+   the 3s auto-reconnect that exists for signal dropouts mid-session. */
+let hrUserDisconnect=false;
+function disconnectWhoop(){
+  if(!hrDevice||!hrDevice.gatt.connected) return;
+  hrUserDisconnect=true;
+  clearInterval(live.tick); live.tick=null; live.lastBpm=null;
+  try{ hrDevice.gatt.disconnect(); }catch(e){ hrUserDisconnect=false; }
+}
 function onHrDisconnect(){
   clearInterval(live.tick); live.tick=null; live.lastBpm=null;
   const b=document.getElementById("btnConnect");
   b.textContent="Reconnect"; b.classList.remove("linked");
+  if(hrUserDisconnect){
+    hrUserDisconnect=false;
+    setBand(0,"WHOOP disconnected — session saved",null,null);
+    return;
+  }
   setBand(0,"Disconnected — data so far is kept",null,null);
   toast("WHOOP disconnected");
   setTimeout(async()=>{ try{ if(hrDevice&&!hrDevice.gatt.connected){ await subscribeHr(); toast("Reconnected"); } }catch(e){} },3000);
@@ -1683,7 +1697,11 @@ function setBand(z,label,bpm,pct){
 function complianceRows(dayType){
   const m=live.zoneSecs.map(s=>s/60);
   const hi=m[4]+m[5];
+  /* Z0/Z1 are informational only — the protocol neither targets nor caps them, so no ok/warn/bad
+     class. "Z0" is ZONE_NAMES[0] ("Below zones"), the same zoneOfBpm() bucket the band shows. */
   if(dayType==="zone2") return [
+    {l:"Z0", r:"below zones — info only", v:m[0], cls:""},
+    {l:"Z1", r:"info only", v:m[1], cls:""},
     {l:"Z2", r:"goal 25–35 min", v:m[2], cls:m[2]>=25&&m[2]<=35?"ok":(m[2]<25?"warn":"bad")},
     {l:"Z3", r:"cap 5 min", v:m[3], cls:m[3]<=5?"ok":"bad"},
     {l:"Z4–Z5", r:"zero — this must make Wednesday better, not worse", v:hi, cls:hi<0.5?"ok":"bad"}];
@@ -2314,9 +2332,9 @@ function render(){
 
   /* ---- Tue / Thu: optional Zone 2 ---- */
   if(s.type==="zone2"){
-    h+=`<div class="meta"><b>Rules:</b> Optional 25–35 min in Zone 2 — Peloton class, jog, ski, row, assault runner. ≤5 min Z3, zero Z4/Z5. Conversational pace. Skip freely — it must make the next lift better, not worse.</div>`;
-    if(day==="thu") h+=`<div class="meta warn"><b>Thursday rule:</b> if you did Tuesday, strongly consider full rest today — one optional session per week is plenty during heavy weeks (6–8).</div>`;
-    h+=`<div class="meta px"><b>Scoring:</b> Same strength curve as lift days (Z2 peaks ~4 pts/min) — RKD accrues live. Medal on Finish is graded on % of session time in Z2 (target 100%): GOLD ±5%, SILVER ±10%, BRONZE ±15%. The 25–35 min / Z3 cap / zero Z4-Z5 card below still tracks compliance the same way it always has.</div>`;
+    h+=infoBox("ibZ2Rules","meta","Rules",`Optional 25–35 min in Zone 2 — Peloton class, jog, ski, row, assault runner. ≤5 min Z3, zero Z4/Z5. Conversational pace. Skip freely — it must make the next lift better, not worse.`);
+    if(day==="thu") h+=infoBox("ibZ2Thu","meta warn","Thursday rule",`If you did Tuesday, strongly consider full rest today — one optional session per week is plenty during heavy weeks (6–8).`);
+    h+=infoBox("ibZ2Score","meta px","Scoring",`Same strength curve as lift days (Z2 peaks ~4 pts/min) — RKD accrues live. Medal on Finish is graded on % of session time in Z2 (target 100%): GOLD ±5%, SILVER ±10%, BRONZE ±15%. The 25–35 min / Z3 cap / zero Z4-Z5 card below still tracks compliance the same way it always has.`);
     h+=zone2ActivityHtml();
     h+=blockHtml(s,0);
     h+=`<div class="notecard"><label>Zone caps (live from WHOOP)</label><div id="zc" data-type="zone2"></div></div>`;
@@ -2558,6 +2576,8 @@ function saveSession(){
   stopBlock(); if(sessInt){ clearInterval(sessInt); sessInt=null; } sessStart=null; sessAcc=0;
   setBand(0,live.tick?"Tracking reset — new session":"HR not connected",live.lastBpm,null);
   releaseAwake();
+  /* After the band update so the disconnect handler's message is the one left showing. */
+  disconnectWhoop();
   /* Rebuild the form empty. Without this the finished session's sets stay in the DOM, where a
      later capture can resurrect them as a draft and a second Finish can re-log them. render()
      re-zeroes curRPE itself; set it here too since the history/RKD views don't. */
