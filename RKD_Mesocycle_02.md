@@ -61,11 +61,13 @@
 
 ## Progression
 
-| Weeks | Intent |
-|---|---|
-| 1–2 | Baseline. Confirm nothing aggravates under the 90° chest-press elbow-flexion cap. |
-| 3–4 | Progressive overload — cleared movements only: Rack Pull, Goblet Squat/Leg Press, Bulgarian Split Squat, RDL/Hip Thrust, Triceps Extension. Pressing/pulling (Chest Press, Neutral-Grip Row) holds steady or adds a rep, not load. |
-| 5–6 | Hold or nudge slightly. Taper volume in week 6 to land wherever NCS/follow-up lands. |
+| Weeks | Phase | Intent |
+|---|---|---|
+| 1–2 | Baseline | Confirm nothing aggravates under the 90° chest-press elbow-flexion cap. |
+| 3–4 | Volume | Main lifts (Back Squat, Chest Press, RDL/Hip Thrust) 5×6–8 @ RPE 7–8. Rack Pull 4×5. Accessories hold their fixed prescriptions. |
+| 5–6 | Volume (second) | Same as weeks 3–4. Changed 9/26 from a heavy 3×3–5 Performance phase: the goal is muscle gain, and a second volume phase serves that better than heavy low-rep work. |
+
+The app's phase label and prescriptions follow this table (`phaseForWeek()` with Meso 02's entry in `PHASE_PLAN`). Weeks 1–2 were logged under the original fixed prescriptions and keep them in history.
 
 ---
 

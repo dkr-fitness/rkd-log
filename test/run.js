@@ -210,14 +210,21 @@ eq(blockFor(D(2026,10,26)).week,2,"off-block keeps counting (never re-freezes)")
 eq(blockTag(blockFor(D(2026,9,5))),"M1·W3·V","blockTag is the compact form, with the phase's initial for a meso block");
 eq(blockText(blockFor(D(2026,9,5))),"Meso 1 · Wk 3 · Volume Phase","blockText is the verbose form, with the phase spelled out");
 
-section("phaseForWeek — generic 2/2/2 split, no per-meso hardcoding");
+section("phaseForWeek — generic 2/2/2 default, per-block override");
 eq(phaseForWeek(1),"Baseline","week 1 -> Baseline");
 eq(phaseForWeek(2),"Baseline","week 2 -> Baseline");
 eq(phaseForWeek(3),"Volume","week 3 -> Volume");
 eq(phaseForWeek(4),"Volume","week 4 -> Volume");
-eq(phaseForWeek(5),"Performance","week 5 -> Performance");
-eq(phaseForWeek(6),"Performance","week 6 -> Performance");
-eq(phaseForWeek(9),"Performance","a block that overruns clamps to Performance rather than erroring");
+eq(phaseForWeek(5),"Performance","week 5 -> Performance by default");
+eq(phaseForWeek(6),"Performance","week 6 -> Performance by default");
+eq(phaseForWeek(9),"Performance","a block that overruns clamps to its last phase rather than erroring");
+eq(phaseForWeek(0),"Baseline","week 0 clamps to the first phase");
+eq(phaseForWeek(3,"meso03"),"Volume","a block with no override uses the default plan");
+eq(phaseForWeek(5,"meso02"),"Volume","Meso 2 week 5 is a second Volume phase, not Performance");
+eq(phaseForWeek(6,"meso02"),"Volume","...and so is week 6");
+eq(phaseForWeek(2,"meso02"),"Baseline","...its weeks 1–2 are still Baseline");
+eq(blockText(blockFor(D(2026,10,5))),"Meso 2 · Wk 5 · Volume Phase","the label follows the per-block plan");
+eq(blockTag(blockFor(D(2026,10,12))),"M2·W6·V","...in the compact form too");
 eq(blockTag(blockFor(D(2026,7,6))),"B1·W1","non-meso blocks (Block 1) carry no phase suffix");
 eq(blockText(blockFor(D(2026,10,19))),"Off-block · Wk 1","off-block carries no phase suffix either");
 
