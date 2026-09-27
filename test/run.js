@@ -145,6 +145,7 @@ function draftKey(){return "8|"+DAY;}
 function resetState(){
   LS={}; LOGS=[]; TOASTS=[]; sessionDraft=null; freeformNames=[]; resetDOM(); SESSIONS={};
   extraSets={};
+  if(typeof painEvents!=="undefined") painEvents={};
   live={zoneSecs:[0,0,0,0,0,0],pxi:0,lastBpm:null,secs:0,tick:null};
   sessAcc=0; curRPE=0; TODAY="2026-09-20"; DAY="meso02Wed";
   if(typeof resetCurDraft==="function") resetCurDraft();
@@ -609,6 +610,40 @@ extraSets[setKey(0,0)]=2;
 var e2=collectEntries(SESS)[0];
 eq(e2.sets.length,5,"a count ahead of the DOM still collects");
 eq(e2.sets[4].w,"","...with the missing row empty rather than throwing");
+
+section("Pain check — symptoms are session data");
+resetState();
+/* A session stopped by pain before anything was typed still has to survive a killed tab. */
+sessionDraft={key:draftKey(),day:DAY,fields:{},rpe:0,strain:"",note:"",activity:null};
+painEvents[setKey(1,0)]=[{set:2,kind:"tingling",side:"Right",resolved:false,at:"2026-09-20T18:00:00Z"}];
+persistDraft();
+var PKEY="dtp-draft_2026-09-20_meso02Wed";
+ok(!!LS[PKEY],"a logged symptom alone is enough to write a draft");
+eq(((parseLS(PKEY).pain||{})["meso02Wed|1_0"]||[]).length,1,"...and the symptom is persisted");
+DAY="meso02Mon";
+eq(painFor(1,0).length,0,"a symptom does not leak to the same position on another day");
+sessionDraft={key:draftKey(),day:DAY,fields:{},rpe:0,strain:"",note:"",activity:null};
+persistDraft();
+ok(!LS["dtp-draft_2026-09-20_meso02Mon"],"...nor make another day's empty slot look occupied");
+DAY="meso02Wed";
+painEvents={};
+resumeDraft(PKEY);
+eq(painFor(1,0).length,1,"resume restores the symptom");
+eq(painFor(1,0)[0].resolved,false,"...with its outcome");
+ok(painStopped(1,0),"an unresolved-to-persistent symptom marks the exercise stopped");
+/* Finish carries it onto the exercise's log entry, where History and copy-summary read it. */
+resetState();
+var PSESS={blocks:[{ex:[{key:"Rack Pull",n:"Rack Pull",rx:"4 × 5",sets:2}]}]};
+fillForm({"w_0_0_0":"225","r_0_0_0":"5","w_0_0_1":"","r_0_0_1":""});
+eq(collectEntries(PSESS)[0].symptoms,undefined,"no symptoms -> nothing stamped");
+painEvents[setKey(0,0)]=[{set:2,kind:"ache",side:"",resolved:true,at:"2026-09-20T18:00:00Z"}];
+var pe=collectEntries(PSESS)[0];
+eq((pe.symptoms||[]).length,1,"a logged symptom is saved on its exercise");
+eq(pe.symptoms&&pe.symptoms[0].kind,"ache","...with its kind");
+painEvents[setKey(0,0)][0].resolved=false;
+eq(pe.symptoms[0].resolved,true,"...as a copy, so a later edit can't rewrite a saved entry");
+eq(painText({set:3,kind:"tingling",side:"Right",resolved:false}),"Tingling / numb (Right) · set 3 · stayed, stopped","painText reads as one line");
+eq(painText({set:1,kind:"ache",side:"",resolved:null}),"Ache / fatigue · set 1 · not checked","...and names an unchecked one");
 
 section("Extra sets — two-tap removal");
 resetState();

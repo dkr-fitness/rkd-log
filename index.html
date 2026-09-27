@@ -310,6 +310,19 @@ body.ivt-amb.z5 #focus{background-image:var(--zg5)}
 .f-next{font-size:14px; color:rgba(255,255,255,.7)}
 .f-voice{height:48px; padding:0 12px; border-radius:10px; border:1px solid rgba(255,255,255,.3); background:rgba(0,0,0,.2); color:var(--text); font-size:14px; font-weight:700}
 .f-voice.on{background:var(--amber); color:#0E1526; border-color:var(--amber)}
+/* ===== Pain check ===== */
+.p-open{min-height:52px; border-radius:10px; border:1px solid rgba(224,91,91,.7); background:rgba(0,0,0,.2); color:#FF8A8A; font-size:17px; font-weight:800}
+.p-kinds{display:flex; flex-direction:column; gap:10px}
+.p-kind{min-height:64px; border-radius:12px; border:none; font-size:20px; font-weight:800; font-family:var(--disp); letter-spacing:.05em; text-transform:uppercase; color:#0E1526}
+.p-kind.ache{background:var(--amber)}
+.p-kind.tingling,.p-kind.sharp{background:#FF8A8A}
+.p-side{flex:1; height:56px; border-radius:10px; border:1px solid rgba(255,255,255,.3); background:rgba(0,0,0,.2); color:var(--text); font-size:16px; font-weight:700}
+.p-side.on{background:var(--text); color:#0E1526}
+.p-stop{background:var(--red); color:#fff}
+.p-warn{font-size:16px; color:#FFD27A; background:rgba(0,0,0,.25); border-left:3px solid var(--amber); padding:10px 12px; border-radius:8px}
+.p-line{font-size:15px; font-weight:700; color:#FFD27A}
+.ex-pain{font-size:12px; font-weight:700; color:var(--amber); margin-top:6px}
+.setbtn.pain{color:#FF8A8A; border-color:rgba(224,91,91,.45)}
 /* ===== Bell flash: iPhone browsers ignore navigator.vibrate and tones drown under headphone
    music, so every cue is also a full-screen flash. Never takes a touch. ===== */
 #flash{position:fixed; inset:0; z-index:60; pointer-events:none; opacity:0}
@@ -1488,6 +1501,19 @@ const normalizeFreeform=f=>!Array.isArray(f)?[]:Array.isArray(f[0])?[].concat.ap
 let extraSets={};
 const setKey=(bi,ei)=>curDay()+"|"+bi+"_"+ei;
 const extraFor=(bi,ei)=>extraSets[setKey(bi,ei)]||0;
+/* Symptoms logged mid-session by the pain check, keyed day|block_exercise like extraSets and for
+   the same positional reason. Threads through the durable draft the same way and is saved onto
+   the exercise's log entry as `symptoms`. Each event: {set, kind, side, resolved, at} — resolved
+   is true (went away, carried on), false (stayed, exercise stopped) or null (not checked yet). */
+let painEvents={};
+const painFor=(bi,ei)=>painEvents[setKey(bi,ei)]||[];
+const painStopped=(bi,ei)=>painFor(bi,ei).some(e=>e.resolved===false);
+const PAIN_KINDS={ache:"Ache / fatigue",tingling:"Tingling / numb",sharp:"Sharp / shooting"};
+function painText(e){
+  return (PAIN_KINDS[e.kind]||e.kind)+(e.side?" ("+e.side+")":"")+" · set "+e.set+" · "
+    +(e.resolved===true?"went away":e.resolved===false?"stayed, stopped":"not checked");
+}
+const painLinesHtml=(bi,ei)=>painFor(bi,ei).map(e=>`<div class="ex-pain">⚠ ${escAttr(painText(e))}</div>`).join("");
 
 /* ================= HEP TRACKER (compliance only — no RKD scoring) =================
    Discharged from OT — this is self-managed maintenance, not a prescribed 4-block program.
@@ -2193,20 +2219,101 @@ function focusStepsFor(blocks,extraOf){
 let focusIdx=null; /* null = closed */
 function focusSession(){ return getSession(+document.getElementById("weekSel").value,curDay()); }
 const focusInput=(p,st)=>document.getElementById(p+"_"+st.bi+"_"+st.ei+"_"+st.i);
-function openFocus(){
+const focusEmpty=st=>{const w=focusInput("w",st),r=focusInput("r",st);return w&&r&&!w.value&&!r.value;};
+/* With no argument, opens on the first set with nothing typed, so reopening mid-session lands
+   where you are. With an exercise (the session page's ⚠ Pain button), opens on that exercise's
+   first empty set — or its last set if all are typed — with the pain check already up. */
+function openFocus(bi,ei,pain){
   const steps=focusStepsFor(focusSession().blocks,extraFor); if(!steps.length) return;
-  /* Open on the first set with nothing typed, so reopening mid-session lands where you are. */
-  const k=steps.findIndex(st=>{const w=focusInput("w",st),r=focusInput("r",st);return w&&r&&!w.value&&!r.value;});
+  let k;
+  if(bi!=null){
+    const mine=steps.map((st,i)=>({st,i})).filter(o=>o.st.bi===bi&&o.st.ei===ei);
+    const open=mine.find(o=>focusEmpty(o.st));
+    k=open?open.i:mine.length?mine[mine.length-1].i:0;
+  } else k=steps.findIndex(focusEmpty);
+  const wasOpen=focusIdx!=null;
   focusIdx=k<0?0:k;
-  keepAwake(); /* the screen sleeping between sets is the thing this mode exists to prevent */
+  focusPain=pain?{stage:"kind",side:""}:null;
+  if(!wasOpen) keepAwake(); /* the screen sleeping between sets is the thing this mode exists to prevent */
   renderFocus();
 }
 function closeFocus(){
   if(focusIdx==null) return;
-  focusIdx=null; releaseAwake();
+  focusIdx=null; focusPain=null; releaseAwake();
   document.getElementById("focus").hidden=true;
 }
-function focusGo(d){ focusIdx=Math.max(0,focusIdx+d); renderFocus(); }
+/* Moving forward skips the rest of an exercise stopped by the pain check — its remaining sets
+   aren't going to happen. Moving back doesn't, so a stopped set can still be revisited. */
+function focusAdvance(steps,from){
+  let i=from;
+  while(i<steps.length&&painStopped(steps[i].bi,steps[i].ei)&&focusEmpty(steps[i])) i++;
+  return i;
+}
+function focusGo(d){
+  focusPain=null;
+  if(d>0){ const steps=focusStepsFor(focusSession().blocks,extraFor); focusIdx=focusAdvance(steps,focusIdx+d); }
+  else focusIdx=Math.max(0,focusIdx+d);
+  renderFocus();
+}
+
+/* ---- Pain check ----
+   Mirrors the rule already in use: when something shows up mid-set, rest and ask "is it gone?".
+   Gone → logged as passing, carry on. Still there → logged as persistent and the exercise stops.
+   The Form Reference's stop rule for tingling/shooting is shown, not enforced — the call is yours. */
+let focusPain=null; /* null | {stage:"kind",side} | {stage:"check",key,idx} */
+/* Patches the session page's symptom lines in place rather than calling render(), which would
+   drop a running block's live highlight underneath the overlay. */
+function refreshPainLines(bi,ei){ const el=document.getElementById("pain_"+bi+"_"+ei); if(el) el.innerHTML=painLinesHtml(bi,ei); }
+function painOpen(){ focusPain={stage:"kind",side:""}; renderFocus(); }
+function painCancel(){ focusPain=null; renderFocus(); }
+function painSide(s){ if(!focusPain) return; focusPain.side=focusPain.side===s?"":s; renderFocus(); }
+function painKind(kind){
+  const steps=focusStepsFor(focusSession().blocks,extraFor), st=steps[focusIdx]; if(!st||!focusPain) return;
+  const k=setKey(st.bi,st.ei);
+  (painEvents[k]=painEvents[k]||[]).push({set:st.i+1,kind,side:focusPain.side,resolved:null,at:new Date().toISOString()});
+  focusPain={stage:"check",key:k,idx:painEvents[k].length-1,kind,bi:st.bi,ei:st.ei};
+  onSetInput(); refreshPainLines(st.bi,st.ei); renderFocus();
+}
+function painResolve(gone){
+  if(!focusPain||focusPain.stage!=="check") return;
+  const ev=(painEvents[focusPain.key]||[])[focusPain.idx];
+  if(ev&&gone!=null) ev.resolved=gone;
+  refreshPainLines(focusPain.bi,focusPain.ei);
+  focusPain=null; onSetInput();
+  if(gone===false){
+    toast("Logged — exercise stopped");
+    const steps=focusStepsFor(focusSession().blocks,extraFor), st=steps[focusIdx];
+    /* The current set stays reachable if you'd already typed it; everything after is skipped. */
+    if(st&&!focusEmpty(st)) focusIdx++;
+    focusIdx=focusAdvance(steps,focusIdx);
+  }
+  renderFocus();
+}
+/* Symptoms from the last session that trained this movement — shown before you start it again. */
+function lastSymptomsFor(key){
+  if(!key) return [];
+  const logs=loadLogs();
+  for(let i=logs.length-1;i>=0;i--){
+    const e=(logs[i].entries||[]).find(x=>x.key===key);
+    if(e&&(e.sets.some(s=>s.w||s.r)||(e.symptoms||[]).length)) return e.symptoms||[];
+  }
+  return [];
+}
+function painPanelHtml(){
+  if(focusPain.stage==="kind"){
+    const sb=s=>`<button class="p-side${focusPain.side===s?" on":""}" onclick="painSide('${s}')">${s}</button>`;
+    return `<div class="f-name">What are you feeling?</div>
+      <div class="p-kinds">${Object.keys(PAIN_KINDS).map(k=>`<button class="p-kind ${k}" onclick="painKind('${k}')">${PAIN_KINDS[k]}</button>`).join("")}</div>
+      <div class="f-row"><label>Side</label>${sb("Left")}${sb("Right")}${sb("Both")}</div>
+      <div class="f-nav"><button onclick="painCancel()">Cancel</button></div>`;
+  }
+  const stop=focusPain.kind!=="ache";
+  return `<div class="f-name">Rest. Is it gone?</div>
+    ${stop?`<div class="p-warn">Form Reference: tingling, shooting or numbness is a stop. Aching or fatigue under load is expected.</div>`:""}
+    <div class="f-act"><button class="f-done" onclick="painResolve(true)">Gone — carry on</button></div>
+    <div class="f-act"><button class="p-stop" onclick="painResolve(false)">Still there — stop exercise</button></div>
+    <div class="f-nav"><button onclick="painResolve(null)">Check later</button></div>`;
+}
 function focusStep(p,delta){
   const el=document.getElementById(p==="w"?"fW":"fR"); if(!el) return;
   const v=Math.max(0,(parseFloat(el.value||el.placeholder)||0)+delta);
@@ -2222,7 +2329,7 @@ function focusDone(same){
   const w=focusInput("w",st), r=focusInput("r",st); if(!w||!r) return;
   w.value=fw.value; r.value=fr.value;
   onSetInput();
-  focusIdx++; renderFocus();
+  focusIdx=focusAdvance(steps,focusIdx+1); renderFocus();
 }
 function renderFocus(){
   const el=document.getElementById("focus");
@@ -2244,32 +2351,42 @@ function renderFocus(){
   }
   const st=steps[focusIdx], b=s.blocks[st.bi], ex=b.ex[st.ei];
   const w=focusInput("w",st), r=focusInput("r",st);
-  /* A redraw of the same set (a bell starting or finishing the block) must not eat numbers typed
-     but not yet confirmed. */
+  /* A redraw of the same set — a bell starting or finishing the block, or a trip through the pain
+     check — must not eat numbers typed but not yet confirmed. */
   const pw=document.getElementById("fW"), pr=document.getElementById("fR");
-  const keep=el.dataset.idx===String(focusIdx)&&pw?{w:pw.value,r:pr.value}:null;
+  if(pw&&el.dataset.idx===String(focusIdx)) focusTyped={idx:focusIdx,w:pw.value,r:pr.value};
+  if(focusTyped&&focusTyped.idx!==focusIdx) focusTyped=null;
   el.dataset.idx=String(focusIdx);
+  if(focusPain){
+    el.innerHTML=top+`<div class="f-sub">Pain check · ${escAttr(ex.n||"Exercise")} · set ${st.i+1}</div>`+painPanelHtml();
+    return;
+  }
   const last=lastFor(ex.key), lw=last&&last[st.i]?last[st.i].w:"", lr=last&&last[st.i]?last[st.i].r:"";
   const nx=steps[focusIdx+1], nxEx=nx?s.blocks[nx.bi].ex[nx.ei]:null;
   const isRun=run&&run.bi===st.bi;
+  const nowSym=painFor(st.bi,st.ei), lastSym=nowSym.length?[]:lastSymptomsFor(ex.key);
   el.innerHTML=top+`
     <div class="f-sub">${escAttr(b.letter)} · ${escAttr(b.t)}${b.ex.length>1?" · superset":""}</div>
     <div class="f-name">${escAttr(ex.n||"Exercise")}</div>
     ${ex.rx?`<div class="f-rx">${escAttr(ex.rx)}</div>`:""}
     <div class="f-set">SET ${st.i+1} <small>of ${st.total}${st.i>=ex.sets?" · extra":""}</small></div>
     <div class="f-last">${lw||lr?`Last time: ${escAttr(lw||"–")} × ${escAttr(lr||"–")}`:"No previous numbers for this set"}</div>
+    ${nowSym.map(e=>`<div class="p-line">⚠ Today: ${escAttr(painText(e))}</div>`).join("")}
+    ${lastSym.map(e=>`<div class="p-line">⚠ Last session: ${escAttr(painText(e))}</div>`).join("")}
     <div class="f-row"><label>Weight</label><button class="f-step" onclick="focusStep('w',-5)">−5</button>
       <input id="fW" inputmode="decimal" value="${escAttr(w?w.value:"")}" placeholder="${escAttr(lw)}"><button class="f-step" onclick="focusStep('w',5)">+5</button></div>
     <div class="f-row"><label>Reps</label><button class="f-step" onclick="focusStep('r',-1)">−1</button>
       <input id="fR" inputmode="numeric" value="${escAttr(r?r.value:"")}" placeholder="${escAttr(lr)}"><button class="f-step" onclick="focusStep('r',1)">+1</button></div>
     <div class="f-act">${lw||lr?`<button class="f-same" onclick="focusDone(true)">Same as last ✓</button>`:""}<button class="f-done" onclick="focusDone(false)">Done ✓</button></div>
+    <button class="p-open" onclick="painOpen()">⚠ Pain</button>
     ${b.bells?`<div class="f-timer">${isRun
       ?`<div><div class="l">Block ${escAttr(b.letter)} · set ${run.setNo} of ${run.bells}</div><div class="t" id="fTimer">${fmt(Math.max(0,Math.ceil((run.end-Date.now())/1000)))}</div></div><button onclick="stopBlock()">Stop</button>`
       :`<div class="l">Bells: ${b.bells} × ${fmt(interval(b))}</div><button onclick="playBlock(${st.bi})">▶ Start bells</button>`}</div>`:""}
     ${nxEx?`<div class="f-next">Next: ${escAttr(nxEx.n||"Exercise")} · set ${nx.i+1}</div>`:""}
     <div class="f-nav"><button onclick="focusGo(-1)"${focusIdx===0?' disabled style="opacity:.35"':""}>‹ Prev</button><span>${focusIdx+1}/${steps.length}</span><button onclick="focusGo(1)">Next ›</button></div>`;
-  if(keep){ document.getElementById("fW").value=keep.w; document.getElementById("fR").value=keep.r; }
+  if(focusTyped){ document.getElementById("fW").value=focusTyped.w; document.getElementById("fR").value=focusTyped.r; }
 }
+let focusTyped=null; /* {idx,w,r} — typed-but-unconfirmed numbers for the set on screen */
 
 /* ================= RENDER ================= */
 /* ---- session draft: typed-but-unsaved inputs survive tab switches (DOM is rebuilt wholesale on every render) ---- */
@@ -2365,7 +2482,10 @@ function persistDraft(){
      dropping a typed value. Scoped to the day being written, so adding a set on Monday doesn't
      make Tuesday's empty slot look occupied. */
   const hasExtra=Object.keys(extraSets).some(k=>k.indexOf(day+"|")===0);
-  const has=Object.keys(f).length>0||rpe>0||(note||"").trim()!==""||(strain||"")!==""||hasExtra||live.secs>=DRAFT_MIN_SECS;
+  /* A logged symptom is content in its own right — a session stopped by pain before any set was
+     typed still has to survive a killed tab. */
+  const hasPain=Object.keys(painEvents).some(k=>k.indexOf(day+"|")===0&&painEvents[k].length);
+  const has=Object.keys(f).length>0||rpe>0||(note||"").trim()!==""||(strain||"")!==""||hasExtra||hasPain||live.secs>=DRAFT_MIN_SECS;
   const slot=draftSlot(day);
   if(!has){ removeDraft(slot.key); if(curDraft.key===slot.key) resetCurDraft(); return; }
   curDraft=slot;
@@ -2375,6 +2495,7 @@ function persistDraft(){
     activity:sessionDraft?sessionDraft.activity:null,
     freeform:freeformNames.slice(),
     extra:Object.assign({},extraSets),
+    pain:JSON.parse(JSON.stringify(painEvents)),
     zoneSecs:live.zoneSecs.slice(),pxi:live.pxi,secs:live.secs,duration:elapsedSec()});
 }
 /* Throttle, not debounce: the first edit in a window guarantees a write within `ms` rather than
@@ -2429,6 +2550,7 @@ function resumeDraft(k){
   if(d.week) document.getElementById("weekSel").value=d.week;
   freeformNames=normalizeFreeform(d.freeform).slice();
   extraSets=Object.assign({},d.extra||{});
+  painEvents=JSON.parse(JSON.stringify(d.pain||{}));
   live.zoneSecs=(d.zoneSecs||[0,0,0,0,0,0]).slice(); live.pxi=d.pxi||0; live.secs=d.secs||0;
   sessAcc=(d.duration||0)*1000; /* clock picks up where it left off; feeds entry.duration */
   curDraft={id:d.draftId,startedAt:d.startedAt,date:d.date,day:d.day,key:k,resumed:true};
@@ -2635,8 +2757,10 @@ function blockHtml(s,bi){
       } else {
         h+=`<button class="setbtn" onclick="addSet(${bi},${ei})">+ Set</button>`;
         if(extra) h+=`<button class="setbtn del" onclick="armRemoveSet(${bi},${ei})">− Set</button><span class="setx">+${extra} over ${ex.sets}</span>`;
+        h+=`<button class="setbtn pain" onclick="openFocus(${bi},${ei},true)">⚠ Pain</button>`;
       }
       h+=`</div>`;
+      h+=`<div id="pain_${bi}_${ei}">${painLinesHtml(bi,ei)}</div>`;
     }
     h+=`</div>`;
   });
@@ -2721,6 +2845,7 @@ function saveSession(){
         sets.push({w:wEl?wEl.value:"",r:rEl?rEl.value:""});}
       const rec={key:ex.key,name:ex.n,rx:ex.rx||"",sets};
       if(extra>0){ rec.extra=extra; rec.programmed=ex.sets; }
+      const sym=painFor(bi,ei); if(sym.length) rec.symptoms=sym.map(e=>Object.assign({},e));
       entries.push(rec);}}));
   /* RKD: live wins; else attached manual entry */
   let pxi=null, zoneMins=null, model=curModel(), medal=null;
@@ -2778,7 +2903,7 @@ function saveSession(){
      tick does the same via live.secs. Hold until onSetInput() sees a real edit. */
   resetCurDraft(); draftHold=true;
   live.zoneSecs=[0,0,0,0,0,0]; live.pxi=0; live.secs=0; pendingManual=null; sessionDraft=null;
-  freeformNames=[]; extraSets={};
+  freeformNames=[]; extraSets={}; painEvents={};
   /* The session clock kept running across Finish, so elapsedSec() carried on climbing and a
      second Finish would have stamped a full duration onto a phantom entry. Close it out. */
   stopBlock(); if(sessInt){ clearInterval(sessInt); sessInt=null; } sessStart=null; sessAcc=0;
@@ -3049,10 +3174,13 @@ END-WORKOUT"></textarea>
     const medalColor=l.medal==="GOLD"?"var(--gold)":l.medal==="SILVER"?"var(--silver)":l.medal==="BRONZE"?"var(--bronze)":(l.medal==="Rest ✓"||l.medal==="Done ✓")?"var(--green)":"var(--muted)";
     const dl=DAY_LABEL[l.day]||"";
     const strainPill=l.strain!=null?`<span class="pxi-pill" style="color:var(--z2)">Strain ${l.strain.toFixed(1)}</span>`:"";
+    const symCount=(l.entries||[]).reduce((n,e)=>n+((e.symptoms||[]).length),0);
+    const symPill=symCount?`<span class="pxi-pill" style="color:var(--amber)">⚠ ${symCount}</span>`:"";
     const noteIcon=l.note?`<svg class="note-ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="${escAttr(l.note)}" style="cursor:pointer" onclick="toggleNote(${idx})"><path d="M4 4h13l3 3v13H4z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>`:"";
     h+=`<div class="hist-card"><div class="h"><span>${blockTag(blockOf(l))}${dl?" · "+dl:""} · ${l.name}</span>
-      <span style="display:flex;align-items:center;gap:8px">${l.pxi!=null?`<span class="pxi-pill"${l.pxi<0?' style="color:var(--red)"':''}>RKD ${l.pxi}</span>`:""}${l.medal?`<span class="medal-pill" style="color:${medalColor}">${l.medal}</span>`:""}${strainPill}${noteIcon}<span style="font-weight:400;color:var(--muted);font-size:13px">${dt.toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span></span></div>
+      <span style="display:flex;align-items:center;gap:8px">${l.pxi!=null?`<span class="pxi-pill"${l.pxi<0?' style="color:var(--red)"':''}>RKD ${l.pxi}</span>`:""}${l.medal?`<span class="medal-pill" style="color:${medalColor}">${l.medal}</span>`:""}${strainPill}${symPill}${noteIcon}<span style="font-weight:400;color:var(--muted);font-size:13px">${dt.toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span></span></div>
     <div class="sub">${l.duration?fmt(l.duration)+" · ":""}${l.rpe?"RPE "+l.rpe:""}${l.activity?" · "+l.activity:""}${l.zoneMins?" · "+l.zoneMins.map((z,i)=>i>0&&z>=0.5?"Z"+i+" "+Math.round(z)+"m":null).filter(Boolean).join(" "):""}</div>
+    ${(l.entries||[]).map(e=>(e.symptoms||[]).map(x=>`<div class="ex-pain">⚠ ${escAttr(e.name)}: ${escAttr(painText(x))}</div>`).join("")).join("")}
     ${l.note?`<div class="note-full" id="noteFull${idx}" style="display:none">${escAttr(l.note)}</div>`:""}
     <div class="row2"><button onclick="copySummary(${idx})">Copy summary</button></div></div>`;});
   m.innerHTML=h;
@@ -3073,7 +3201,10 @@ function priorBestValue(logs,uptoIdx,key){
 }
 function exerciseSummaryLine(logs,idx,e){
   const sets=e.sets.filter(s=>s.w||s.r);
-  if(!sets.length)return `- ${e.name}: prescribed ${e.rx||"—"}\n  actual: no data`;
+  /* Symptoms go in the summary because it's what drives programming feedback — a lift that
+     produced tingling is the first thing a next-session recommendation has to account for. */
+  const sym=(e.symptoms||[]).map(x=>`\n  symptom: ${painText(x)}`).join("");
+  if(!sets.length)return `- ${e.name}: prescribed ${e.rx||"—"}\n  actual: no data${sym}`;
   let best=e.key in PR_KEYS?priorBestValue(logs,idx,e.key):null;
   const parts=sets.map(s=>{
     const w=parseFloat(s.w),r=parseFloat(s.r);
@@ -3089,7 +3220,7 @@ function exerciseSummaryLine(logs,idx,e){
   /* Extra sets are the whole point of tracking them structurally — the summary is what drives
      programming feedback, so it has to say the prescription was exceeded and by how much. */
   const over=e.extra>0?`  (+${e.extra} set${e.extra===1?"":"s"} over the programmed ${e.programmed})\n`:"";
-  return `- ${e.name}: prescribed ${e.rx||"—"}\n${over}  actual: ${parts.join(", ")}`;
+  return `- ${e.name}: prescribed ${e.rx||"—"}\n${over}  actual: ${parts.join(", ")}${sym}`;
 }
 function buildSummary(logs,idx){
   const l=logs[idx];
@@ -3365,6 +3496,7 @@ if(mesoDefaultDay) daySel.value=mesoDefaultDay;
   if(!d) return;
   freeformNames=normalizeFreeform(d.freeform).slice();
   extraSets=Object.assign({},d.extra||{});
+  painEvents=JSON.parse(JSON.stringify(d.pain||{}));
   live.zoneSecs=(d.zoneSecs||[0,0,0,0,0,0]).slice(); live.pxi=d.pxi||0; live.secs=d.secs||0;
   sessAcc=(d.duration||0)*1000;
   curDraft={id:d.draftId,startedAt:d.startedAt,date:d.date,day:d.day,key:k,resumed:false};
