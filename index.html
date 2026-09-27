@@ -189,6 +189,8 @@ body.ivt-amb .selects, body.ivt-amb .tabs{background:transparent}
 .ivt-row{display:flex; gap:10px; align-items:center; margin-top:8px}
 .ivt-mute-btn{width:44px; height:44px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--text); font-size:18px; flex:0 0 44px}
 .ivt-mute-btn.on{border-color:var(--amber); color:var(--amber)}
+.ivt-voice{height:36px; padding:0 10px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--muted); font-size:13px; font-weight:700}
+.ivt-voice.on{border-color:var(--amber); color:var(--amber)}
 .ivt-phase{border-radius:12px; padding:22px 12px; text-align:center; margin:10px 0 4px; transition:background-color .3s ease, border-color .3s ease, opacity .3s ease}
 .ivt-phase.idle{background:var(--surface); border:1px solid var(--line)}
 .ivt-phase.work{background:rgba(52,199,123,.14); border:1px solid var(--green)}
@@ -306,6 +308,17 @@ body.ivt-amb.z5 #focus{background-image:var(--zg5)}
 .f-nav button{flex:1; min-height:52px; border-radius:10px; border:1px solid rgba(255,255,255,.3); background:rgba(0,0,0,.2); color:var(--text); font-size:16px; font-weight:700}
 .f-nav span{font-size:14px; color:rgba(255,255,255,.7); min-width:56px; text-align:center}
 .f-next{font-size:14px; color:rgba(255,255,255,.7)}
+.f-voice{height:48px; padding:0 12px; border-radius:10px; border:1px solid rgba(255,255,255,.3); background:rgba(0,0,0,.2); color:var(--text); font-size:14px; font-weight:700}
+.f-voice.on{background:var(--amber); color:#0E1526; border-color:var(--amber)}
+/* ===== Bell flash: iPhone browsers ignore navigator.vibrate and tones drown under headphone
+   music, so every cue is also a full-screen flash. Never takes a touch. ===== */
+#flash{position:fixed; inset:0; z-index:60; pointer-events:none; opacity:0}
+#flash.go{background:#fff; animation:flash3 .9s ease-out}
+#flash.rest{background:var(--amber); animation:flash3 .9s ease-out}
+#flash.warn{background:var(--amber); animation:flash1 .6s ease-out}
+#flash.done{background:var(--green); animation:flash3 1.2s ease-out}
+@keyframes flash3{0%,33%,66%{opacity:.85} 16%,50%,100%{opacity:0}}
+@keyframes flash1{0%{opacity:.7} 100%{opacity:0}}
 </style>
 </head>
 <body>
@@ -366,6 +379,7 @@ body.ivt-amb.z5 #focus{background-image:var(--zg5)}
 </div>
 <main id="main"></main>
 <div id="focus" hidden></div>
+<div id="flash"></div>
 <div class="dock" id="dock"><div class="dock-idle">Reach your equipment → press ▶ on that block. Bell = start your set. Rest until the next bell.</div></div>
 <div class="toast" id="toast"></div>
 
@@ -1877,7 +1891,7 @@ const ivtOnScreen=()=>view==="pxi";
 let ivtAboutOpen=false; /* survives the render() that rebuilds the RKD page on tab/day changes */
 function ivtPanelHtml(){
   return `<div class="ivt-panel">
-    <div class="ivt-h"><span class="t">Interval Timer</span></div>
+    <div class="ivt-h"><span class="t">Interval Timer</span>${voiceBtnHtml("ivt-voice","ivtVoiceBtn")}</div>
     <div id="ivtBody"></div>
     <details class="ivt-about"${ivtAboutOpen?" open":""} ontoggle="ivtAboutOpen=this.open">
       <summary>About this timer</summary>
@@ -1964,7 +1978,10 @@ function ivtReset(){
   renderIvt();
 }
 function ivtTone(phase){
+  /* The flash is visual, so it runs even muted — mute is about sound. */
+  flashAlert(phase==="work"?"go":"rest");
   if(ivtCfg.muted)return;
+  say(phase==="work"?(ivt&&ivt.round>1?"Round "+ivt.round+". Work":"Work"):phase==="prep"?"Get ready":"Rest");
   ac(); if(!AC)return;
   if(phase==="work"){ tone(880,0,.3,.5); if(navigator.vibrate)navigator.vibrate(150); }
   /* prep start is a low, soft blip — enough to confirm the tap without reading as "go". The
@@ -1973,7 +1990,9 @@ function ivtTone(phase){
   else { tone(440,0,.3,.45); if(navigator.vibrate)navigator.vibrate([100,80,100]); }
 }
 function ivtChime(){
+  flashAlert("done");
   if(ivtCfg.muted)return;
+  say("Done");
   ac(); if(!AC)return;
   tone(660,0,.2,.45); tone(880,.2,.2,.45); tone(1100,.4,.4,.5);
   if(navigator.vibrate)navigator.vibrate([250,120,250]);
@@ -2059,9 +2078,10 @@ function playBlock(bi){
   const b=getSession(w,day).blocks[bi];
   if(!b.bells)return;
   startClock(); keepAwake();
-  run={bi, letter:b.letter, bells:b.bells, ivl:interval(b), setNo:1};
+  run={bi, letter:b.letter, bells:b.bells, ivl:interval(b), setNo:1, warned:false,
+       names:b.ex.filter(ex=>ex.sets>0).map(ex=>ex.n)};
   run.end=Date.now()+run.ivl*1000;
-  bell(); markLive(bi,true); updateDock();
+  bell(); flashAlert("go"); say(setCue(run)); markLive(bi,true); updateDock();
   run.int=setInterval(tickBlock,200);
   highlightSet(bi,1);
   if(focusIdx!=null) renderFocus();
@@ -2073,7 +2093,12 @@ function tickBlock(){
   const left=Math.ceil((run.end-Date.now())/1000);
   if(left<=0){
     if(run.setNo>=run.bells){ finishBlock(); return;}
-    run.setNo++; run.end=Date.now()+run.ivl*1000; bell(); highlightSet(run.bi,run.setNo);
+    run.setNo++; run.end=Date.now()+run.ivl*1000; run.warned=false;
+    bell(); flashAlert("go"); say(setCue(run)); highlightSet(run.bi,run.setNo);
+  }
+  /* Heads-up before the next set. Not on the last set (nothing follows) or a very short interval. */
+  else if(left<=10&&!run.warned&&run.setNo<run.bells&&run.ivl>20){
+    run.warned=true; flashAlert("warn"); say("Ten seconds");
   }
   updateDock(left<=0?run.ivl:left);
 }
@@ -2084,6 +2109,7 @@ function finishBlock(){
   if(card){card.classList.remove("live");card.classList.add("finished");
     const pb=card.querySelector(".playb"); if(pb){pb.classList.remove("live");pb.classList.add("done");pb.textContent="✓";}}
   clearInterval(run.int); const done=run.letter; run=null;
+  flashAlert("done"); say("Block "+done+" done");
   if(view==="session") document.getElementById("dock").innerHTML=`<div class="dock-idle"><b style="color:var(--green)">Block ${done} done.</b> Log your numbers, move to the next station, press ▶.${ivtDockBtnHtml()}</div>`;
   if(focusIdx!=null) renderFocus();
 }
@@ -2105,6 +2131,40 @@ function highlightSet(bi,setNo){
   document.querySelectorAll(`#blk${bi} .set`).forEach(el=>{
     el.classList.toggle("now",+el.dataset.set===setNo);});
 }
+/* ================= ALERTS =================
+   Cues that reach you with music in your headphones. flashAlert() always runs; spoken cues are
+   opt-in (dtp-alerts) because they talk over whatever is playing. iOS only lets a page speak
+   after a tap, so turning voice on speaks once to unlock it. */
+const ALERTS_KEY="dtp-alerts";
+let alertsMem="{}"; /* storageOK===false fallback */
+function alertCfg(){
+  try{ return Object.assign({voice:false},JSON.parse((storageOK?localStorage.getItem(ALERTS_KEY):alertsMem)||"{}")); }
+  catch(e){ return {voice:false}; }
+}
+function toggleVoice(){
+  const c=alertCfg(); c.voice=!c.voice;
+  const s=JSON.stringify(c);
+  if(storageOK) localStorage.setItem(ALERTS_KEY,s); else alertsMem=s;
+  if(c.voice) say("Voice cues on");
+  const vb=document.getElementById("ivtVoiceBtn"); if(vb) vb.outerHTML=voiceBtnHtml("ivt-voice","ivtVoiceBtn");
+  if(focusIdx!=null) renderFocus();
+}
+function voiceBtnHtml(cls,id){
+  const on=alertCfg().voice;
+  return `<button class="${cls}${on?" on":""}" id="${id}" onclick="toggleVoice()" title="Spoken cues">🗣 ${on?"Voice on":"Voice off"}</button>`;
+}
+function say(text){
+  if(!alertCfg().voice||!window.speechSynthesis) return;
+  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.rate=1.05; speechSynthesis.speak(u); }catch(e){}
+}
+/* kind: go | rest | warn | done. Class is dropped and re-added so back-to-back cues replay. */
+function flashAlert(kind){
+  const el=document.getElementById("flash"); if(!el) return;
+  el.className=""; void el.offsetWidth; el.className=kind;
+}
+/* "Set 2 of 4. Rack Pull" — superset names both, in the order they're done. */
+function setCue(r){ return "Set "+r.setNo+" of "+r.bells+(r.names.length?". "+r.names.join(", then "):""); }
+
 let AC=null;
 function tone(f,t,dur,vol){const o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);
   o.frequency.value=f;g.gain.setValueAtTime(vol,AC.currentTime+t);g.gain.exponentialRampToValueAtTime(.01,AC.currentTime+t+dur);
@@ -2170,7 +2230,7 @@ function renderFocus(){
   const s=focusSession(), steps=focusStepsFor(s.blocks,extraFor);
   if(!steps.length){ closeFocus(); return; }
   el.hidden=false;
-  const top=`<div class="f-top"><span class="f-blk">Set mode · ${escAttr(s.name.split(" — ")[0])}</span><button class="f-x" onclick="closeFocus()">✕</button></div>
+  const top=`<div class="f-top"><span class="f-blk">Set mode · ${escAttr(s.name.split(" — ")[0])}</span>${voiceBtnHtml("f-voice","fVoiceBtn")}<button class="f-x" onclick="closeFocus()">✕</button></div>
     <div class="f-hr"><span id="fBpm">${live.lastBpm!=null?live.lastBpm:"--"}</span> bpm · <span class="z" id="fZone">${escAttr(document.getElementById("zoneName").textContent)}</span></div>`;
   if(focusIdx>=steps.length){
     focusIdx=steps.length; el.dataset.idx="done";
