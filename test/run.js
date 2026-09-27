@@ -176,7 +176,8 @@ loadRegions(
   region("const IVT_DEFAULTS=","function ivtToggleMute(){"),            /* timer presets */
   region("function captureSessionDraft(){","function restoreSessionDraft(){"),
   region("function restoreSessionDraft(){","/* ================= DURABLE SESSION DRAFTS"),
-  region("const DRAFT_PREFIX=","function setView(v){")              /* durable drafts        */
+  region("const DRAFT_PREFIX=","function setView(v){"),             /* durable drafts        */
+  region("function focusStepsFor(blocks,extraOf){","let focusIdx=null;") /* set-mode walk order */
 );
 /* The PR grid lives inside renderHistory(); wrap the tile-building slice as a function. */
 loadRegions("function prGrid(logs){\n"+region("  const prs={};","  const totals=weeklyTotals(logs);")+"\n  return h;\n}");
@@ -358,6 +359,20 @@ resetState();
 var g2=prGrid([{entries:[{key:"Goblet Squat",sets:[{w:"70",r:"8"}]}]}]);
 ok(g2.indexOf("current block")<0,"no heading when the block programmes none of them");
 ok(/Everything else · 1/.test(g2),"...everything just folds");
+
+section("Set mode — walk order");
+var fb=[{ex:[{n:"Prep",sets:0}]},                                   /* nothing to log -> skipped */
+        {ex:[{n:"Row",sets:2},{n:"Squat",sets:2}]},                 /* superset */
+        {ex:[{n:"Carry",sets:1}]}];
+var fs=focusStepsFor(fb,function(){return 0;});
+eq(fs.map(function(s){return s.bi+"."+s.ei+"."+s.i;}).join(" "),"1.0.0 1.1.0 1.0.1 1.1.1 2.0.0",
+   "a superset alternates exercises set by set; zero-set exercises are skipped");
+eq(fs[0].total,2,"each step knows its exercise's set count");
+var fx=focusStepsFor(fb,function(bi,ei){return bi===1&&ei===0?1:0;});
+eq(fx.map(function(s){return s.bi+"."+s.ei+"."+s.i;}).join(" "),"1.0.0 1.1.0 1.0.1 1.1.1 1.0.2 2.0.0",
+   "an extra set extends only the exercise it was added to");
+eq(fx[4].total,3,"...and its total counts the extra");
+eq(focusStepsFor([],function(){return 0;}).length,0,"no blocks -> no steps");
 
 section("Durable drafts — autosave");
 resetState();

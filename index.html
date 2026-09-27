@@ -269,6 +269,43 @@ body.ivt-amb .selects, body.ivt-amb .tabs{background:transparent}
 .zc-row.ok .zv{color:var(--green)} .zc-row.warn .zv{color:var(--amber)} .zc-row.bad .zv{color:var(--red)}
 @media(min-width:700px){ main{max-width:640px; margin:0 auto} .dock{max-width:640px; margin:0 auto; left:50%; transform:translateX(-50%); border-radius:14px 14px 0 0} .zGrid{grid-template-columns:repeat(5,1fr)} }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* ===== Set mode: one set at a time, sized to be read from arm's length on a phone mid-set ===== */
+.focusbtn{width:100%; padding:14px; margin-bottom:14px; border-radius:10px; border:none; background:var(--amber); color:#0E1526; font-size:17px; font-weight:800; font-family:var(--disp); letter-spacing:.06em; text-transform:uppercase}
+#focus{position:fixed; inset:0; z-index:50; overflow-y:auto; background:var(--bg); padding:14px 16px 20px; display:flex; flex-direction:column; gap:12px}
+#focus[hidden]{display:none}
+/* Same zone wash as the page behind it, so colour still reads at a glance with the overlay up. */
+body.ivt-amb.z1 #focus{background-image:var(--zg1)}
+body.ivt-amb.z2 #focus{background-image:var(--zg2)}
+body.ivt-amb.z3 #focus{background-image:var(--zg3)}
+body.ivt-amb.z4 #focus{background-image:var(--zg4)}
+body.ivt-amb.z5 #focus{background-image:var(--zg5)}
+.f-top{display:flex; align-items:center; gap:10px}
+.f-blk{flex:1; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:rgba(255,255,255,.7)}
+.f-sub{font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:rgba(255,255,255,.7)}
+.f-x{width:48px; height:48px; border-radius:10px; border:1px solid rgba(255,255,255,.3); background:rgba(0,0,0,.2); color:var(--text); font-size:20px; font-weight:800}
+.f-hr{font-family:var(--disp); font-weight:700; font-size:22px; letter-spacing:.04em}
+.f-hr .z{font-size:15px; color:rgba(255,255,255,.75); text-transform:uppercase; letter-spacing:.08em}
+.f-name{font-family:var(--disp); font-weight:700; font-size:32px; line-height:1.05; text-transform:uppercase; letter-spacing:.03em}
+.f-rx{font-size:16px; color:rgba(255,255,255,.8)}
+.f-set{font-family:var(--disp); font-weight:700; font-size:64px; line-height:1}
+.f-set small{font-size:26px; color:rgba(255,255,255,.7)}
+.f-last{font-size:17px; color:rgba(255,255,255,.8)}
+.f-row{display:flex; align-items:center; gap:10px}
+.f-row label{flex:0 0 58px; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,.7)}
+.f-row input{flex:1; min-width:0; height:64px; font-size:40px; font-family:var(--mono); text-align:center; background:rgba(0,0,0,.28); color:var(--text); border:1px solid rgba(255,255,255,.3); border-radius:10px}
+.f-step{flex:0 0 64px; height:64px; border-radius:10px; border:1px solid rgba(255,255,255,.3); background:rgba(0,0,0,.2); color:var(--text); font-size:22px; font-weight:800}
+.f-act{display:flex; gap:10px}
+.f-act button{flex:1; min-height:68px; border-radius:12px; border:none; font-size:20px; font-weight:800; font-family:var(--disp); letter-spacing:.05em; text-transform:uppercase}
+.f-same{background:rgba(255,255,255,.16); color:var(--text)}
+.f-done{background:var(--green); color:#0E1526}
+.f-timer{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 14px; border-radius:12px; background:rgba(0,0,0,.25)}
+.f-timer .t{font-family:var(--disp); font-weight:700; font-size:48px; line-height:1; font-variant-numeric:tabular-nums}
+.f-timer .l{font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,.75)}
+.f-timer button{min-height:52px; padding:0 16px; border-radius:10px; border:none; background:var(--amber); color:#0E1526; font-weight:800; font-size:16px}
+.f-nav{display:flex; align-items:center; gap:10px; margin-top:auto}
+.f-nav button{flex:1; min-height:52px; border-radius:10px; border:1px solid rgba(255,255,255,.3); background:rgba(0,0,0,.2); color:var(--text); font-size:16px; font-weight:700}
+.f-nav span{font-size:14px; color:rgba(255,255,255,.7); min-width:56px; text-align:center}
+.f-next{font-size:14px; color:rgba(255,255,255,.7)}
 </style>
 </head>
 <body>
@@ -328,6 +365,7 @@ body.ivt-amb .selects, body.ivt-amb .tabs{background:transparent}
   <button class="tab" id="tabHep" onclick="setView('hep')">HEP</button>
 </div>
 <main id="main"></main>
+<div id="focus" hidden></div>
 <div class="dock" id="dock"><div class="dock-idle">Reach your equipment → press ▶ on that block. Bell = start your set. Rest until the next bell.</div></div>
 <div class="toast" id="toast"></div>
 
@@ -1696,6 +1734,7 @@ function setBand(z,label,bpm,pct){
   const fillPct=pct!=null?Math.max(0,Math.min(100,(pct-40)/60*100)):0;
   document.getElementById("hrBarFill").style.width=fillPct+"%";
   document.querySelectorAll("#hrBarSegs span").forEach((s,i)=>s.classList.toggle("cur",z>0&&(i+1)===z));
+  const fb=document.getElementById("fBpm"); if(fb){ fb.textContent=bpm!=null?bpm:"--"; document.getElementById("fZone").textContent=label; }
   ivtSyncChrome(); /* the timer's ambient wash mirrors this band, so it changes zone with it */
 }
 
@@ -2025,9 +2064,11 @@ function playBlock(bi){
   bell(); markLive(bi,true); updateDock();
   run.int=setInterval(tickBlock,200);
   highlightSet(bi,1);
+  if(focusIdx!=null) renderFocus();
 }
 function stopBlock(){ if(!run)return; clearInterval(run.int); markLive(run.bi,false); run=null;
-  if(view==="session") document.getElementById("dock").innerHTML=`<div class="dock-idle">Reach your equipment → press ▶ on that block. Bell = start your set. Rest until the next bell.${ivtDockBtnHtml()}</div>`;}
+  if(view==="session") document.getElementById("dock").innerHTML=`<div class="dock-idle">Reach your equipment → press ▶ on that block. Bell = start your set. Rest until the next bell.${ivtDockBtnHtml()}</div>`;
+  if(focusIdx!=null) renderFocus();}
 function tickBlock(){
   const left=Math.ceil((run.end-Date.now())/1000);
   if(left<=0){
@@ -2044,10 +2085,12 @@ function finishBlock(){
     const pb=card.querySelector(".playb"); if(pb){pb.classList.remove("live");pb.classList.add("done");pb.textContent="✓";}}
   clearInterval(run.int); const done=run.letter; run=null;
   if(view==="session") document.getElementById("dock").innerHTML=`<div class="dock-idle"><b style="color:var(--green)">Block ${done} done.</b> Log your numbers, move to the next station, press ▶.${ivtDockBtnHtml()}</div>`;
+  if(focusIdx!=null) renderFocus();
 }
 function updateDock(left){
   if(!run||view!=="session")return;
   left=left??Math.ceil((run.end-Date.now())/1000);
+  const ft=document.getElementById("fTimer"); if(ft) ft.textContent=fmt(Math.max(0,left));
   document.getElementById("dock").innerHTML=`<div class="dock-run">
     <div class="d-block">${run.letter}</div>
     <div class="d-mid"><div class="d-set">SET ${run.setNo} OF ${run.bells} · every ${fmt(run.ivl)}</div>
@@ -2069,6 +2112,104 @@ function tone(f,t,dur,vol){const o=AC.createOscillator(),g=AC.createGain();o.con
 function ac(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}
 function bell(){ac(); if(!AC)return; tone(880,0,.35,.5); if(navigator.vibrate)navigator.vibrate(150);}
 function chime(){ac(); if(!AC)return; tone(660,0,.2,.45); tone(880,.2,.2,.45); tone(1100,.4,.4,.5);}
+
+/* ================= SET MODE =================
+   Full-screen, one set at a time — the session page's small inputs and progress bar aren't
+   readable on a phone mid-set. Holds no set data of its own: it reads and writes the session
+   page's own w_/r_ inputs, so drafts, Finish, extra sets and history all work unchanged. */
+/* Walk order through the day. A superset block interleaves its exercises set by set
+   (A1 set 1, A2 set 1, A1 set 2, …), which is how the block is actually performed; extra sets
+   extend only the exercise they were added to. Exercises with no logged sets (prep, warm-up)
+   are skipped. Pure so the test suite can check the order without a session DOM. */
+function focusStepsFor(blocks,extraOf){
+  const out=[];
+  blocks.forEach((b,bi)=>{
+    const tot=b.ex.map((ex,ei)=>ex.sets>0?ex.sets+extraOf(bi,ei):0);
+    const max=Math.max(0,...tot);
+    for(let i=0;i<max;i++) b.ex.forEach((ex,ei)=>{ if(i<tot[ei]) out.push({bi,ei,i,total:tot[ei]}); });
+  });
+  return out;
+}
+let focusIdx=null; /* null = closed */
+function focusSession(){ return getSession(+document.getElementById("weekSel").value,curDay()); }
+const focusInput=(p,st)=>document.getElementById(p+"_"+st.bi+"_"+st.ei+"_"+st.i);
+function openFocus(){
+  const steps=focusStepsFor(focusSession().blocks,extraFor); if(!steps.length) return;
+  /* Open on the first set with nothing typed, so reopening mid-session lands where you are. */
+  const k=steps.findIndex(st=>{const w=focusInput("w",st),r=focusInput("r",st);return w&&r&&!w.value&&!r.value;});
+  focusIdx=k<0?0:k;
+  keepAwake(); /* the screen sleeping between sets is the thing this mode exists to prevent */
+  renderFocus();
+}
+function closeFocus(){
+  if(focusIdx==null) return;
+  focusIdx=null; releaseAwake();
+  document.getElementById("focus").hidden=true;
+}
+function focusGo(d){ focusIdx=Math.max(0,focusIdx+d); renderFocus(); }
+function focusStep(p,delta){
+  const el=document.getElementById(p==="w"?"fW":"fR"); if(!el) return;
+  const v=Math.max(0,(parseFloat(el.value||el.placeholder)||0)+delta);
+  el.value=String(Math.round(v*10)/10);
+}
+/* Writes the set into the session page's inputs, then moves on. `same` fills last time's
+   numbers first, so an unchanged set is a single tap. */
+function focusDone(same){
+  const steps=focusStepsFor(focusSession().blocks,extraFor), st=steps[focusIdx]; if(!st) return;
+  const fw=document.getElementById("fW"), fr=document.getElementById("fR");
+  if(same){ fw.value=fw.placeholder; fr.value=fr.placeholder; }
+  if(!fr.value&&!fw.value){ toast("Enter reps (and weight) first"); return; }
+  const w=focusInput("w",st), r=focusInput("r",st); if(!w||!r) return;
+  w.value=fw.value; r.value=fr.value;
+  onSetInput();
+  focusIdx++; renderFocus();
+}
+function renderFocus(){
+  const el=document.getElementById("focus");
+  if(focusIdx==null||view!=="session"){ closeFocus(); return; }
+  const s=focusSession(), steps=focusStepsFor(s.blocks,extraFor);
+  if(!steps.length){ closeFocus(); return; }
+  el.hidden=false;
+  const top=`<div class="f-top"><span class="f-blk">Set mode · ${escAttr(s.name.split(" — ")[0])}</span><button class="f-x" onclick="closeFocus()">✕</button></div>
+    <div class="f-hr"><span id="fBpm">${live.lastBpm!=null?live.lastBpm:"--"}</span> bpm · <span class="z" id="fZone">${escAttr(document.getElementById("zoneName").textContent)}</span></div>`;
+  if(focusIdx>=steps.length){
+    focusIdx=steps.length; el.dataset.idx="done";
+    /* Next › can skip sets, so reaching the end doesn't mean everything was logged — count it. */
+    const logged=steps.filter(st=>{const w=focusInput("w",st),r=focusInput("r",st);return (w&&w.value)||(r&&r.value);}).length;
+    el.innerHTML=top+`<div class="f-name">${logged===steps.length?"All sets logged":"End of session"}</div>
+      <div class="f-rx">${logged} of ${steps.length} sets logged. Close set mode to add session RPE, strain and notes, then Finish.</div>
+      <div class="f-act"><button class="f-done" onclick="closeFocus()">Back to session</button></div>
+      <div class="f-nav"><button onclick="focusGo(-1)">‹ Prev</button><span>${steps.length}/${steps.length}</span><button disabled style="opacity:.35">Next ›</button></div>`;
+    return;
+  }
+  const st=steps[focusIdx], b=s.blocks[st.bi], ex=b.ex[st.ei];
+  const w=focusInput("w",st), r=focusInput("r",st);
+  /* A redraw of the same set (a bell starting or finishing the block) must not eat numbers typed
+     but not yet confirmed. */
+  const pw=document.getElementById("fW"), pr=document.getElementById("fR");
+  const keep=el.dataset.idx===String(focusIdx)&&pw?{w:pw.value,r:pr.value}:null;
+  el.dataset.idx=String(focusIdx);
+  const last=lastFor(ex.key), lw=last&&last[st.i]?last[st.i].w:"", lr=last&&last[st.i]?last[st.i].r:"";
+  const nx=steps[focusIdx+1], nxEx=nx?s.blocks[nx.bi].ex[nx.ei]:null;
+  const isRun=run&&run.bi===st.bi;
+  el.innerHTML=top+`
+    <div class="f-sub">${escAttr(b.letter)} · ${escAttr(b.t)}${b.ex.length>1?" · superset":""}</div>
+    <div class="f-name">${escAttr(ex.n||"Exercise")}</div>
+    ${ex.rx?`<div class="f-rx">${escAttr(ex.rx)}</div>`:""}
+    <div class="f-set">SET ${st.i+1} <small>of ${st.total}${st.i>=ex.sets?" · extra":""}</small></div>
+    <div class="f-last">${lw||lr?`Last time: ${escAttr(lw||"–")} × ${escAttr(lr||"–")}`:"No previous numbers for this set"}</div>
+    <div class="f-row"><label>Weight</label><button class="f-step" onclick="focusStep('w',-5)">−5</button>
+      <input id="fW" inputmode="decimal" value="${escAttr(w?w.value:"")}" placeholder="${escAttr(lw)}"><button class="f-step" onclick="focusStep('w',5)">+5</button></div>
+    <div class="f-row"><label>Reps</label><button class="f-step" onclick="focusStep('r',-1)">−1</button>
+      <input id="fR" inputmode="numeric" value="${escAttr(r?r.value:"")}" placeholder="${escAttr(lr)}"><button class="f-step" onclick="focusStep('r',1)">+1</button></div>
+    <div class="f-act">${lw||lr?`<button class="f-same" onclick="focusDone(true)">Same as last ✓</button>`:""}<button class="f-done" onclick="focusDone(false)">Done ✓</button></div>
+    ${b.bells?`<div class="f-timer">${isRun
+      ?`<div><div class="l">Block ${escAttr(b.letter)} · set ${run.setNo} of ${run.bells}</div><div class="t" id="fTimer">${fmt(Math.max(0,Math.ceil((run.end-Date.now())/1000)))}</div></div><button onclick="stopBlock()">Stop</button>`
+      :`<div class="l">Bells: ${b.bells} × ${fmt(interval(b))}</div><button onclick="playBlock(${st.bi})">▶ Start bells</button>`}</div>`:""}
+    ${nxEx?`<div class="f-next">Next: ${escAttr(nxEx.n||"Exercise")} · set ${nx.i+1}</div>`:""}
+    <div class="f-nav"><button onclick="focusGo(-1)"${focusIdx===0?' disabled style="opacity:.35"':""}>‹ Prev</button><span>${focusIdx+1}/${steps.length}</span><button onclick="focusGo(1)">Next ›</button></div>`;
+  if(keep){ document.getElementById("fW").value=keep.w; document.getElementById("fR").value=keep.r; }
+}
 
 /* ================= RENDER ================= */
 /* ---- session draft: typed-but-unsaved inputs survive tab switches (DOM is rebuilt wholesale on every render) ---- */
@@ -2259,9 +2400,9 @@ function staleDraftBannerHtml(){
 /* BUGFIX (pre-existing): changing day rebuilds #main and destroyed anything typed, because only
    tab switches ever captured. sessionDraft.day still names the outgoing day here, so the flush
    files this work under the day it was actually typed on. */
-function onDayChange(){ flushDraft(); stopBlock(); render(); }
+function onDayChange(){ closeFocus(); flushDraft(); stopBlock(); render(); }
 function setView(v){
-  if(view==="session"&&v!=="session"){ captureSessionDraft(); flushDraft(); }
+  if(view==="session"&&v!=="session"){ closeFocus(); captureSessionDraft(); flushDraft(); }
   if(view==="hep"&&v!=="hep") stopHepClock();
   view=v;
   document.getElementById("tabS").className="tab"+(v==="session"?" active":"");
@@ -2392,6 +2533,7 @@ function render(){
     ? `${MODEL_DESC[curModel()]} RKD reference only — no target/medal, nothing prescribed to grade against.`
     : `${MODEL_DESC[curModel()]} Target ${pxiSet.target} · Gold ±5%.`);
   h+=infoBox("ibEq","meta eq","Equipment",EQ[day]);
+  h+=`<button class="focusbtn" onclick="openFocus()">Set mode — one set at a time</button>`;
   s.blocks.forEach((b,bi)=>{ h+=blockHtml(s,bi);
     if(day==="strengthFree") h+=`<div class="row2" style="margin:-6px 0 14px"><button class="btn2" onclick="addFreeformEx()">+ Add exercise</button></div>`;
   });
