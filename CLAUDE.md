@@ -4,7 +4,8 @@
 - Live at `https://dkr-fitness.github.io/rkd-log/`
 - Repo: `dkr-fitness/rkd-log`
 - Core file: `index.html` — has been `index.html` since the repo's first commit (3e45811); never named `Block_Log_RKD.html` in this repo's history (confirmed via `git log --follow`, 2026-07-06). Content originally came from a local file `RKD_Log.html` in Documents, copied in at the filesystem level before `git add`, so no rename event exists in git.
-- Single self-contained file (~2,000 lines, no build step) — that's deliberate: deploy is `git push`, and it works offline in Bluefy. Don't split it.
+- Single self-contained file (~3,500 lines, no build step) — that's deliberate: deploy is `git push`, and it works offline in Bluefy. Don't split it.
+- **Used on an iPhone in Bluefy at the gym** (the iPad was too bulky). Design for phone width, read at arm's length mid-set, often with music in headphones. iPhone browsers ignore `navigator.vibrate`, so never rely on haptics for a cue.
 - Git auth via `gh` CLI
 - Rollback via `git revert`
 
@@ -28,7 +29,8 @@
   | `meso01` | Meso 1 | Aug 17 – Sep 6 |
   | `meso02` | Meso 2 | Sep 7 – Oct 18 |
 - Past the last block, weeks keep counting as **`Off-block · Wk N`** so totals never re-freeze into one bucket. Before Block 1 is `Pre-block`.
-- **Two display forms:** `blockTag` compact (`M1·W3`) for the top bar and history rows; `blockText` verbose (`Meso 1 · Wk 3`) for the weekly-totals list and copy-summary.
+- **Two display forms:** `blockTag` compact (`M2·W3·V`) for the top bar and history rows; `blockText` verbose (`Meso 2 · Wk 3 · Volume Phase`) for the weekly-totals list and copy-summary. The phase suffix appears only on `meso*` blocks.
+- **Phases:** `phaseForWeek(week, blockId)` reads `PHASE_PLAN[blockId]`, else `PHASE_PLAN_DEFAULT` (weeks 1–2 Baseline, 3–4 Volume, 5–6 Performance; clamps past either end). **Meso 02 overrides it** to Baseline ×2 then Volume ×4 — changed 2026-09-26 because the goal is muscle gain and 3×3–5 heavy builds strength more than size. Meso 02's main lifts (Back Squat, Chest Press, RDL/Hip Thrust), Rack Pull, and accessory set counts branch on the phase inside `getSession()` (`meso2MainRx` / `meso2RackPullRx` / `meso2AccRx`). A Meso 03 gets the default split unless it adds a `PHASE_PLAN` entry.
 - Entries are stamped `block` / `blockLabel` / `blockWeek` at save. `week: w` is kept **vestigially** for backward compat with pre-existing logs. `blockOf(log)` trusts the stamp, else re-derives from `log.date` — so old logs regroup correctly with no migration.
 - `weeklyTotals()` keys on **block + week-within-block**, so unrelated blocks never share a bucket.
 - Mesocycle reference docs: `RKD_Mesocycle_01.md`, `RKD_Mesocycle_02.md`. Day templates are calendar-driven via `mesoPhase()` / `mesoPhase2()` and ignore `w` entirely.
@@ -42,8 +44,9 @@
 - Keep initial asks single-purpose
 - Say **"don't edit anything yet"** explicitly when the intent is to stay in strategy/discussion mode
 - Default rhythm: **show the diff → commit → push as separate steps.** Don't chain commit+push.
-- UI must work on touch (Bluefy/iPad) — no hover-only interactions
-- No build step. **`./test/run.sh` runs the logic tests** — run it before committing anything logic-shaped. It covers block/week identity, the scoring curves and medal tiers, weekly-totals grouping, the durable-draft lifecycle, Finish stamping + the duplicate guard, and the PR grid. It uses macOS JavaScriptCore (`jsc`), reads `index.html` and extracts regions **by source anchor** rather than duplicating logic, so a moved anchor fails loudly instead of testing a stale copy. Anything Bluetooth- or timing-shaped is out of scope and still needs a real device.
+- UI must work on touch (Bluefy on iPhone) — no hover-only interactions
+- No build step. **`./test/run.sh` runs the logic tests** — run it before committing anything logic-shaped. It covers block/week identity and phases, the scoring curves and medal tiers, weekly-totals grouping, the durable-draft lifecycle, Finish stamping + the duplicate guard, extra sets, symptoms (pain check), set mode's walk order, and the PR grid. It uses macOS JavaScriptCore (`jsc`), reads `index.html` and extracts regions **by source anchor** rather than duplicating logic, so a moved anchor fails loudly instead of testing a stale copy. Anything Bluetooth- or timing-shaped is out of scope and still needs a real device.
+- UI changes can be checked without a device: serve the repo (`python3 -m http.server`), load `index.html` in a same-origin wrapper page that drives it through `iframe.contentWindow.eval(...)` (top-level `let`/`const` aren't on `window`), and screenshot with headless Chrome at 390px wide (`--headless=new --screenshot --window-size=390,844`; Chrome's minimum window is wider, so fix the iframe at 390px). macOS has no `timeout`; use `perl -e 'alarm 25; exec @ARGV'`. Use a throwaway `--user-data-dir` so real data is never touched, and delete the wrapper afterwards.
 - **Don't stub out the function whose behaviour is under test.** `captureSessionDraft()` was stubbed to a no-op, and since it's the function that scrapes the live form, no test could observe the form being scraped after a save — the post-Finish draft resurrection hid behind 103 green checks. It and `restoreSessionDraft()` are now loaded from source against a small `DOM` id-map stub (`fillForm`/`emptyForm`). Prefer widening that stub to stubbing the logic. Sanity-check a new regression test by reverting the fix and confirming it actually fails.
 - Gotcha: `jsc`'s `quit(n)` ignores its argument and always exits 0, and an uncaught throw exits 3 — so `test/run.sh` gates on a `RESULT:` sentinel line instead. Use the wrapper, not bare `jsc`, if you need the exit code.
 
@@ -51,13 +54,14 @@
 - Data persists by **URL origin**, not file contents — redeploying to the same Pages URL never risks saved data
 - Real data-loss risks: opening via `file://`, clearing browser/site data, switching devices
 - JSON export is the portability net for moving data across devices
-- Keys in use: `dtp-logs` (sessions), `dtp-pxi` (scoring settings), `dtp-ivt` (interval-timer config), `hep_<date>` / `hepDetail_<date>` (daily HEP), `dtp-draft_<date>_<day>` (unfinished sessions)
+- Keys in use: `dtp-logs` (sessions), `dtp-pxi` (scoring settings), `dtp-ivt` (interval-timer config), `dtp-ivt-presets` (saved timer presets), `dtp-alerts` (voice-cue on/off), `hep_<date>` / `hepDetail_<date>` (daily HEP), `dtp-draft_<date>_<day>` (unfinished sessions)
 - Every writer degrades to an in-memory fallback when `storageOK` is false (private browsing) — match that pattern for anything new
 
 ## Session Logging
 - Finish flow captures **WHOOP strain** (0–21, manual entry) and reuses the existing pre-save **notes** textarea (no separate field)
-- History rows: block/week tag, strain pill, tappable note icon (toggles full text inline — works on touch; `title` attr gives hover on desktop too)
-- **Copy summary** button per History row exports a fixed-format text block (date, **block/week**, RKD score/medal, zone minutes, strain, prescribed-vs-actual per exercise with PR flags, notes) for pasting into chat to drive programming feedback
+- History rows: block/week tag, strain pill, ⚠ symptom count + one line per symptom, tappable note icon (toggles full text inline — works on touch; `title` attr gives hover on desktop too)
+- **Copy summary** button per History row exports a fixed-format text block (date, **block/week/phase**, RKD score/medal, zone minutes, strain, prescribed-vs-actual per exercise with PR flags and `symptom:` lines, notes) for pasting into chat to drive programming feedback
+- **Symptoms (pain check):** `painEvents`, keyed `day|block_exercise` like `extraSets`. Each event is `{set, kind: ache|tingling|sharp, side, resolved: true|false|null, at}`, following the user's own rule "rest, then is the pain gone?" — true = went away, false = stayed and the exercise was stopped, null = not checked. Saved on the exercise's log entry as `symptoms`. The Form Reference's "tingling/shooting is a stop" line is **shown, not enforced**.
 - Prescribed reps/weight (`rx`) persisted onto each log entry at save time — keeps historical accuracy even after program numbers change later
 - PR flag = beat the best prior value from **chronologically earlier** sessions only (not all-time/future-aware)
 
@@ -65,7 +69,7 @@
 - A session is written to `dtp-draft_<YYYY-MM-DD>_<day>` **as sets are logged**, not only on FINISH — so a killed background tab or a forgotten FINISH doesn't lose the workout.
 - Triggers: every set/RPE/note/strain/activity edit (400ms throttle), live zone accrual (10s), and a flush on `pagehide` + `visibilitychange:hidden`. **`beforeunload` is deliberately not used** — unreliable on iOS/Bluefy.
 - **Bare tracked time only counts as content above `DRAFT_MIN_SECS` (120s).** `live.secs` ticks for every second the strap is streaming, session or not, so a lower bar wrote "0 exercises" drafts just from browsing with a strap on. A pure-HR Tue/Thu Z2 with nothing typed is still autosaved — it just has to amount to a session.
-- Captures the whole session, not just typed sets: `zoneSecs`, `pxi`, `secs`, `duration`, `freeformNames`. A resumed session keeps its RKD score and clock.
+- Captures the whole session, not just typed sets: `zoneSecs`, `pxi`, `secs`, `duration`, `freeformNames`, `extra` (added sets), `pain` (symptoms). A resumed session keeps its RKD score and clock. An added set or a logged symptom counts as content on its own, so a session stopped by pain before anything was typed still survives a killed tab.
 - Reopening the **same day** adopts the draft silently. Only **previous-day** drafts raise the amber banner (date, weekday, exercise count, duration) with Resume / two-tap Discard.
 - Drafts **never auto-expire and are never auto-discarded** — a stale prompt is preferred over silent loss.
 - Resumed sessions are stamped with `startedAt`, so `blockFor()` files them in the block/week they were *trained* in, not when they were closed out.
@@ -76,10 +80,13 @@
 - `restoreSessionDraft()`'s fallback is a **half-adoption** — it restores `fields`/`rpe`/`strain`/`note`/`activity` but *not* `zoneSecs`/`pxi`/`secs`/`duration`/`freeform`, unlike `adoptTodayDraft()` and `resumeDraft()`. See Known Gaps.
 
 ## Other Features
-- **Interval timer** — standalone programmable work/rest/rounds timer behind the ⏱ control on the bottom dock. Colour-coded work/rest, audio + vibration on transitions, persistent mute, pause/resume. Deliberately **logs nothing**; runs independently alongside a workout. Shares the block timer's `setInterval` + Web Audio + wake-lock approach, and its backgrounding limitation is flagged in its own UI.
-- **Wake lock** is reference-counted — the block timer and interval timer can both hold it independently.
+- **Set mode** (`openFocus()` / `renderFocus()`) — full-screen, one set at a time, for reading on a phone mid-set: set N of M, target, last time's numbers as hints, ±5 / ±1 steppers, one-tap "Same as last", the block's bell countdown, live HR/zone, and the zone wash. **It holds no set data of its own** — it reads and writes the session page's `w_`/`r_` inputs and calls `onSetInput()`, so drafts, Finish, extra sets and history are unaffected. Walk order comes from `focusStepsFor()` (supersets interleave set by set; zero-set prep is skipped; a pain-stopped exercise's remaining sets are skipped going forward). It holds the wake lock while open and closes on a tab or day change.
+- **Alerts** — every block-timer and interval-timer cue also flashes the whole screen (`flashAlert`: white = go, amber = 10 s warning / rest, green = done), because tones get lost under music and iPhones ignore vibration. Spoken cues (`say()`, speechSynthesis — "Set 2 of 4. Rack Pull", "Ten seconds", "Block B done") are opt-in via the 🗣 Voice switch in set mode and the interval timer (`dtp-alerts`). The interval timer's mute silences sound and speech, but not the flash. None of it fires with the screen locked or Bluefy backgrounded.
+- **Interval timer** — standalone programmable work/rest/rounds timer on the RKD tab. Colour-coded work/rest, audio + flash on transitions, presets, persistent mute, pause/resume. Deliberately **logs nothing**; runs independently alongside a workout. Shares the block timer's `setInterval` + Web Audio + wake-lock approach, and its backgrounding limitation is flagged in its own UI.
+- **Wake lock** is reference-counted — the block timer, interval timer and set mode can each hold it independently.
 
-## Known Gaps (as of 2026-09-09)
+## Known Gaps (as of 2026-09-26)
+- **Back squat and overhand pull-ups are cleared, but the docs lag.** Back Squat was added to Meso 02 Monday on 2026-09-22. Overhand pull-ups (3 unassisted on 2026-09-26, lats stable; the OT's rule is "if it doesn't hurt, you're good") are cleared, but they aren't in the app yet and have no reps-based PR key (`Weighted Pull-Up` only records added load). `RKD_Mesocycle_02.md` still lists both as named exclusions. Goblet Squat's Form Reference entry still calls it the "Primary back squat substitute", and Back Squat has no Form Reference entry at all.
 - **`restoreSessionDraft()`'s half-adoption can still clobber a second same-day draft.** Its fallback restores a durable draft's typed fields but leaves `live.zoneSecs`/`pxi`/`secs` and `freeformNames` at whatever they already were, so the next edit persists a zeroed live block over that draft's accrued zone time and RKD. The post-Finish path is guarded (`draftHold`), but the general **day-switch** path is not: hold two drafts for the same date on different templates (a Tue Z2 and a lift day), switch between them, type one character, and the zone time on the one you left is gone. Narrow — it needs two same-day drafts to reach — but real, and deliberately not fixed in the pass that added the `draftHold` guard. Proper fix is to make the fallback restore the whole record like `adoptTodayDraft()` does, or to refuse to adopt across days at all.
 - **Four Form Reference holes remain**, all needing authored content rather than transcription: `Chest Press` — deliberately empty, because the glossary records it *only* as a named aggravator from the 7/14 eval, so it needs a clinical line before it gets an entry — plus Meso 01's `Chest-Supported Row`, `Single-Arm DB Row` and `Neutral-Grip Cable Row`. The last is nearly free: same movement as the drafted `Neutral-Grip Row`, so a one-line alias.
 - **Six `FORM_GLOSSARY` entries are drafted, not clinical** — Rack Pull, Bulgarian SS, Pallof, Neutral-Grip Row, Romanian Deadlift (DB), Bird Dog. Each ends with an italic provenance line naming where its clinical language came from; the mechanics are not clinician-reviewed. Worth a review pass with Bhupinder/OT.
