@@ -181,7 +181,12 @@ loadRegions(
   region("function captureSessionDraft(){","function restoreSessionDraft(){"),
   region("function restoreSessionDraft(){","/* ================= DURABLE SESSION DRAFTS"),
   region("const DRAFT_PREFIX=","function setView(v){"),             /* durable drafts        */
-  region("function focusStepsFor(blocks,extraOf){","let focusIdx=null;") /* set-mode walk order */
+  region("function focusStepsFor(blocks,extraOf){","let focusIdx=null;"), /* set-mode walk order */
+  /* HEP tracker + detail tab, skipping the todayStr/todayLabel lines between them — todayStr is
+     stubbed above to pin the date, and the real one would overwrite the stub. */
+  region("const HEP_LABELS=","let hepMem={};"),
+  "var hepMem={};",
+  region("const hepKey=","/* ---- shared stopwatch")
 );
 /* The PR grid lives inside renderHistory(); wrap the tile-building slice as a function. */
 loadRegions("function prGrid(logs){\n"+region("  const prs={};","  const totals=weeklyTotals(logs);")+"\n  return h;\n}");
@@ -742,6 +747,32 @@ ok(/removeSet\(0,0,3\)/.test(armed)&&/cancelRemoveSet\(\)/.test(armed),"the arme
 ok(/Remove set 4\?/.test(armed),"...naming which set goes");
 ok(!/addSet\(0,0\)/.test(armed),"...and + Set steps aside so the confirming tap can't mis-hit");
 setArmDel=null;
+
+section("HEP — rebuilt for cubital tunnel, keys unchanged");
+resetState();
+/* Every key the July plan logged under, so old hepDetail_* history still has a home. */
+var JULY_KEYS=["b1_levator","b1_scapwallslides","b1_pillowcase","b1_pronechest","b1_wallball","b1_elbowdist",
+  "b1_wristdev","b1_plankscap","b1_isometricIR","b1_subscap","b1_wristflex","b1_toothbrush","b1_pushups","b1_bicep",
+  "float_arom","float_finkelstein","float_cupping","float_doorway","float_lat","float_calf","float_kt",
+  "float_diagonal","float_nightsplint"];
+var ALL_KEYS=[]; HEP_BLOCKS.forEach(function(b){ b.ex.forEach(function(e){ ALL_KEYS.push(e.key); }); });
+JULY_KEYS.forEach(function(k){ ok(ALL_KEYS.indexOf(k)>=0,"July key survives: "+k); });
+eq(ALL_KEYS.length,JULY_KEYS.length+4,"...plus exactly four new items");
+eq(ALL_KEYS.filter(function(k,i){ return ALL_KEYS.indexOf(k)!==i; }).length,0,"no key appears twice");
+var B1=HEP_BLOCKS[0], LIB=HEP_BLOCKS[2];
+eq(B1.hepIdx,0,"B1 keeps hepIdx 0");
+eq(B1.ex.map(function(e){return e.key;}).join(","),
+   "b1_scapwallslides,b1_pillowcase,b1_levator,b1_fingerspreads,b1_platepinch,b1_ulnarslider,b1_radialglide","B1 runs in the new order");
+eq(HEP_BLOCKS[1].ex.map(function(e){return e.key;}).join(","),"float_nightsplint","Float is night elbow position only");
+ok(LIB.library&&LIB.hepIdx==null,"Library is read-only and has no daily target");
+eq(hepTargetIdx().join(","),"0","only B1 counts toward the daily score");
+/* Auto-complete: Library logs never tick B1, and B1 needs all seven of its own items. */
+var det={}; LIB.ex.forEach(function(e){ det[e.key]=[1]; });
+autoCheckHepBlocks(det); eq(loadHep()[0],false,"logging every Library item does not complete B1");
+B1.ex.slice(0,6).forEach(function(e){ det[e.key]=[1]; });
+autoCheckHepBlocks(det); eq(loadHep()[0],false,"six of seven B1 items does not complete it");
+det.b1_radialglide=[8];
+autoCheckHepBlocks(det); eq(loadHep()[0],true,"the seventh completes B1");
 
 section("Interval timer — built-in presets");
 resetState(); ivtPresetMem=[];

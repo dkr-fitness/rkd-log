@@ -111,6 +111,8 @@ main{padding:12px 14px}
 .hep-blk-ind{display:inline-block; transition:transform .15s ease}
 .notecard.collapsed .hep-blk-ind{transform:rotate(-90deg)}
 .notecard.collapsed .hep-blk-body{display:none}
+.hep-blk-note{color:var(--amber); font-size:13px; margin:2px 0 10px}
+.hep-dormant{font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); border:1px solid var(--line); border-radius:4px; padding:1px 5px; vertical-align:middle}
 .formref-label{cursor:pointer; display:flex; align-items:center; justify-content:space-between}
 .formref-ind{display:inline-block; transition:transform .15s ease}
 .notecard.collapsed .formref-ind{transform:rotate(-90deg)}
@@ -1726,22 +1728,36 @@ function toggleHep(i){
   document.getElementById("hepStatus").innerHTML=hepRowHtml(hepCount(arr));
 }
 
-/* ================= HEP DETAIL TAB (B1 Gym + Float, logging only — no scoring) ================= */
-// Originally a faithful transcription of RKD_HEP_Schedule.xlsx via HEP_Schedule_Final.md
-// (MedBridge X8WKBFQW · Bhupinder Kaur, Kaiser OT). Post-discharge this is self-managed
-// maintenance: the four prescribed blocks are collapsed to one scheduled block plus Float, and
-// HEP_Schedule_Final.md has been updated to match. The exercises and their doses are unchanged
-// from the prescription — only the block structure they were grouped into is gone.
+/* ================= HEP DETAIL TAB (B1 Gym + Float logged, Library reference — no scoring) ================= */
+// Rebuilt 10/8/26 for right cubital tunnel syndrome (left borderline), confirmed by nerve
+// conduction study. The July OT plan (MedBridge X8WKBFQW · Bhupinder Kaur, Kaiser OT, via
+// RKD_HEP_Schedule.xlsx) treated radial nerve / lateral elbow; OT has ended and this is
+// self-managed. B1 is the daily pre-lift routine: scapular work plus ulnar-side nerve and grip
+// work. Float is elbow positioning. Every other July item moved to Library — shown for reference,
+// never logged or counted. Keys are unchanged throughout, so logged hepDetail_* history still
+// lines up. HEP_Schedule_Final.md matches this file.
 const HEP_LEVATOR_NOTE="Supine preferred over seated/standing per 8/11 OT guidance (removes neck/head stabilization demand competing with the stretch)";
 const HEP_BICEP_DORMANT_REASON="Deprioritized per 8/11 OT visit, no longer clinically necessary";
 const HEP_LAT_RX="3×/day · 2–3 reps, 10–30+ sec · loose grip right side, don't load hand/wrist";
 const HEP_FINKELSTEIN_RX="3–5 reps · progressive hold · 2×/day (reduced from 3–4×, metacarpal aggravation)";
 const HEP_PUSHUP_DORMANT_REASON="Goal met 8/12 — floor push-ups now run in training (Meso 02 Wednesday), not as an HEP item";
 const HEP_BLOCKS=[
- {label:"B1 Gym · pre-lift", hepIdx:0, ex:[
-   {key:"b1_levator",n:"Levator scap stretch (seated, on wall)",rx:"3–4×/day · ⚠️ if warming into fingertips, back off",type:"timed",note:HEP_LEVATOR_NOTE},
-   {key:"b1_scapwallslides",n:"Scapular wall slides",rx:"1×/day — only here",type:"reps"},
-   {key:"b1_pillowcase",n:"Scapular stability isometric (pillowcase)",rx:"5 reps/day — only here",type:"reps"},
+ {label:"B1 Gym · pre-lift", hepIdx:0, note:"Stop the glides for the day if tingling increases or lingers.", ex:[
+   {key:"b1_scapwallslides",n:"Scapular wall slides",rx:"2 × 10 · slow, elbows stay on the wall",type:"reps"},
+   {key:"b1_pillowcase",n:"Pillowcase isometric",rx:"5 × 5 s holds",type:"reps"},
+   {key:"b1_levator",n:"Levator scap stretch",rx:"2 × 30 s per side · keep the stretching arm straight · ⚠️ if warming or tingling into fingertips, back off",type:"timed",note:HEP_LEVATOR_NOTE},
+   {key:"b1_fingerspreads",n:"Finger spreads",rx:"2 × 15 each hand · rubber band around the fingers",type:"reps"},
+   {key:"b1_platepinch",n:"Plate pinch hold",rx:"2 × 20–30 s per side · 5 lb plate, thumb flat on one face, fingers flat on the other, arm straight · right first",type:"timed"},
+   {key:"b1_ulnarslider",n:"Ulnar nerve slider",rx:"2 × 8 per arm, both arms · arm out, palm up: bend the elbow while tilting the head toward that arm, straighten it while tilting away · smooth, never a stretch",type:"reps"},
+   {key:"b1_radialglide",n:"Radial nerve glide (chiro)",rx:"2 × 8 per arm · thumb tucked into a fist, elbow straight, push the hand back and away from the body, tilt the head to the opposite side",type:"reps"}]},
+ // Float has no hepIdx — logged by hand, never auto-completed or counted.
+ {label:"Float · anytime", note:"Don't lean on elbows · switch hands on long phone holds · light hands on bike bars.", ex:[
+   // Key kept from the July night splint (~7/30) so its history lines up.
+   {key:"float_nightsplint",n:"Night elbow position",rx:"nightly, both arms · towel wrap or soft splint so the elbows don't stay deeply bent · log 1 when done",type:"reps",unit:" done"}]},
+ /* Library: the rest of the July plan, kept as stretch reminders. No hepIdx, so it never counts
+    toward the daily score or autoCheckHepBlocks; `library` makes renderHepTab show it read-only
+    and collapsed, dormant items included with their reasons. Items keep their July rx verbatim. */
+ {label:"Library · reference", library:true, ex:[
    {key:"b1_pronechest",n:"Prone chest stretch on chair",rx:"3×/day · no aggravation",type:"timed"},
    {key:"b1_wallball",n:"Standing wall ball circles (mini Swiss ball, 2–3 lb)",rx:"1–3×/day · 7×/week · 1 min hold, progress duration",type:"timed"},
    {key:"b1_elbowdist",n:"Elbow distraction self mobilization",rx:"1–2×/day · 7×/week · 3 sets of 10 oscillations or 10-sec holds · stop on any neural symptoms",type:"reps",unit:" sets"},
@@ -1751,31 +1767,20 @@ const HEP_BLOCKS=[
    {key:"b1_subscap",n:"Standing subscapularis lift-off",rx:"1×/day · 7×/week · 3–5 reps · walk-to-tension hold",type:"reps"},
    {key:"b1_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
    {key:"b1_toothbrush",n:"Vibration desensitization (electric toothbrush)",rx:"along radial distribution · shared 2–3×/day dose w/ the Float self-massage",type:"timed"},
-   // NB: no lat stretch here — it lives in Float. See the note on that entry.
-   // DORMANT — retained with reasons rather than deleted, same convention as the training pool.
-   {key:"b1_pushups",n:"Wall push-ups",rx:"max pain-free reps · progress toward 5-pushup goal",type:"reps",dormant:true,reason:HEP_PUSHUP_DORMANT_REASON},
-   {key:"b1_bicep",n:"Standing bicep stretch at wall",rx:"3–4×/day · palm UP",type:"timed",dormant:true,reason:HEP_BICEP_DORMANT_REASON}]},
- // Float has no hepIdx — anytime bouts, so its box is ticked by hand and never auto-completed.
- {label:"Float · anytime", ex:[
-   // One consolidated item replacing the per-block b1_rom_* … b4_rom_* pairs and float_arom5th.
-   // max:5 rather than the default 3 so the full 5×/day prescription is actually loggable.
-   // The 90° in each is the position held, not the joint moved (7/14 OT source). Earlier labels
-   // here said only "elbow flex–ext", and the schedule/glossary said "shoulder flex–ext"; both
-   // were reading the set-up position as the movement.
+   // The 90° in each is the position held, not the joint moved (7/14 OT source).
    {key:"float_arom",n:"AROM/PROM: elbow flex–ext (supine, shoulder at 90°) + pronation–supination (seated, elbow at 90°)",rx:"5 reps per bout · log each bout toward the 5×/day prescription",type:"reps",unit:" done",max:5},
-   // Deliberately NOT in B1 — don't pre-load radial tissue before lifting.
+   // Not pre-lift — don't pre-load radial tissue before lifting.
    {key:"float_finkelstein",n:"Finkelstein stretch",rx:HEP_FINKELSTEIN_RX,type:"timed"},
    {key:"float_cupping",n:"Tennis elbow self massage (silicone cupping)",rx:"5–10 min gentle · shared 2–3×/day radial-nerve dose w/ the B1 vibration desensitization · light pressure only, no hard friction/trigger point work",type:"timed"},
    {key:"float_doorway",n:"Doorway stretch",rx:"3×/day · progressive · no forward head",type:"timed"},
-   // Deliberately NOT in B1 — stretching the lat before pulling works against the deadlift firing
-   // cue. The rule was written after the right-lat firing gap was documented, and Meso 02's Rack
-   // Pull and Deadlift entries both call for lat *activation* immediately pre-lift. New key, so
-   // the old b2/b3/b4_lat history is orphaned — harmless, hepDetail is day-scoped.
+   // Not pre-lift — stretching the lat before pulling works against the Rack Pull/Deadlift
+   // lat-activation cue (see Meso 02 Monday).
    {key:"float_lat",n:"Lat stretch",rx:HEP_LAT_RX,type:"timed"},
    {key:"float_calf",n:"Calf stretching",rx:"daily · plantar fasciitis",type:"reps",unit:" done"},
    {key:"float_kt",n:"KT taping",rx:"as needed · plantar fasciitis",type:"reps",unit:" done"},
    {key:"float_diagonal",n:"Diagonal / fascial line stretch",rx:"daily · plantar fasciitis, trial both sides",type:"reps",unit:" done"},
-   {key:"float_nightsplint",n:"Night splint",rx:"nightly — log 1 when done · started ~7/30, resolved nocturnal symptoms",type:"reps",unit:" done"}]}
+   {key:"b1_pushups",n:"Wall push-ups",rx:"max pain-free reps · progress toward 5-pushup goal",type:"reps",dormant:true,reason:HEP_PUSHUP_DORMANT_REASON},
+   {key:"b1_bicep",n:"Standing bicep stretch at wall",rx:"3–4×/day · palm UP",type:"timed",dormant:true,reason:HEP_BICEP_DORMANT_REASON}]}
 ];
 let hepDetailMem={};
 const hepDetailKey=()=>"hepDetail_"+todayStr();
@@ -1846,8 +1851,14 @@ function renderHepTab(m){
   const detail=loadHepDetail();
   let h="";
   HEP_BLOCKS.forEach((b,bi)=>{
-    h+=`<div class="notecard" id="hepBlk${bi}"><label class="hep-blk-label" onclick="toggleHepBlockCollapse(${bi})">${b.label}<span class="hep-blk-ind">▾</span></label><div class="hep-blk-body">`;
+    h+=`<div class="notecard${b.library?" collapsed":""}" id="hepBlk${bi}"><label class="hep-blk-label" onclick="toggleHepBlockCollapse(${bi})">${b.label}<span class="hep-blk-ind">▾</span></label><div class="hep-blk-body">`;
+    if(b.note) h+=`<div class="hep-blk-note">${b.note}</div>`;
     b.ex.forEach(ex=>{
+      /* Library is read-only: name, rx and note, plus the reason on a dormant item. */
+      if(b.library){
+        h+=`<div class="ex"><div class="ex-name">${ex.n}${ex.dormant?` <span class="hep-dormant">dormant</span>`:""}</div><div class="ex-rx">${ex.rx}</div>${ex.note?`<div class="ex-note">${ex.note}</div>`:""}${ex.dormant?`<div class="ex-note">${ex.reason}</div>`:""}</div>`;
+        return;
+      }
       if(ex.dormant) return;
       const entries=detail[ex.key]||[];
       const unit=ex.unit!=null?ex.unit:(ex.type==="timed"?"s":" reps");
