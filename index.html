@@ -1221,6 +1221,10 @@ const FORM_GLOSSARY={
    "pushdown or overhead" wording, so it is dropped here. */
 FORM_GLOSSARY["Rope Triceps Pressdown"]=Object.assign({},FORM_GLOSSARY["Triceps Extension"],
   {injuryNotes:FORM_GLOSSARY["Triceps Extension"].injuryNotes.slice(0,2)});
+/* Meso 03's single-arm floor press logs under "SA Chest Press" so per-arm loads stay out of the
+   two-arm Chest Press PR history. Same movement family and the same 7/14 symptom caveat, so it
+   shares the Chest Press entry rather than going without one. */
+FORM_GLOSSARY["SA Chest Press"]=FORM_GLOSSARY["Chest Press"];
 function formRefSection(title,items,ordered){
   if(!items||!items.length) return "";
   const tag=ordered?"ol":"ul";
