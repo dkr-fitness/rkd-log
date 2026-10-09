@@ -147,6 +147,7 @@ function resetState(){
   LS={}; LOGS=[]; TOASTS=[]; sessionDraft=null; freeformNames=[]; resetDOM(); SESSIONS={};
   extraSets={};
   if(typeof painEvents!=="undefined") painEvents={};
+  if(typeof exNotes!=="undefined") exNotes={};
   live={zoneSecs:[0,0,0,0,0,0],pxi:0,lastBpm:null,secs:0,tick:null};
   sessAcc=0; curRPE=0; TODAY="2026-09-20"; DAY="meso02Wed";
   if(typeof resetCurDraft==="function") resetCurDraft();
@@ -691,6 +692,62 @@ painEvents[setKey(0,0)][0].resolved=false;
 eq(pe.symptoms[0].resolved,true,"...as a copy, so a later edit can't rewrite a saved entry");
 eq(painText({set:3,kind:"tingling",side:"Right",resolved:false}),"Tingling / numb (Right) · set 3 · stayed, stopped","painText reads as one line");
 eq(painText({set:1,kind:"ache",side:"",resolved:null}),"Ache / fatigue · set 1 · not checked","...and names an unchecked one");
+
+section("Exercise notes — one per exercise, through draft and Finish");
+resetState();
+/* Typed in set mode on Wednesday's second block; nothing else entered yet. */
+sessionDraft={key:draftKey(),day:DAY,fields:{},rpe:0,strain:"",note:"",activity:null};
+setExNote(1,0,"L 75, R elbow fine");
+persistDraft();
+var NKEY="dtp-draft_2026-09-20_meso02Wed";
+ok(!!LS[NKEY],"a note alone is enough to write a draft");
+eq((parseLS(NKEY).exNotes||{})["meso02Wed|1_0"],"L 75, R elbow fine","...and the note is persisted under its exercise");
+DAY="meso02Mon";
+eq(exNoteFor(1,0),"","a note does not leak to the same position on another day");
+sessionDraft={key:draftKey(),day:DAY,fields:{},rpe:0,strain:"",note:"",activity:null};
+persistDraft();
+ok(!LS["dtp-draft_2026-09-20_meso02Mon"],"...nor make another day's empty slot look occupied");
+DAY="meso02Wed";
+/* The tab is killed: in-memory state is gone, only the durable draft remains. */
+exNotes={};
+resumeDraft(NKEY);
+eq(exNoteFor(1,0),"L 75, R elbow fine","resume restores the note");
+setExNote(1,0,"   ");
+eq(exNoteFor(1,0),"","clearing the field (whitespace only) removes the note");
+setExNote(1,0,"L 75, R elbow fine");
+/* Finish stamps it on the exercise's entry, trimmed, and leaves exercises without one alone. */
+resetState();
+var NSESS={blocks:[{ex:[{key:"Rack Pull",n:"Rack Pull",rx:"4 × 5",sets:1},{key:"Pallof",n:"Pallof Press",rx:"3 × 10",sets:1}]}]};
+fillForm({"w_0_0_0":"225","r_0_0_0":"5","w_0_1_0":"20","r_0_1_0":"10"});
+eq(collectEntries(NSESS)[0].note,undefined,"no note -> nothing stamped");
+setExNote(0,0,"  grip fine, bar slipped set 3 ");
+var ne=collectEntries(NSESS);
+eq(ne[0].note,"grip fine, bar slipped set 3","a note is saved on its exercise, trimmed");
+eq(ne[1].note,undefined,"...and only on that exercise");
+/* Through the save path itself, from a resumed draft. */
+resetState();
+sessionDraft={key:draftKey(),day:DAY,fields:{"w_0_0_0":"225","r_0_0_0":"5"},rpe:0,strain:"",note:"",activity:null};
+setExNote(0,0,"felt strong");
+persistDraft(); exNotes={};
+resumeDraft(NKEY);
+entries=collectEntries(NSESS); saveEntry();
+eq(LOGS.length,1,"the resumed session finishes");
+eq(LOGS[0].entries[0].note,"felt strong","...with the note restored from the draft on its entry");
+ok(!LS[NKEY],"...and the draft is cleared");
+eq(LOGS[0].note,"","the session-level note is separate and unchanged");
+entries=[];
+/* Next time: the note shows under "Last time". */
+resetState();
+LOGS=[{entries:[{key:"Rack Pull",sets:[{w:"225",r:"5"}],note:"old note"}]},
+      {entries:[{key:"Rack Pull",sets:[{w:"235",r:"5"}],note:"L 75, R elbow fine"}]}];
+eq(lastNoteFor("Rack Pull"),"L 75, R elbow fine","the last session's note comes back");
+LOGS.push({entries:[{key:"Rack Pull",sets:[{w:"245",r:"5"}]}]});
+eq(lastNoteFor("Rack Pull"),"","...but not past a later session that left none");
+eq(lastNoteFor("Pallof"),"","an exercise never noted has none");
+eq(lastLineText("70","10","L 75, R elbow fine"),"Last time: 70 × 10 · note: L 75, R elbow fine","last-time line carries the note");
+eq(lastLineText("70","10",""),"Last time: 70 × 10","...and reads as before without one");
+eq(lastLineText("","","bar slipped"),"Last time: note: bar slipped","a note shows even with no numbers for this set");
+eq(lastLineText("","",""),"No previous numbers for this set","...and nothing at all reads as before");
 
 section("Extra sets — two-tap removal");
 resetState();

@@ -324,6 +324,11 @@ body.ivt-amb.z5 #focus{background-image:var(--zg5)}
 .p-warn{font-size:16px; color:#FFD27A; background:rgba(0,0,0,.25); border-left:3px solid var(--amber); padding:10px 12px; border-radius:8px}
 .p-line{font-size:15px; font-weight:700; color:#FFD27A}
 .ex-pain{font-size:12px; font-weight:700; color:var(--amber); margin-top:6px}
+/* ===== Exercise note (set mode) ===== */
+.n-open{min-height:52px; border-radius:10px; border:1px solid rgba(255,255,255,.3); background:rgba(0,0,0,.2); color:var(--text); font-size:17px; font-weight:800; text-align:left; padding:0 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.n-open.has{border-color:rgba(92,168,255,.7); color:#A9D0FF}
+.n-text{width:100%; min-height:88px; font-family:inherit; font-size:17px; line-height:1.35; padding:10px 12px; background:rgba(0,0,0,.28); color:var(--text); border:1px solid rgba(255,255,255,.3); border-radius:10px; resize:none}
+.ex-xnote{font-size:12px; color:#A9D0FF; margin-top:6px}
 .setbtn.pain{color:#FF8A8A; border-color:rgba(224,91,91,.45)}
 /* ===== Bell flash: iPhone browsers ignore navigator.vibrate and tones drown under headphone
    music, so every cue is also a full-screen flash. Never takes a touch. ===== */
@@ -1685,6 +1690,30 @@ function painText(e){
     +(e.resolved===true?"went away":e.resolved===false?"stayed, stopped":"not checked");
 }
 const painLinesHtml=(bi,ei)=>painFor(bi,ei).map(e=>`<div class="ex-pain">⚠ ${escAttr(painText(e))}</div>`).join("");
+/* One free-text note per exercise, typed in set mode and editable from any of its sets. Keyed
+   day|block_exercise like painEvents, threaded through the durable draft the same way, and saved
+   onto the exercise's log entry as `note` — separate from the session-level note. */
+let exNotes={};
+const exNoteFor=(bi,ei)=>exNotes[setKey(bi,ei)]||"";
+function setExNote(bi,ei,v){ const k=setKey(bi,ei); if(String(v).trim()) exNotes[k]=String(v); else delete exNotes[k]; }
+/* The note from the last session that trained this movement — same "last session" rule as
+   lastSymptomsFor(), so an old note isn't carried past a session that left none. */
+function lastNoteFor(key){
+  if(!key) return "";
+  const logs=loadLogs();
+  for(let i=logs.length-1;i>=0;i--){
+    const e=(logs[i].entries||[]).find(x=>x.key===key);
+    if(e&&(e.sets.some(s=>s.w||s.r)||(e.symptoms||[]).length||e.note)) return e.note||"";
+  }
+  return "";
+}
+/* Set mode's "Last time" line: numbers for this set, then last session's note for the exercise. */
+function lastLineText(lw,lr,note){
+  const bits=[];
+  if(lw||lr) bits.push((lw||"–")+" × "+(lr||"–"));
+  if(note) bits.push("note: "+note);
+  return bits.length?"Last time: "+bits.join(" · "):"No previous numbers for this set";
+}
 
 /* ================= HEP TRACKER (compliance only — no RKD scoring) =================
    Discharged from OT — this is self-managed maintenance, not a prescribed 4-block program.
@@ -2419,7 +2448,7 @@ function openFocus(bi,ei,pain){
 }
 function closeFocus(){
   if(focusIdx==null) return;
-  focusIdx=null; focusPain=null; releaseAwake();
+  focusIdx=null; focusPain=null; focusNoteKey=null; releaseAwake();
   document.getElementById("focus").hidden=true;
 }
 /* Moving forward skips the rest of an exercise stopped by the pain check — its remaining sets
@@ -2494,6 +2523,20 @@ function painPanelHtml(){
     <div class="f-act"><button class="p-stop" onclick="painResolve(false)">Still there — stop exercise</button></div>
     <div class="f-nav"><button onclick="painResolve(null)">Check later</button></div>`;
 }
+/* The note field is collapsed until asked for, and stays open only for the exercise it was
+   opened on — moving to another exercise folds it away again. */
+let focusNoteKey=null;
+function focusNoteToggle(){
+  const steps=focusStepsFor(focusSession().blocks,extraFor), st=steps[focusIdx]; if(!st) return;
+  const k=setKey(st.bi,st.ei);
+  focusNoteKey=focusNoteKey===k?null:k;
+  renderFocus();
+  const ta=document.getElementById("fNote"); if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); }
+}
+function focusNoteInput(v){
+  const steps=focusStepsFor(focusSession().blocks,extraFor), st=steps[focusIdx]; if(!st) return;
+  setExNote(st.bi,st.ei,v); onSetInput();
+}
 function focusStep(p,delta){
   const el=document.getElementById(p==="w"?"fW":"fR"); if(!el) return;
   const v=Math.max(0,(parseFloat(el.value||el.placeholder)||0)+delta);
@@ -2545,12 +2588,15 @@ function renderFocus(){
   const nx=steps[focusIdx+1], nxEx=nx?s.blocks[nx.bi].ex[nx.ei]:null;
   const isRun=run&&run.bi===st.bi;
   const nowSym=painFor(st.bi,st.ei), lastSym=nowSym.length?[]:lastSymptomsFor(ex.key);
+  const note=exNoteFor(st.bi,st.ei), noteOpen=focusNoteKey===setKey(st.bi,st.ei);
+  /* A redraw mid-typing (a bell, say) rebuilds the textarea; put the caret back in it. */
+  const typingNote=document.activeElement&&document.activeElement.id==="fNote";
   el.innerHTML=top+`
     <div class="f-sub">${escAttr(b.letter)} · ${escAttr(b.t)}${b.ex.length>1?" · superset":""}</div>
     <div class="f-name">${escAttr(ex.n||"Exercise")}</div>
     ${ex.rx?`<div class="f-rx">${escAttr(ex.rx)}</div>`:""}
     <div class="f-set">SET ${st.i+1} <small>of ${st.total}${st.i>=ex.sets?" · extra":""}</small></div>
-    <div class="f-last">${lw||lr?`Last time: ${escAttr(lw||"–")} × ${escAttr(lr||"–")}`:"No previous numbers for this set"}</div>
+    <div class="f-last">${escAttr(lastLineText(lw,lr,lastNoteFor(ex.key)))}</div>
     ${nowSym.map(e=>`<div class="p-line">⚠ Today: ${escAttr(painText(e))}</div>`).join("")}
     ${lastSym.map(e=>`<div class="p-line">⚠ Last session: ${escAttr(painText(e))}</div>`).join("")}
     <div class="f-row"><label>Weight</label><button class="f-step" onclick="focusStep('w',-5)">−5</button>
@@ -2558,6 +2604,10 @@ function renderFocus(){
     <div class="f-row"><label>${ex.rUnit==="sec"?"Seconds":ex.rUnit==="yd"?"Yards":"Reps"}</label><button class="f-step" onclick="focusStep('r',-1)">−1</button>
       <input id="fR" inputmode="numeric" value="${escAttr(r?r.value:"")}" placeholder="${escAttr(lr)}"><button class="f-step" onclick="focusStep('r',1)">+1</button></div>
     <div class="f-act">${lw||lr?`<button class="f-same" onclick="focusDone(true)">Same as last ✓</button>`:""}<button class="f-done" onclick="focusDone(false)">Done ✓</button></div>
+    ${noteOpen
+      ?`<textarea class="n-text" id="fNote" rows="3" placeholder="Note for this exercise — any set" oninput="focusNoteInput(this.value)">${escAttr(note)}</textarea>
+        <button class="n-open" onclick="focusNoteToggle()">Close note</button>`
+      :`<button class="n-open${note?" has":""}" onclick="focusNoteToggle()">${note?"✎ "+escAttr(note):"+ Note"}</button>`}
     <button class="p-open" onclick="painOpen()">⚠ Pain</button>
     ${b.bells?`<div class="f-timer">${isRun
       ?`<div><div class="l">Block ${escAttr(b.letter)} · set ${run.setNo} of ${run.bells}</div><div class="t" id="fTimer">${fmt(Math.max(0,Math.ceil((run.end-Date.now())/1000)))}</div></div><button onclick="stopBlock()">Stop</button>`
@@ -2565,6 +2615,7 @@ function renderFocus(){
     ${nxEx?`<div class="f-next">Next: ${escAttr(nxEx.n||"Exercise")} · set ${nx.i+1}</div>`:""}
     <div class="f-nav"><button onclick="focusGo(-1)"${focusIdx===0?' disabled style="opacity:.35"':""}>‹ Prev</button><span>${focusIdx+1}/${steps.length}</span><button onclick="focusGo(1)">Next ›</button></div>`;
   if(focusTyped){ document.getElementById("fW").value=focusTyped.w; document.getElementById("fR").value=focusTyped.r; }
+  if(typingNote&&noteOpen){ const ta=document.getElementById("fNote"); if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); } }
 }
 let focusTyped=null; /* {idx,w,r} — typed-but-unconfirmed numbers for the set on screen */
 
@@ -2665,7 +2716,9 @@ function persistDraft(){
   /* A logged symptom is content in its own right — a session stopped by pain before any set was
      typed still has to survive a killed tab. */
   const hasPain=Object.keys(painEvents).some(k=>k.indexOf(day+"|")===0&&painEvents[k].length);
-  const has=Object.keys(f).length>0||rpe>0||(note||"").trim()!==""||(strain||"")!==""||hasExtra||hasPain||live.secs>=DRAFT_MIN_SECS;
+  /* An exercise note is typed content, same as a set. */
+  const hasExNote=Object.keys(exNotes).some(k=>k.indexOf(day+"|")===0);
+  const has=Object.keys(f).length>0||rpe>0||(note||"").trim()!==""||(strain||"")!==""||hasExtra||hasPain||hasExNote||live.secs>=DRAFT_MIN_SECS;
   const slot=draftSlot(day);
   if(!has){ removeDraft(slot.key); if(curDraft.key===slot.key) resetCurDraft(); return; }
   curDraft=slot;
@@ -2676,6 +2729,7 @@ function persistDraft(){
     freeform:freeformNames.slice(),
     extra:Object.assign({},extraSets),
     pain:JSON.parse(JSON.stringify(painEvents)),
+    exNotes:Object.assign({},exNotes),
     zoneSecs:live.zoneSecs.slice(),pxi:live.pxi,secs:live.secs,duration:elapsedSec()});
 }
 /* Throttle, not debounce: the first edit in a window guarantees a write within `ms` rather than
@@ -2731,6 +2785,7 @@ function resumeDraft(k){
   freeformNames=normalizeFreeform(d.freeform).slice();
   extraSets=Object.assign({},d.extra||{});
   painEvents=JSON.parse(JSON.stringify(d.pain||{}));
+  exNotes=Object.assign({},d.exNotes||{});
   live.zoneSecs=(d.zoneSecs||[0,0,0,0,0,0]).slice(); live.pxi=d.pxi||0; live.secs=d.secs||0;
   sessAcc=(d.duration||0)*1000; /* clock picks up where it left off; feeds entry.duration */
   curDraft={id:d.draftId,startedAt:d.startedAt,date:d.date,day:d.day,key:k,resumed:true};
@@ -3026,6 +3081,7 @@ function saveSession(){
       const rec={key:ex.key,name:ex.n,rx:ex.rx||"",sets};
       if(extra>0){ rec.extra=extra; rec.programmed=ex.sets; }
       const sym=painFor(bi,ei); if(sym.length) rec.symptoms=sym.map(e=>Object.assign({},e));
+      const xn=exNoteFor(bi,ei).trim(); if(xn) rec.note=xn;
       entries.push(rec);}}));
   /* RKD: live wins; else attached manual entry */
   let pxi=null, zoneMins=null, model=curModel(), medal=null;
@@ -3083,7 +3139,7 @@ function saveSession(){
      tick does the same via live.secs. Hold until onSetInput() sees a real edit. */
   resetCurDraft(); draftHold=true;
   live.zoneSecs=[0,0,0,0,0,0]; live.pxi=0; live.secs=0; pendingManual=null; sessionDraft=null;
-  freeformNames=[]; extraSets={}; painEvents={};
+  freeformNames=[]; extraSets={}; painEvents={}; exNotes={};
   /* The session clock kept running across Finish, so elapsedSec() carried on climbing and a
      second Finish would have stamped a full duration onto a phantom entry. Close it out. */
   stopBlock(); if(sessInt){ clearInterval(sessInt); sessInt=null; } sessStart=null; sessAcc=0;
@@ -3363,7 +3419,8 @@ END-WORKOUT"></textarea>
     h+=`<div class="hist-card"><div class="h"><span>${blockTag(blockOf(l))}${dl?" · "+dl:""} · ${l.name}</span>
       <span style="display:flex;align-items:center;gap:8px">${l.pxi!=null?`<span class="pxi-pill"${l.pxi<0?' style="color:var(--red)"':''}>RKD ${l.pxi}</span>`:""}${l.medal?`<span class="medal-pill" style="color:${medalColor}">${l.medal}</span>`:""}${strainPill}${symPill}${noteIcon}<span style="font-weight:400;color:var(--muted);font-size:13px">${dt.toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span></span></div>
     <div class="sub">${l.duration?fmt(l.duration)+" · ":""}${l.rpe?"RPE "+l.rpe:""}${l.activity?" · "+l.activity:""}${l.zoneMins?" · "+l.zoneMins.map((z,i)=>i>0&&z>=0.5?"Z"+i+" "+Math.round(z)+"m":null).filter(Boolean).join(" "):""}</div>
-    ${(l.entries||[]).map(e=>(e.symptoms||[]).map(x=>`<div class="ex-pain">⚠ ${escAttr(e.name)}: ${escAttr(painText(x))}</div>`).join("")).join("")}
+    ${(l.entries||[]).map(e=>(e.symptoms||[]).map(x=>`<div class="ex-pain">⚠ ${escAttr(e.name)}: ${escAttr(painText(x))}</div>`).join("")
+      +(e.note?`<div class="ex-xnote">✎ ${escAttr(e.name)}: ${escAttr(e.note)}</div>`:"")).join("")}
     ${l.note?`<div class="note-full" id="noteFull${idx}" style="display:none">${escAttr(l.note)}</div>`:""}
     <div class="row2"><button onclick="copySummary(${idx})">Copy summary</button></div></div>`;});
   m.innerHTML=h;
@@ -3386,7 +3443,7 @@ function exerciseSummaryLine(logs,idx,e){
   const sets=e.sets.filter(s=>s.w||s.r);
   /* Symptoms go in the summary because it's what drives programming feedback — a lift that
      produced tingling is the first thing a next-session recommendation has to account for. */
-  const sym=(e.symptoms||[]).map(x=>`\n  symptom: ${painText(x)}`).join("");
+  const sym=(e.symptoms||[]).map(x=>`\n  symptom: ${painText(x)}`).join("")+(e.note?`\n  note: ${e.note}`:"");
   if(!sets.length)return `- ${e.name}: prescribed ${e.rx||"—"}\n  actual: no data${sym}`;
   let best=e.key in PR_KEYS?priorBestValue(logs,idx,e.key):null;
   const parts=sets.map(s=>{
@@ -3684,6 +3741,7 @@ if(mesoDefaultDay) daySel.value=mesoDefaultDay;
   freeformNames=normalizeFreeform(d.freeform).slice();
   extraSets=Object.assign({},d.extra||{});
   painEvents=JSON.parse(JSON.stringify(d.pain||{}));
+  exNotes=Object.assign({},d.exNotes||{});
   live.zoneSecs=(d.zoneSecs||[0,0,0,0,0,0]).slice(); live.pxi=d.pxi||0; live.secs=d.secs||0;
   sessAcc=(d.duration||0)*1000;
   curDraft={id:d.draftId,startedAt:d.startedAt,date:d.date,day:d.day,key:k,resumed:false};
