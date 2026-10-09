@@ -336,6 +336,8 @@ ok(Object.keys(t).every(function(k){return k.indexOf("sat")<0;}),"Sat still excl
 eq(t["meso01|2"].ord,1,"ord present for cross-block sorting");
 
 section("Weekly RKD — compact bars");
+ok(/Sat counts from Meso 3/.test(weeklyBlock([{date:"2026-10-24T18:00:00Z",day:"meso03Sat",pxi:90}])),
+   "the label says which Saturdays count, not that Sat is always excluded");
 resetState();
 /* Two blocks so there is something to fold. blockFor() decides which is "current" from the wall
    clock, so assert on the split's shape rather than on which block lands where. */

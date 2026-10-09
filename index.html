@@ -3399,7 +3399,9 @@ END-WORKOUT"></textarea>
        above, so the page has one idiom rather than two. */
     const curId=blockFor().id;
     const cur=keys.filter(k=>k.split("|")[0]===curId), rest=keys.filter(k=>k.split("|")[0]!==curId);
-    h+=`<div class="notecard"><label>Weekly RKD (Mon–Sun · Sat excluded)</label>`;
+    /* weeklyTotals() skips the shared Sat Conditioning Sub but counts Meso 3's scored Saturday
+       (meso03Sat), so the label has to hold for weeks either side of that change. */
+    h+=`<div class="notecard"><label>Weekly RKD (Mon–Sun · Sat counts from Meso 3)</label>`;
     h+=cur.map(wkRow).join("");
     if(rest.length){
       h+=`<div class="wk-rest collapsed" id="wkRestPanel"><div class="wk-rest-h" onclick="toggleWeeklyRest()">Earlier blocks · ${rest.length} week${rest.length===1?"":"s"}<span class="formref-ind">▾</span></div>
