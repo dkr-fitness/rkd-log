@@ -126,7 +126,8 @@ var view="pxi";
    since what's under test is the grouping, not the 1,500 lines of program templates. */
 var BLOCK_LIFTS={legacy:["upper","lower","mixed"],
                  meso01:["fullBodyA","fullBodyB","fullBodyC"],
-                 meso02:["meso02Mon","meso02Wed","meso02Fri"]};
+                 meso02:["meso02Mon","meso02Wed","meso02Fri"],
+                 meso03:["meso03Mon","meso03Wed","meso03Fri","meso03Sat"]};
 var SESSIONS={};                                     /* day -> [exercise key, ...] */
 function getSession(w,day){
   return {blocks:[{ex:(SESSIONS[day]||[]).map(function(k){return {key:k,n:k};})}]};
@@ -169,6 +170,8 @@ function eq(actual,expected,msg){
 loadRegions(
   region("const MESO01_START=","function hrText(day,w){"),          /* block/week identity   */
   region("const PTS=","const LIFT_DAYS="),                          /* curves, medals, zones */
+  region("const LIFT_DAYS=","/* The only templates that still read"), /* medal-eligible days */
+  region("function curModel(){","/* ================= STATE"),      /* curve per day         */
   region("function weeklyTotals(logs){","function renderHistory(m){"),
   region("const e1rm=","const DAY_LABEL="),                         /* PR_KEYS + PR_LABEL    */
   region("const setKey=(bi,ei)=>","/* ================= HEP"),           /* extra-set keying */
@@ -206,9 +209,13 @@ eq(blockFor(D(2026,9,6)).week,3,"Sep 6 -> Meso 1 wk 3 (last day)");
 eq(blockFor(D(2026,9,7)).id,"meso02","Sep 7 -> Meso 2 starts, no gap after Meso 1");
 eq(blockFor(D(2026,9,7)).week,1,"Sep 7 -> Meso 2 wk 1");
 eq(blockFor(D(2026,10,18)).week,6,"Oct 18 -> Meso 2 wk 6 (last day)");
-eq(blockFor(D(2026,10,19)).id,"open","Oct 19 -> off-block");
-eq(blockFor(D(2026,10,19)).week,1,"first off-block week is 1");
-eq(blockFor(D(2026,10,26)).week,2,"off-block keeps counting (never re-freezes)");
+eq(blockFor(D(2026,10,19)).id,"meso03","Oct 19 -> Meso 3 starts, no gap after Meso 2");
+eq(blockFor(D(2026,10,19)).week,1,"Oct 19 -> Meso 3 wk 1");
+eq(blockFor(D(2026,12,13)).id,"meso03","Dec 13 -> still Meso 3 (last day)");
+eq(blockFor(D(2026,12,13)).week,8,"Dec 13 -> Meso 3 wk 8");
+eq(blockFor(D(2026,12,14)).id,"open","Dec 14 -> off-block");
+eq(blockFor(D(2026,12,14)).week,1,"first off-block week is 1");
+eq(blockFor(D(2026,12,21)).week,2,"off-block keeps counting (never re-freezes)");
 eq(blockTag(blockFor(D(2026,9,5))),"M1·W3·V","blockTag is the compact form, with the phase's initial for a meso block");
 eq(blockText(blockFor(D(2026,9,5))),"Meso 1 · Wk 3 · Volume Phase","blockText is the verbose form, with the phase spelled out");
 
@@ -221,14 +228,38 @@ eq(phaseForWeek(5),"Performance","week 5 -> Performance by default");
 eq(phaseForWeek(6),"Performance","week 6 -> Performance by default");
 eq(phaseForWeek(9),"Performance","a block that overruns clamps to its last phase rather than erroring");
 eq(phaseForWeek(0),"Baseline","week 0 clamps to the first phase");
-eq(phaseForWeek(3,"meso03"),"Volume","a block with no override uses the default plan");
+eq(phaseForWeek(5,"meso04"),"Performance","a block with no override uses the default plan");
 eq(phaseForWeek(5,"meso02"),"Volume","Meso 2 week 5 is a second Volume phase, not Performance");
 eq(phaseForWeek(6,"meso02"),"Volume","...and so is week 6");
 eq(phaseForWeek(2,"meso02"),"Baseline","...its weeks 1–2 are still Baseline");
 eq(blockText(blockFor(D(2026,10,5))),"Meso 2 · Wk 5 · Volume Phase","the label follows the per-block plan");
 eq(blockTag(blockFor(D(2026,10,12))),"M2·W6·V","...in the compact form too");
 eq(blockTag(blockFor(D(2026,7,6))),"B1·W1","non-meso blocks (Block 1) carry no phase suffix");
-eq(blockText(blockFor(D(2026,10,19))),"Off-block · Wk 1","off-block carries no phase suffix either");
+eq(blockText(blockFor(D(2026,12,14))),"Off-block · Wk 1","off-block carries no phase suffix either");
+
+section("Meso 3 — 8-week plan ending in a Deload week");
+["Baseline","Baseline","Volume","Volume","Volume","Performance","Performance","Deload"].forEach(function(p,i){
+  eq(phaseForWeek(i+1,"meso03"),p,"Meso 3 week "+(i+1)+" -> "+p);
+});
+eq(phaseForWeek(9,"meso03"),"Deload","past week 8 clamps to Deload rather than erroring");
+/* Monday of each week, so a week boundary slip shows up as the wrong phase. */
+eq(blockText(blockFor(D(2026,11,2))),"Meso 3 · Wk 3 · Volume Phase","Nov 2 -> wk 3, Volume");
+eq(blockText(blockFor(D(2026,11,23))),"Meso 3 · Wk 6 · Performance Phase","Nov 23 -> wk 6, Performance");
+eq(blockText(blockFor(D(2026,12,7))),"Meso 3 · Wk 8 · Deload Phase","Dec 7 -> wk 8, Deload, spelled out");
+eq(blockTag(blockFor(D(2026,12,13))),"M3·W8·D","...and as D in the compact tag");
+eq(blockTag(blockFor(D(2026,10,25))),"M3·W1·B","Oct 25 (Sun) is still week 1");
+/* The fall-back clock change lands in week 2 (Sun Nov 1); a 25-hour day must not shift a week. */
+eq(blockFor(D(2026,11,1)).week,2,"Nov 1 (DST ends) -> wk 2");
+eq(blockFor(D(2026,11,2)).week,3,"Nov 2 -> wk 3, not held back by the extra hour");
+eq(blockOf({date:"2026-12-10T18:00:00Z"}).id,"meso03","an unstamped log from the Deload week re-derives to Meso 3");
+
+section("Meso 3 Saturday — scored like a lift day");
+ok(LIFT_DAYS.indexOf("meso03Sat")>=0,"meso03Sat is medal-eligible");
+ok(LIFT_DAYS.indexOf("sat")<0,"...the shared Sat Conditioning Sub still is not");
+DAY="meso03Sat"; eq(curModel(),"strength","meso03Sat scores on the strength curve");
+DAY="sat";       eq(curModel(),"cardio","...while the shared Sat keeps the cardio ramp");
+DAY="meso02Wed";
+["meso03Mon","meso03Wed","meso03Fri"].forEach(function(d){ ok(LIFT_DAYS.indexOf(d)>=0,d+" is medal-eligible"); });
 
 section("blockOf — stamped identity vs re-derivation");
 eq(blockOf({block:"meso02",blockLabel:"Meso 2",blockWeek:4,date:"2026-07-08T18:00:00Z"}).week,4,
@@ -286,6 +317,13 @@ eq(Object.keys(t).length,3,"3 buckets, not 1 — Meso 1 wk1/wk2 and Meso 2 wk1")
 eq(t["meso01|2"].sum,200,"two sessions in the same real week do merge (101+99)");
 eq(t["meso01|1"].sum,104,"Meso 1 wk 1 kept separate");
 eq(t["meso02|1"].sum,103,"Meso 2 stays out of Meso 1's buckets");
+var t3=weeklyTotals([{date:"2026-10-19T18:00:00Z",day:"meso03Mon",pxi:100},
+                     {date:"2026-10-24T18:00:00Z",day:"meso03Sat",pxi:90},
+                     {date:"2026-10-24T18:00:00Z",day:"sat",pxi:500},
+                     {date:"2026-10-12T18:00:00Z",day:"meso02Mon",pxi:7}]);
+eq(t3["meso03|1"].sum,190,"Meso 3's scored Saturday counts toward its week; the shared Sat does not");
+eq(t3["meso03|1"].label,"Meso 3 · Wk 1 · Baseline Phase","...under Meso 3's own label");
+eq(t3["meso02|6"].sum,7,"...and Meso 2's last week stays its own bucket");
 ok(!t["meso02|1"].label.match(/Meso 1/),"labels name the right block");
 ok(t["legacy"]===undefined&&!("meso01|3" in t),"no phantom buckets");
 ok(Object.keys(t).every(function(k){return k.indexOf("sat")<0;}),"Sat still excluded");
@@ -334,6 +372,10 @@ ok(/245×5/.test(h),"best set shown for a tracked lift");
 ok(/12 reps/.test(h),"rep-based PR carries its unit");
 eq((h.match(/class="pr"/g)||[]).length,2,"only logged movements get a tile");
 ok(/No PRs yet/.test(prGrid([{entries:[]}])),"sessions but no PRs -> explanatory line");
+var hh=prGrid([{entries:[{key:"Plate Pinch Hold",sets:[{w:"20",r:"25"},{w:"20",r:"31"},{w:"25",r:"18"}]},
+                         {key:"Safety Bar Squat",sets:[{w:"185",r:"6"}]}]}]);
+ok(/Plate Pinch Hold<\/div><div class="v">31s</.test(hh),"pinch hold PR is the longest hold, in seconds, from the reps box");
+ok(/Safety Bar Squat · e1RM/.test(hh),"Safety Bar Squat is PR-tracked as an e1RM lift");
 /* Export/Import moved to the top of the page, so it is the one thing this slice always emits —
    including on a device with nothing logged yet, which is exactly when you reach for Import. */
 ok(/exportLogs\(\)/.test(prGrid([])),"export/import renders even with no sessions");

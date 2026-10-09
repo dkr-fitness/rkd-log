@@ -358,6 +358,12 @@ body.ivt-amb.z5 #focus{background-image:var(--zg5)}
        top — so the list opens on one complete Mon–Sun week for the block you're training, with
        the other blocks' lifting days below. Each block group carries its date range. -->
   <select id="daySel" onchange="onDayChange()">
+    <optgroup id="ogMeso03" label="Mesocycle 03 · 10/19–12/13">
+      <option value="meso03Mon">Mon · Hinge Lead</option>
+      <option value="meso03Wed">Wed · Squat + Push</option>
+      <option value="meso03Fri">Fri · Pull + Hinge</option>
+      <option value="meso03Sat">Sat · Full Range</option>
+    </optgroup>
     <optgroup id="ogMeso02" label="Mesocycle 02 · 9/7–10/18">
       <option value="meso02Mon">Mon · Lower/Hinge</option>
       <option value="meso02Wed">Wed · Upper Push</option>
@@ -422,7 +428,11 @@ const EQ={
  fullBodyC:"Bodyweight (push-ups, lunges, bridges) · DBs (chest-supported row) · leg press machine · cable + rope (triceps) · light band (prep pull-aparts)",
  meso02Mon:"Rack pull station · DB or KB (goblet squat) or leg press machine · DBs (Bulgarian split squat) · cable or band (Pallof)",
  meso02Wed:"Chest press machine or DBs · bodyweight (floor push-ups, wall slides) · cable or DB (triceps extension)",
- meso02Fri:"Light band or light DBs (Y-raise/pull-apart) · cable or DB (neutral-grip row) · DBs (RDL) or hip thrust setup · bodyweight (dead bug)"};
+ meso02Fri:"Light band or light DBs (Y-raise/pull-apart) · cable or DB (neutral-grip row) · DBs (RDL) or hip thrust setup · bodyweight (dead bug)",
+ meso03Mon:"Light band (pull-aparts) · rack pull station · DBs (Bulgarian split squat) · bench + bar or DB (hip thrust) · cable or band (Pallof) · KB or DB (suitcase carry)",
+ meso03Wed:"Safety squat bar + rack · DB + floor (single-arm floor press) · cable + rope (pressdown, pullover) · two smooth plates (pinch hold)",
+ meso03Fri:"Light DBs or bodyweight (Y-raise) · DBs (RDL, step-up) · box or bench (step-up) · cable or DB (neutral-grip row) · KB or DB (suitcase carry)",
+ meso03Sat:"Leg press machine · DB (single-leg RDL) · open floor (backward lunges) · light band (face pull) · sled · bike or treadmill (cardio ramp)"};
 // Mesocycle 01 (rebuild block, Dr. Zak 8/14 functional clearance) — a fixed 3-week structure
 // running 8/17–9/6, ending at the 9/3 ortho appointment. Its own week phase is computed from
 // the real calendar date, deliberately independent of weekSel (which is the OLD 8-week
@@ -460,6 +470,27 @@ function inMeso02Window(){
   const days=Math.floor((new Date()-MESO02_START)/864e5);
   return days>=0&&days<=MESO02_END_DAY;
 }
+// Mesocycle 03 — 8-week block, 10/19–12/13. Mon/Wed/Fri split like Meso 02 (hinge lead, squat +
+// push, pull + hinge) plus a scored Saturday full-range session. Phases come from PHASE_PLAN
+// (Baseline ×2, Volume ×3, Performance ×2, Deload) — see RKD_Mesocycle_03.md.
+const MESO03_START=new Date(2026,9,19); // Mon Oct 19, 2026
+const MESO03_END_DAY=55; // Sun 12/13 — last day of the 8-week window (day 0 = Mon 10/19)
+function inMeso03Window(){
+  const days=Math.floor((new Date()-MESO03_START)/864e5);
+  return days>=0&&days<=MESO03_END_DAY;
+}
+/* Meso 03's week by its own calendar rather than blockFor(), so its templates preview as week 1
+   before 10/19 instead of borrowing Meso 02's week number. phaseForWeek() clamps either end. */
+function meso03Week(){ return Math.floor((new Date()-MESO03_START)/864e5/7)+1; }
+const MESO03_PHASE_CUE={
+ Baseline:"RPE 6–7. Establish working loads; leave reps in reserve.",
+ Volume:"RPE 7–8. Fill the rep range before adding load.",
+ Performance:"RPE 8. Heavier, fewer reps — still no grinding.",
+ Deload:"RPE 6. Less volume, same patterns, crisp reps. Leave fresh."};
+function mesoPhase3(){
+  const p=phaseForWeek(meso03Week(),"meso03");
+  return {label:p+" Phase",rpe:MESO03_PHASE_CUE[p]};
+}
 /* ================= BLOCK / WEEK IDENTITY =================
    Single source of truth for "which training block does a date belong to, and which week of
    that block is it" — same calendar day-offset math as inMeso01Window()/inMeso02Window().
@@ -468,14 +499,15 @@ function inMeso02Window(){
    session after that — across Meso01 and Meso02, two unrelated blocks — as "week 8".
    weekSel is left in place and still selects the legacy upper/lower/mixed loads (DL/OHP/ROW);
    it is just no longer the source of truth for the displayed label or for log grouping.
-   The three windows tile with no gap: Jul 6–Aug 16, Aug 17–Sep 6, Sep 7–Oct 18. */
+   The four windows tile with no gap: Jul 6–Aug 16, Aug 17–Sep 6, Sep 7–Oct 18, Oct 19–Dec 13. */
 const LEGACY_START=new Date(2026,6,6); // Mon Jul 6, 2026 — the original 8-week block
 const LEGACY_END_DAY=41;               // Sun Aug 16 — Meso01 supersedes it the next day
 const BLOCKS=[
  {id:"legacy",label:"Block 1",start:LEGACY_START,lastDay:LEGACY_END_DAY},
  {id:"meso01",label:"Meso 1", start:MESO01_START,lastDay:MESO01_END_DAY},
- {id:"meso02",label:"Meso 2", start:MESO02_START,lastDay:MESO02_END_DAY}];
-const BLOCK_ORD={pre:-1,legacy:0,meso01:1,meso02:2,open:3};
+ {id:"meso02",label:"Meso 2", start:MESO02_START,lastDay:MESO02_END_DAY},
+ {id:"meso03",label:"Meso 3", start:MESO03_START,lastDay:MESO03_END_DAY}];
+const BLOCK_ORD={pre:-1,legacy:0,meso01:1,meso02:2,meso03:3,open:4};
 function blockFor(when){
   const t=(when?new Date(when):new Date()).getTime();
   for(let i=BLOCKS.length-1;i>=0;i--){ /* newest first — a later block wins any overlap */
@@ -485,7 +517,7 @@ function blockFor(when){
   /* FALLBACK for dates no block covers — FLAGGED FOR CONFIRMATION. Past the end of the last
      defined block we keep counting weeks ("Off-block · Wk 1, 2, …") so totals keep advancing
      and unrelated weeks never merge into one bucket — i.e. the exact failure being fixed here
-     does not just reappear after Oct 18. Anything before Block 1 began is "Pre-block". */
+     does not just reappear after Dec 13. Anything before Block 1 began is "Pre-block". */
   const last=BLOCKS[BLOCKS.length-1];
   const past=Math.floor((t-last.start)/864e5)-last.lastDay;
   return past>0?{id:"open",label:"Off-block",week:Math.ceil(past/7)}
@@ -497,14 +529,16 @@ function blockOf(l){
   return (l.block&&l.blockWeek)?{id:l.block,label:l.blockLabel||l.block,week:l.blockWeek}:blockFor(l.date);
 }
 /* Phase for a week of a meso block. Default is the generic 2/2/2 split — weeks 1–2 Baseline,
-   3–4 Volume, 5–6 Performance — so a future Meso 03 needs nothing here unless it deviates. A
+   3–4 Volume, 5–6 Performance — so a future block needs nothing here unless it deviates. A
    block that does deviates via PHASE_PLAN: Meso 02 runs a second Volume phase in weeks 5–6
    instead of Performance, because the goal is muscle gain and 3×3–5 heavy builds strength more
-   than size. A block shorter than its plan (Meso 1's 3 weeks) or one that overruns clamps to the
+   than size. Meso 03 runs 8 weeks — a third Volume week, two Performance, then a Deload week,
+   the only block with that phase. A block shorter than its plan (Meso 1's 3 weeks) or one that overruns clamps to the
    nearest defined week. Distinct from mesoPhase()/mesoPhase2() above, which are hand-authored,
    per-meso RPE/exercise guidance text — this is the plain display/prescription label. */
 const PHASE_PLAN_DEFAULT=["Baseline","Baseline","Volume","Volume","Performance","Performance"];
-const PHASE_PLAN={meso02:["Baseline","Baseline","Volume","Volume","Volume","Volume"]};
+const PHASE_PLAN={meso02:["Baseline","Baseline","Volume","Volume","Volume","Volume"],
+                  meso03:["Baseline","Baseline","Volume","Volume","Volume","Performance","Performance","Deload"]};
 function phaseForWeek(weekNum,blockId){
   const plan=PHASE_PLAN[blockId]||PHASE_PLAN_DEFAULT;
   return plan[Math.min(plan.length,Math.max(1,weekNum))-1];
@@ -515,7 +549,7 @@ function phaseForWeek(weekNum,blockId){
    Phase only applies to mesocycle blocks (id "meso*") — Block 1 and off-block have no phase
    concept — appended verbosely on blockText and as a single-letter suffix on blockTag. */
 const blockText=b=>b.label+" · Wk "+b.week+(b.id.startsWith("meso")?" · "+phaseForWeek(b.week,b.id)+" Phase":"");
-const BLOCK_SHORT={pre:"PRE",legacy:"B1",meso01:"M1",meso02:"M2",open:"OFF"};
+const BLOCK_SHORT={pre:"PRE",legacy:"B1",meso01:"M1",meso02:"M2",meso03:"M3",open:"OFF"};
 const blockTag=b=>(BLOCK_SHORT[b.id]||b.id)+"·W"+b.week+(b.id.startsWith("meso")?"·"+phaseForWeek(b.week,b.id)[0]:"");
 function hrText(day,w){
   if(day==="lower"&&w===8) return "Taper: Z1–Z2 only. Save everything for Wednesday's test day.";
@@ -529,7 +563,11 @@ function hrText(day,w){
    fullBodyC:`Push lead — strength curve throughout. ${mesoPhase().label} · ${mesoPhase().rpe}`,
    meso02Mon:`Lower/hinge lead — strength curve, Z1–Z2 base, Rack Pull spikes to Z3 OK. ${mesoPhase2().label} · ${mesoPhase2().rpe}`,
    meso02Wed:`Upper push lead — strength curve throughout, stay pain-free through the Chest Press cap. ${mesoPhase2().label} · ${mesoPhase2().rpe}`,
-   meso02Fri:`Pull lead — strength curve throughout. ${mesoPhase2().label} · ${mesoPhase2().rpe}`}[day];
+   meso02Fri:`Pull lead — strength curve throughout. ${mesoPhase2().label} · ${mesoPhase2().rpe}`,
+   meso03Mon:`Hinge lead — strength curve, Z1–Z2 base, Rack Pull spikes to Z3 OK. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
+   meso03Wed:`Squat + push — strength curve throughout, stay pain-free through the Chest Press cap. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
+   meso03Fri:`Pull + hinge — strength curve throughout. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
+   meso03Sat:`Full range — effort cap 7/10. Strength curve, scored and medalled like a lift day (target RKD ≈ 105). ${mesoPhase3().label} — ${mesoPhase3().label==="Deload Phase"?"2 sets of everything this week.":"fixed sets all block; only the tempo cue changes."}`}[day];
 }
 // Shared pre-activation cue — surfaces on every exercise where the right lat
 // coordination gap shows up (confirmed 8/11 across Deadlift + DB Shoulder Press).
@@ -1157,7 +1195,25 @@ const FORM_GLOSSARY={
   injuryNotes:[
    "For Donovan specifically: this movement was flagged during the 7/14 OT eval as symptom-provoking at a specific point in the range — treat any recurrence of forearm/elbow symptoms at a given depth or lockout point as a stop-and-back-off signal, not something to push through. Full range and load should track clinician guidance, not just how it feels day to day.",
    "No such restriction applies for other users of this app — general form and load progression apply normally.",
-   "<i>Drafted for this panel; not clinician-reviewed.</i>"]}
+   "<i>Drafted for this panel; not clinician-reviewed.</i>"]},
+ /* ---- Mesocycle 03 pool. Drafted — no glossary source yet. ---- */
+ "Plate Pinch Hold":{
+  status:"✅ CLEARED · Pain-free (Meso 03) · Grip-side symptoms are the monitor",
+  setup:[
+   "Two smooth-faced plates of the same size, smooth sides out. Fingers on one face, thumb on the other — the thumb is the working side.",
+   "Squat or hinge down to pick them up with a neutral spine. Don't round over to grab them off the floor.",
+   "Stand tall, shoulder packed down and back, arm long at your side, wrist neutral."],
+  execution:[
+   "Start the clock once you're standing. Squeeze through the whole hold — plates sliding means the grip has already gone.",
+   "Hold for the prescribed time, then set the plates down under control. Set them down before the grip fails, never after.",
+   "Right side first, then left. Log the plate load in the weight box and seconds held in the seconds box."],
+  checkpoints:[
+   "✅ Shoulder stays packed; ✅ wrist stays straight; ✅ plates set down, not dropped",
+   "❌ Shrugging or curling the wrist to hang on = load too heavy",
+   "❌ Plates slipping mid-hold = the set ended there; log the time you actually held"],
+  injuryNotes:[
+   "<b>Grip-side symptoms are the monitor</b>, same as the carries, the deadlift and the rack pull. Aching or fatigue in the forearm is expected; tingling, shooting, or numbness is a stop and a log entry.",
+   "<i>Drafted for this panel. Clearance per self-report (causes no pain); grip-side monitor carried from the Deadlift, Rack Pull and Suitcase Carry entries. The mechanics are not clinician-reviewed.</i>"]}
 };
 /* Meso 01 keys this movement "Rope Triceps Pressdown"; Meso 02 keys it "Triceps Extension".
    Same movement, same glossary entry — aliased rather than duplicated. The Meso 02 entry's
@@ -1368,6 +1424,113 @@ function getSession(w,day){
      {letter:"D",t:"Core",mins:6,bells:cd.sets,ex:[
        {key:"Bird Dog",n:"Core (Dead Bug or similar)",rx:cd.rx,sets:cd.sets}]}]};
   }
+  // Mesocycle 03 — Mon/Wed/Fri split plus a scored Saturday. The three main lifts (Rack Pull,
+  // Safety Bar Squat, Romanian Deadlift) and the accessories branch on Meso 03's phase; activation
+  // slots stay fixed; the carries and the pinch hold drop to one round in the Deload week.
+  // Saturday holds fixed sets all block and only its tempo cue follows the phase.
+  const meso3Phase=phaseForWeek(meso03Week(),"meso03");
+  const meso3MainRx=suffix=>{
+    const o={Baseline:{sets:4,base:"4 × 6 @ RPE 6–7"},
+             Volume:{sets:5,base:"5 × 6–8 @ RPE 7–8"},
+             Performance:{sets:4,base:"4 × 4–5 @ RPE 8"},
+             Deload:{sets:3,base:"3 × 5 @ RPE 6"}}[meso3Phase];
+    return {sets:o.sets, rx:o.base+" · max 2 warm-up ramp sets, not logged — log working sets only"+(suffix?" · "+suffix:"")};
+  };
+  // per is the unit suffix on the reps ("/leg", "/side") — the movement name stays clean.
+  const meso3AccRx=(per,note)=>{
+    const o={Baseline:{sets:3,reps:"8–10"},Volume:{sets:3,reps:"10–12"},
+             Performance:{sets:3,reps:"8",cue:"heavier"},Deload:{sets:2,reps:"8"}}[meso3Phase];
+    return {sets:o.sets, rx:o.sets+" × "+o.reps+(per||"")+(o.cue?" · "+o.cue:"")+(note?" · "+note:"")};
+  };
+  const meso3HoldRx=(text,note)=>{
+    const sets=meso3Phase==="Deload"?1:2;
+    return {sets, rx:sets+" × "+text+(note?" · "+note:"")};
+  };
+  if(day==="meso03Mon"){
+    const rp=meso3MainRx("chiro-approved; monitor grip-side"),
+          bss=meso3AccRx("/leg","DB in each hand"),
+          ht=meso3AccRx(),
+          pf=meso3AccRx("/side","anti-rotation core"),
+          sc=meso3HoldRx("40 yd/side","right side first");
+    return {name:"MONDAY — Hinge Lead", type:"lift", blocks:[
+     // Rack Pull's Form Reference entry calls for pull-aparts or Y-raises immediately prior.
+     {letter:"A",t:"Activation",mins:4,bells:2,ex:[
+       {key:"Band Pull-Aparts",n:"Band Pull-Aparts",rx:"2 × 15 · light, first in session",sets:2}]},
+     {letter:"B",t:"Hinge",mins:12,bells:rp.sets,ex:[
+       {key:"Rack Pull",n:"Rack Pull",rx:rp.rx,sets:rp.sets}]},
+     {letter:"C",t:"Unilateral",mins:8,bells:bss.sets,ex:[
+       {key:"Bulgarian SS",n:"Bulgarian Split Squat",rx:bss.rx,sets:bss.sets}]},
+     {letter:"D",t:"Glutes",mins:7,bells:ht.sets,ex:[
+       {key:"Hip Thrust",n:"Hip Thrust",rx:ht.rx,sets:ht.sets}]},
+     {letter:"E",t:"Core",mins:6,bells:pf.sets,ex:[
+       {key:"Pallof",n:"Pallof Press",rx:pf.rx,sets:pf.sets}]},
+     {letter:"F",t:"Carry",mins:5,bells:sc.sets,ex:[
+       {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets}]}]};
+  }
+  if(day==="meso03Wed"){
+    const sq=meso3MainRx("hands on the handles — never reach back for a straight bar"),
+          cp=meso3AccRx("/side","single-arm floor press, right side first · hard stop at 90° elbow flexion, pain-free only"),
+          tp=meso3AccRx("/side","single-arm, right side first"),
+          po=meso3AccRx(),
+          ph=meso3HoldRx("20–30 s/side","right side first · log plate load × seconds held · set down before the grip goes");
+    return {name:"WEDNESDAY — Squat + Push", type:"lift", blocks:[
+     {letter:"A",t:"Activation",mins:4,bells:2,ex:[
+       {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · first in session",sets:2}]},
+     {letter:"B",t:"Squat",mins:12,bells:sq.sets,ex:[
+       {key:"Safety Bar Squat",n:"Safety Bar Squat",rx:sq.rx,sets:sq.sets}]},
+     // Single-arm, so it logs under SA Chest Press — per-arm loads would never read as PRs
+     // against Chest Press's two-arm history.
+     {letter:"C",t:"Push",mins:8,bells:cp.sets,ex:[
+       {key:"SA Chest Press",n:"Chest Press",rx:cp.rx,sets:cp.sets}]},
+     {letter:"D",t:"Triceps",mins:7,bells:tp.sets,ex:[
+       {key:"Rope Triceps Pressdown",n:"Rope Triceps Pressdown",rx:tp.rx,sets:tp.sets}]},
+     {letter:"E",t:"Pullover",mins:6,bells:po.sets,ex:[
+       {key:"Cable Pullover",n:"Cable Pullover",rx:po.rx,sets:po.sets}]},
+     {letter:"F",t:"Grip",mins:4,bells:ph.sets,ex:[
+       {key:"Plate Pinch Hold",n:"Plate Pinch Hold",rx:ph.rx,sets:ph.sets,rUnit:"sec"}]}]};
+  }
+  if(day==="meso03Fri"){
+    const rdl=meso3MainRx(),
+          ngr=meso3AccRx("/side","single-arm, right side first"),
+          su=meso3AccRx("/leg"),
+          cd=meso3AccRx("/side"),
+          sc=meso3HoldRx("40 yd/side","right side first");
+    return {name:"FRIDAY — Pull + Hinge", type:"lift", blocks:[
+     {letter:"A",t:"Activation",mins:4,bells:2,ex:[
+       {key:"Prone Y-Raises",n:"Prone Y-Raises",rx:"2 × 15 · light, first in session",sets:2}]},
+     {letter:"B",t:"Hinge",mins:12,bells:rdl.sets,ex:[
+       {key:"Romanian Deadlift (DB)",n:"Romanian Deadlift",rx:rdl.rx,sets:rdl.sets}]},
+     {letter:"C",t:"Pull",mins:8,bells:ngr.sets,ex:[
+       {key:"Neutral-Grip Row",n:"Neutral-Grip Row (cable or DB)",rx:ngr.rx,sets:ngr.sets}]},
+     {letter:"D",t:"Unilateral",mins:7,bells:su.sets,ex:[
+       {key:"Step-Up",n:"DB Step-Up",rx:su.rx,sets:su.sets}]},
+     {letter:"E",t:"Core",mins:6,bells:cd.sets,ex:[
+       {key:"Bird Dog",n:"Core (Dead Bug or similar)",rx:cd.rx,sets:cd.sets}]},
+     {letter:"F",t:"Carry",mins:5,bells:sc.sets,ex:[
+       {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets}]}]};
+  }
+  if(day==="meso03Sat"){
+    // Fixed 3-set prescriptions all block; the Deload week takes two sets of everything.
+    const n=v=>meso3Phase==="Deload"?2:v,
+          tempo={Baseline:"3 s lowering",Volume:"1 s pause at the bottom",
+                 Performance:"normal tempo, slightly heavier",Deload:"normal tempo"}[meso3Phase];
+    // Cap sits before the " — " so it shows in the top bar and set mode, which keep only that half.
+    return {name:"SATURDAY · CAP 7/10 — Full Range", type:"lift", blocks:[
+     {letter:"A",t:"Activation",mins:4,bells:2,ex:[
+       {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · first in session",sets:2}]},
+     {letter:"B",t:"Squat",mins:8,bells:n(3),ex:[
+       {key:"Leg Press",n:"Leg Press",rx:n(3)+" × 10 · full depth · "+tempo,sets:n(3)}]},
+     {letter:"C",t:"Hinge",mins:8,bells:n(3),ex:[
+       {key:"SL RDL",n:"Single-Leg RDL",rx:n(3)+" × 8/leg · "+tempo,sets:n(3)}]},
+     {letter:"D",t:"Lunge",mins:8,bells:n(3),ex:[
+       {key:"Backward Walking Lunges",n:"Backward Walking Lunges",rx:n(3)+" × 8/leg · "+tempo,sets:n(3)}]},
+     {letter:"E",t:"Upper back",mins:6,bells:n(3),ex:[
+       {key:"Face Pull",n:"Band Face Pull",rx:n(3)+" × 12 · "+tempo,sets:n(3)}]},
+     {letter:"F",t:"Sled",mins:8,bells:n(5),ex:[
+       {key:"Sled Push",n:"Sled Push",rx:n(5)+" × 20 yd · arms straight · log load × yards",sets:n(5),rUnit:"yd"}]},
+     {letter:"G",t:"Cardio Ramp",mins:10,bells:1,ex:[
+       {n:"Cardio Ramp — Zone 2 bike or incline walk",rx:"8–10 min · cap 7/10 effort",sets:0}]}]};
+  }
   if(day==="upper"){
     const o=OHP(w),r=ROW(w);const early=w<=2;
     const blocks=[
@@ -1455,7 +1618,8 @@ function medalFor(pxi,target){
    this just gives that same emphasis a live-scored medal like lift days get. */
 function pctZ2(mins){ const total=mins.reduce((a,b)=>a+(b||0),0); return total>0?Math.round((mins[2]||0)/total*100):0; }
 function zone2MedalFor(mins){ return medalFor(pctZ2(mins),100); }
-const LIFT_DAYS=["upper","lower","mixed","fullBodyA","fullBodyB","fullBodyC","meso02Mon","meso02Wed","meso02Fri"];
+const LIFT_DAYS=["upper","lower","mixed","fullBodyA","fullBodyB","fullBodyC","meso02Mon","meso02Wed","meso02Fri",
+                 "meso03Mon","meso03Wed","meso03Fri","meso03Sat"];
 /* The only templates that still read weekSel — DL[w-1], OHP(w), ROW(w), the w<=2 rehab
    variants, the w<8 finisher. Every mesocycle day is calendar-driven and ignores w. */
 const LEGACY_DAYS=["upper","lower","mixed"];
@@ -1469,7 +1633,8 @@ function syncWeekSel(){
 }
 function curModel(){
   if(pxiSet.model!=="auto") return pxiSet.model;
-  /* sheet: strength curve on all lifting days (mixed through Block B); class day = cardio ramp informationally */
+  /* sheet: strength curve on all lifting days (mixed through Block B); class day = cardio ramp informationally.
+     Meso 03's Saturday is its own template id (meso03Sat), not "sat", so it scores as a lift day. */
   return curDay()==="sat"?"cardio":"strength";
 }
 
@@ -2375,7 +2540,7 @@ function renderFocus(){
     ${lastSym.map(e=>`<div class="p-line">⚠ Last session: ${escAttr(painText(e))}</div>`).join("")}
     <div class="f-row"><label>Weight</label><button class="f-step" onclick="focusStep('w',-5)">−5</button>
       <input id="fW" inputmode="decimal" value="${escAttr(w?w.value:"")}" placeholder="${escAttr(lw)}"><button class="f-step" onclick="focusStep('w',5)">+5</button></div>
-    <div class="f-row"><label>Reps</label><button class="f-step" onclick="focusStep('r',-1)">−1</button>
+    <div class="f-row"><label>${ex.rUnit==="sec"?"Seconds":ex.rUnit==="yd"?"Yards":"Reps"}</label><button class="f-step" onclick="focusStep('r',-1)">−1</button>
       <input id="fR" inputmode="numeric" value="${escAttr(r?r.value:"")}" placeholder="${escAttr(lr)}"><button class="f-step" onclick="focusStep('r',1)">+1</button></div>
     <div class="f-act">${lw||lr?`<button class="f-same" onclick="focusDone(true)">Same as last ✓</button>`:""}<button class="f-done" onclick="focusDone(false)">Done ✓</button></div>
     <button class="p-open" onclick="painOpen()">⚠ Pain</button>
@@ -2745,7 +2910,7 @@ function blockHtml(s,bi){
         h+=`<div class="set${i>=ex.sets?" extra":""}" data-set="${i+1}"><span class="n">${i+1}</span>
           <input inputmode="decimal" placeholder="${pw||'wt'}" id="w_${bi}_${ei}_${i}" oninput="onSetInput()">
           <span class="x">×</span>
-          <input inputmode="numeric" placeholder="${pr||'reps'}" id="r_${bi}_${ei}_${i}" oninput="onSetInput()"></div>`;
+          <input inputmode="numeric" placeholder="${pr||ex.rUnit||'reps'}" id="r_${bi}_${ei}_${i}" oninput="onSetInput()"></div>`;
       }
       h+=`</div>`;
       h+=`<div class="setctl">`;
@@ -3020,7 +3185,9 @@ function manualScore(){
 
 /* ================= HISTORY / PRS ================= */
 const e1rm=(w,r)=>w*(1+r/30);
-const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Supported Row":"lb","DB Shoulder Press":"lb","DB Row":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec","SKB RDL":"kg","Hip Thrust":"lb","Wall Push-Up Progression":"reps","Rope Triceps Pressdown":"lb","Bulgarian SS":"lb","Cable Pullover":"lb","Single-Arm DB Row":"lb","Neutral-Grip Cable Row":"lb","Romanian Deadlift (DB)":"lb","Rack Pull":"lb","Chest Press":"lb","Triceps Extension":"lb","Neutral-Grip Row":"lb","Goblet Squat":"lb","SA Chest Press":"lb","SA RDL":"lb"};
+const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Supported Row":"lb","DB Shoulder Press":"lb","DB Row":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec","SKB RDL":"kg","Hip Thrust":"lb","Wall Push-Up Progression":"reps","Rope Triceps Pressdown":"lb","Bulgarian SS":"lb","Cable Pullover":"lb","Single-Arm DB Row":"lb","Neutral-Grip Cable Row":"lb","Romanian Deadlift (DB)":"lb","Rack Pull":"lb","Chest Press":"lb","Triceps Extension":"lb","Neutral-Grip Row":"lb","Goblet Squat":"lb","SA Chest Press":"lb","SA RDL":"lb","Safety Bar Squat":"lb","Plate Pinch Hold":"hold"};
+/* "hold" = longest hold, in seconds, read from the reps box (Plate Pinch Hold logs plate load ×
+   seconds). Dead Hang predates it and keeps its own seconds-in-the-weight-box rule. */
 /* User-facing labels where the internal key has gone stale. The key itself never changes — it's
    the identity every saved log entry and PR history is keyed on, same backward-compat rule as
    the pxi/dtp-* internals. Only the label moves on. The wall ladder is retired; the movement has
@@ -3033,7 +3200,7 @@ const PR_LABEL={"Wall Push-Up Progression":"Floor Push-Ups"};
    here falls into a bare "Other" bucket in renderHistory rather than being silently dropped. */
 const EXERCISE_GROUP={};
 [["Lower",["Deadlift","Leg Press","Back Squat","SKB RDL","Hip Thrust","Bulgarian SS",
-    "Romanian Deadlift (DB)","Rack Pull","Goblet Squat","SA RDL",
+    "Romanian Deadlift (DB)","Rack Pull","Goblet Squat","SA RDL","Safety Bar Squat",
     "BB Floor Hip Extension","BB Floor Hip Extn SL","DB Goblet Squat","BB Fwd Bkwd Contralateral",
     "DB Bench Step Up alt Legs","KB Deadlift Suitcase SA","KB Static Lunge w Torso Rotation","BB Deadlift",
     "BB Zercher Squat","KB Squat SA","Slides DB Curtsy Lunge","TB Hip Extension","Arabesque alt Leg",
@@ -3042,7 +3209,7 @@ const EXERCISE_GROUP={};
  ["Upper",["Bench Press","Chest-Supported Row","DB Shoulder Press","DB Row","OHP","BB Row",
     "Weighted Pull-Up","Dead Hang","Wall Push-Up Progression","Rope Triceps Pressdown","Cable Pullover",
     "Single-Arm DB Row","Neutral-Grip Cable Row","Chest Press","Triceps Extension","Neutral-Grip Row",
-    "SA Chest Press",
+    "SA Chest Press","Plate Pinch Hold",
     "KB Bent Over Row alt from Grnd","TRX Rear Delt Fly","DB Bench Press","DB Incline Row DBL Arm",
     "BB Military Press","Chin Up","KB Tricep Push Up","DB Pull Over","Wall Extensions",
     "KB Bottoms Up Press SA","PB Straight Arm Pull Down","Shoulder Pass Through","Scapular Roll",
@@ -3052,10 +3219,11 @@ const EXERCISE_GROUP={};
  ["Core",["Hanging Knee Tuck","SB Hip Rolls","DB Side Bend","DB Psoas March","Plank alt Shoulder Taps",
     "KB Around The World","SB Back Extension","KB Halo"]]
 ].forEach(([g,ks])=>ks.forEach(k=>EXERCISE_GROUP[k]=g));
-const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun",strengthFree:"Freeform",fullBodyA:"FB-A",fullBodyB:"FB-B",fullBodyC:"FB-C",meso02Mon:"Mon",meso02Wed:"Wed",meso02Fri:"Fri"};
+const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun",strengthFree:"Freeform",fullBodyA:"FB-A",fullBodyB:"FB-B",fullBodyC:"FB-C",meso02Mon:"Mon",meso02Wed:"Wed",meso02Fri:"Fri",meso03Mon:"Mon",meso03Wed:"Wed",meso03Fri:"Fri",meso03Sat:"Sat"};
 const escAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 /* Keyed by block + week-within-block, so two unrelated blocks never share a bucket.
-   Was keyed on l.week (weekSel), which pinned everything after Aug 24 into a single "8". */
+   Was keyed on l.week (weekSel), which pinned everything after Aug 24 into a single "8".
+   The shared "sat" stays out; Meso 03's scored Saturday is meso03Sat and counts. */
 function weeklyTotals(logs){
   const totals={};
   logs.forEach(l=>{
@@ -3095,7 +3263,7 @@ function renderHistory(m){
     e.sets.forEach(s=>{const w=parseFloat(s.w),r=parseFloat(s.r);
       if(e.key==="Dead Hang"){if(w&&(!prs[e.key]||w>prs[e.key].v))prs[e.key]={v:w};return;}
       if(e.key==="Weighted Pull-Up"){if(!isNaN(w)&&(!prs[e.key]||w>prs[e.key].v))prs[e.key]={v:w};return;}
-      if(e.key==="Wall Push-Up Progression"){if(r&&(!prs[e.key]||r>prs[e.key].v))prs[e.key]={v:r};return;}
+      if(e.key==="Wall Push-Up Progression"||PR_KEYS[e.key]==="hold"){if(r&&(!prs[e.key]||r>prs[e.key].v))prs[e.key]={v:r};return;}
       if(w&&r){const est=e1rm(w,r);if(!prs[e.key]||est>prs[e.key].v)prs[e.key]={v:est,raw:w+"×"+r};}});
   }));
   /* Only movements with a recorded best get a tile. The grid used to render every PR_KEYS entry,
@@ -3118,7 +3286,7 @@ END-WORKOUT"></textarea>
     <div id="pasteWorkoutOut"></div>
   </div>`;
   const prTile=k=>{const p=prs[k];
-    const unit=PR_KEYS[k]==="sec"?"s":PR_KEYS[k]==="+lb"?" lb":PR_KEYS[k]==="kg"?" kg":PR_KEYS[k]==="reps"?" reps":"";
+    const unit=PR_KEYS[k]==="sec"||PR_KEYS[k]==="hold"?"s":PR_KEYS[k]==="+lb"?" lb":PR_KEYS[k]==="kg"?" kg":PR_KEYS[k]==="reps"?" reps":"";
     return `<div class="pr"><div class="l">${PR_LABEL[k]||k}${PR_KEYS[k]==="lb"?" · e1RM":""}</div><div class="v">${Math.round(p.v)+unit}</div>${p.raw?`<div class="sub" style="font-size:12px;color:var(--muted)">${p.raw}</div>`:""}</div>`;};
   if(prKeys.length){
     /* Split, not filtered: what you're training now leads, everything else is still one tap
@@ -3193,7 +3361,7 @@ function priorBestValue(logs,uptoIdx,key){
       e.sets.forEach(s=>{const w=parseFloat(s.w),r=parseFloat(s.r);
         if(key==="Dead Hang"){if(w&&(best==null||w>best))best=w;return;}
         if(key==="Weighted Pull-Up"){if(!isNaN(w)&&(best==null||w>best))best=w;return;}
-        if(key==="Wall Push-Up Progression"){if(r&&(best==null||r>best))best=r;return;}
+        if(key==="Wall Push-Up Progression"||PR_KEYS[key]==="hold"){if(r&&(best==null||r>best))best=r;return;}
         if(w&&r){const est=e1rm(w,r);if(best==null||est>best)best=est;}});
     });
   }
@@ -3211,7 +3379,7 @@ function exerciseSummaryLine(logs,idx,e){
     let val=null;
     if(e.key==="Dead Hang")val=w||null;
     else if(e.key==="Weighted Pull-Up")val=!isNaN(w)?w:null;
-    else if(e.key==="Wall Push-Up Progression")val=r||null;
+    else if(e.key==="Wall Push-Up Progression"||PR_KEYS[e.key]==="hold")val=r||null;
     else if(w&&r)val=e1rm(w,r);
     let pr=false;
     if(e.key in PR_KEYS&&val!=null&&(best==null||val>best)){pr=true;best=val;}
@@ -3353,7 +3521,7 @@ function importLogs(){
    with no entry here has no key in any getSession() template either (warm-up filler or an
    uncapped/unscored finisher even natively), so it falls back to the untracked placeholder,
    same as always. */
-const PASTE_WORKOUT_EXERCISES=["Scapular Wall Isometric","Band Pull-Aparts","Prone Y-Raises","Deadlift","Chest-Supported DB Row","Goblet Squat","Floor Push-Ups","Single-Arm DB Row","Suitcase Carry","Neutral-Grip Cable Row","Romanian Deadlift (DB)","DB Shoulder Press","Cable Pullover","Leg Press","Rope Triceps Pressdown","Glute Bridges","Broad Jump","Backward Walking Lunges","Rack Pull","Bulgarian Split Squat","Pallof Press","Chest Press","Scapular Wall Slide","Triceps Extension (pushdown or overhead)","Neutral-Grip Row (cable or DB)","Core (Dead Bug or similar)","Scapular Wall Slides x5","Pillowcase Wall Isometric x5","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)","Box Jump","DB Step-Up","Sled Push","Single-KB RDL","Conventional Deadlift","Single-Leg RDL","Band Row","Band Face Pull","Bird Dog / Dead Bug","Sled Drag","Cardio Ramp","Farmer Carry","Neutral-Grip DB Row","Safety Bar Squat","Hip Thrust"];
+const PASTE_WORKOUT_EXERCISES=["Scapular Wall Isometric","Band Pull-Aparts","Prone Y-Raises","Deadlift","Chest-Supported DB Row","Goblet Squat","Floor Push-Ups","Single-Arm DB Row","Suitcase Carry","Neutral-Grip Cable Row","Romanian Deadlift (DB)","DB Shoulder Press","Cable Pullover","Leg Press","Rope Triceps Pressdown","Glute Bridges","Broad Jump","Backward Walking Lunges","Rack Pull","Bulgarian Split Squat","Pallof Press","Chest Press","Scapular Wall Slide","Triceps Extension (pushdown or overhead)","Neutral-Grip Row (cable or DB)","Core (Dead Bug or similar)","Scapular Wall Slides x5","Pillowcase Wall Isometric x5","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)","Box Jump","DB Step-Up","Sled Push","Single-KB RDL","Conventional Deadlift","Single-Leg RDL","Band Row","Band Face Pull","Bird Dog / Dead Bug","Sled Drag","Cardio Ramp","Farmer Carry","Neutral-Grip DB Row","Safety Bar Squat","Hip Thrust","Plate Pinch Hold"];
 /* Exercises with their own PR_KEYS entry but no Mon/Wed/Fri day template to inherit a key from —
    self-keyed (name === key) rather than needing a PASTE_WORKOUT_KEYS mapping. Grows over time.
    The block below is BFT class-history exercises pulled in wholesale: final names, side/left-
@@ -3380,7 +3548,7 @@ const EXTRA_EXERCISES=["SA Chest Press","SA RDL",
 /* Every EXTRA_EXERCISES entry gets a real, e1RM-tracked PR_KEYS slot (self-keyed to its name) —
    registered here rather than duplicated into the PR_KEYS literal above. */
 EXTRA_EXERCISES.forEach(n=>{ if(!(n in PR_KEYS)) PR_KEYS[n]="lb"; });
-const PASTE_WORKOUT_KEYS={"Scapular Wall Isometric":"Scapular Wall Isometric","Band Pull-Aparts":"Band Pull-Aparts","Prone Y-Raises":"Prone Y-Raises","Deadlift":"Deadlift","Chest-Supported DB Row":"Chest-Supported Row","Goblet Squat":"Goblet Squat","Floor Push-Ups":"Wall Push-Up Progression","Single-Arm DB Row":"Single-Arm DB Row","Suitcase Carry":"Suitcase Carry","Neutral-Grip Cable Row":"Neutral-Grip Cable Row","Romanian Deadlift (DB)":"Romanian Deadlift (DB)","DB Shoulder Press":"DB Shoulder Press","Cable Pullover":"Cable Pullover","Leg Press":"Leg Press","Rope Triceps Pressdown":"Rope Triceps Pressdown","Glute Bridges":"Glute Bridges","Broad Jump":"Broad Jump","Backward Walking Lunges":"Backward Walking Lunges","Rack Pull":"Rack Pull","Bulgarian Split Squat":"Bulgarian SS","Pallof Press":"Pallof","Chest Press":"Chest Press","Scapular Wall Slide":"Scapular Wall Slide","Triceps Extension (pushdown or overhead)":"Triceps Extension","Neutral-Grip Row (cable or DB)":"Neutral-Grip Row","Core (Dead Bug or similar)":"Bird Dog","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)":"DB Shoulder Press","Box Jump":"Jump","DB Step-Up":"Step-Up","Single-KB RDL":"SKB RDL","Conventional Deadlift":"Deadlift","Single-Leg RDL":"SL RDL","Band Row":"Band Row","Band Face Pull":"Face Pull","Bird Dog / Dead Bug":"Bird Dog","Neutral-Grip DB Row":"DB Row","Safety Bar Squat":"Safety Bar Squat","Hip Thrust":"Hip Thrust"};
+const PASTE_WORKOUT_KEYS={"Scapular Wall Isometric":"Scapular Wall Isometric","Band Pull-Aparts":"Band Pull-Aparts","Prone Y-Raises":"Prone Y-Raises","Deadlift":"Deadlift","Chest-Supported DB Row":"Chest-Supported Row","Goblet Squat":"Goblet Squat","Floor Push-Ups":"Wall Push-Up Progression","Single-Arm DB Row":"Single-Arm DB Row","Suitcase Carry":"Suitcase Carry","Neutral-Grip Cable Row":"Neutral-Grip Cable Row","Romanian Deadlift (DB)":"Romanian Deadlift (DB)","DB Shoulder Press":"DB Shoulder Press","Cable Pullover":"Cable Pullover","Leg Press":"Leg Press","Rope Triceps Pressdown":"Rope Triceps Pressdown","Glute Bridges":"Glute Bridges","Broad Jump":"Broad Jump","Backward Walking Lunges":"Backward Walking Lunges","Rack Pull":"Rack Pull","Bulgarian Split Squat":"Bulgarian SS","Pallof Press":"Pallof","Chest Press":"Chest Press","Scapular Wall Slide":"Scapular Wall Slide","Triceps Extension (pushdown or overhead)":"Triceps Extension","Neutral-Grip Row (cable or DB)":"Neutral-Grip Row","Core (Dead Bug or similar)":"Bird Dog","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)":"DB Shoulder Press","Box Jump":"Jump","DB Step-Up":"Step-Up","Single-KB RDL":"SKB RDL","Conventional Deadlift":"Deadlift","Single-Leg RDL":"SL RDL","Band Row":"Band Row","Band Face Pull":"Face Pull","Bird Dog / Dead Bug":"Bird Dog","Neutral-Grip DB Row":"DB Row","Safety Bar Squat":"Safety Bar Squat","Hip Thrust":"Hip Thrust","Sled Push":"Sled Push","Plate Pinch Hold":"Plate Pinch Hold"};
 function parsePastedSets(setsReps){
   const m=String(setsReps).trim().match(/^(\d+)/);
   return m?Math.max(1,parseInt(m[1],10)):3;
@@ -3463,20 +3631,23 @@ const daySel=document.getElementById("daySel");
 /* Mon/Wed/Fri template per block — the slots the shared days interleave with below. */
 const BLOCK_LIFTS={legacy:["upper","lower","mixed"],
                    meso01:["fullBodyA","fullBodyB","fullBodyC"],
-                   meso02:["meso02Mon","meso02Wed","meso02Fri"]};
-const BLOCK_OG={legacy:"ogLegacy",meso01:"ogMeso01",meso02:"ogMeso02"};
+                   meso02:["meso02Mon","meso02Wed","meso02Fri"],
+                   meso03:["meso03Mon","meso03Wed","meso03Fri","meso03Sat"]};
+const BLOCK_OG={legacy:"ogLegacy",meso01:"ogMeso01",meso02:"ogMeso02",meso03:"ogMeso03"};
 /* Fold Tue/Thu/Sat/Sun into the current block's group in weekday order and float it to the
    top, so the list opens on a complete Mon–Sun week. appendChild moves an existing node, so
    this both reorders the block's own options and pulls the shared ones across; the emptied
    "Every week" group is then removed. Replaces the old " (inactive)" suffixes — the dated
    group labels and top placement carry that now, without widening any option text.
-   Off-block (after 10/18, before 7/6) there is no current block, so the static layout stands
+   A block with its own Saturday (a 4th BLOCK_LIFTS entry, Meso 03) takes the Sat slot, and the
+   shared "sat" moves to the end of the group so it stays selectable for history.
+   Off-block (after 12/13, before 7/6) there is no current block, so the static layout stands
    and Tue/Thu/Sat/Sun stay in their own "Every week" group. */
 function orderDaySel(){
   const id=blockFor().id, lifts=BLOCK_LIFTS[id], og=document.getElementById(BLOCK_OG[id]||"");
   const shared=document.getElementById("ogShared");
   if(!og||!lifts||!shared) return;
-  [lifts[0],"tue",lifts[1],"thu",lifts[2],"sat","sun"].forEach(v=>{
+  [lifts[0],"tue",lifts[1],"thu",lifts[2],lifts[3]||"sat","sun"].concat(lifts[3]?["sat"]:[]).forEach(v=>{
     const o=daySel.querySelector('option[value="'+v+'"]'); if(o) og.appendChild(o);});
   shared.remove();
   daySel.insertBefore(og,daySel.firstChild);
@@ -3486,7 +3657,8 @@ orderDaySel();
 document.getElementById("optSun").textContent=inMeso01Window()?"Sun · Gentle Yoga":"Sun · CS4 Recovery";
 daySel.value=["sun","upper","tue","lower","thu","mixed","sat"][now.getDay()];
 const mesoDefaultDay=inMeso01Window()?{1:"fullBodyA",3:"fullBodyB",5:"fullBodyC"}[now.getDay()]
-                    :inMeso02Window()?{1:"meso02Mon",3:"meso02Wed",5:"meso02Fri"}[now.getDay()]:null;
+                    :inMeso02Window()?{1:"meso02Mon",3:"meso02Wed",5:"meso02Fri"}[now.getDay()]
+                    :inMeso03Window()?{1:"meso03Mon",3:"meso03Wed",5:"meso03Fri",6:"meso03Sat"}[now.getDay()]:null;
 if(mesoDefaultDay) daySel.value=mesoDefaultDay;
 /* Same-day draft (tab was killed mid-session, reopened the same day): adopt it silently — that's
    continuity, not a decision worth prompting over. Only previous-day drafts get the banner.
