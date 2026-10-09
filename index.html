@@ -112,7 +112,7 @@ main{padding:12px 14px}
 .notecard.collapsed .hep-blk-ind{transform:rotate(-90deg)}
 .notecard.collapsed .hep-blk-body{display:none}
 .hep-blk-note{color:var(--amber); font-size:13px; margin:2px 0 10px}
-.hep-dormant{font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); border:1px solid var(--line); border-radius:4px; padding:1px 5px; vertical-align:middle}
+.hep-dormant{font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); border:1px solid var(--line); border-radius:4px; padding:1px 5px; vertical-align:middle; white-space:nowrap; display:inline-block}
 .formref-label{cursor:pointer; display:flex; align-items:center; justify-content:space-between}
 .formref-ind{display:inline-block; transition:transform .15s ease}
 .notecard.collapsed .formref-ind{transform:rotate(-90deg)}
@@ -574,7 +574,7 @@ function hrText(day,w){
    meso03Mon:`Hinge lead — strength curve, Z1–Z2 base, Rack Pull spikes to Z3 OK. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
    meso03Wed:`Squat + push — strength curve throughout, stay pain-free through the Chest Press cap. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
    meso03Fri:`Pull + hinge — strength curve throughout. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
-   meso03Sat:`Full range — effort cap 7/10. Strength curve, scored and medalled like a lift day (target RKD ≈ 105). ${mesoPhase3().label} — ${mesoPhase3().label==="Deload Phase"?"2 sets of everything this week.":"fixed sets all block; only the tempo cue changes."}`}[day];
+   meso03Sat:`Full range — effort cap 7/10. Strength curve, scored and medalled like a lift day (target RKD ≈ 105). ${mesoPhase3().label} — ${mesoPhase3().label==="Deload Phase"?"2 sets of everything this week.":"fixed sets all block; only the tempo cue changes (none on Face Pull)."}`}[day];
 }
 // Shared pre-activation cue — surfaces on every exercise where the right lat
 // coordination gap shows up (confirmed 8/11 across Deadlift + DB Shoulder Press).
@@ -883,14 +883,17 @@ const FORM_GLOSSARY={
    "<b>Stop at the first sign of pain</b>, per the Meso 02 prescription. Pulling volume is what this block is built around; pushing through defeats the reason it's prioritized.",
    "Rowing is <b>not</b> on the excluded list — overhand hanging and pull-ups are. Don't let that exclusion bleed into this.",
    "<i>Drafted for this panel. Light-load and stop-at-pain rules carried from the Meso 02 prescription, the neutral-grip rationale from the DB Shoulder Press entry.</i>"]},
+ // Key kept from Meso 01's DB version for PR continuity; written up as barbell from Meso 03
+ // (Meso 02's history under this key is already mostly barbell).
  "Romanian Deadlift (DB)":{
-  status:"✅ CLEARED · A hinge without the floor pull (per Meso 01/02 prescription)",
+  status:"✅ CLEARED · A hinge without the floor pull · Barbell from Meso 03",
   setup:[
-   "DBs in front of the thighs, neutral grip, arms straight and staying straight.",
+   "Start standing: unrack the bar or deadlift it up once. Double overhand grip just outside the legs, arms straight and staying straight.",
+   `Set the lats before the first rep — the same <b>"protect your armpit"</b> cue as the deadlift.`,
    "Feet hip-width, knees softly bent and <b>staying at that bend</b> — this is a hinge, not a squat.",
    "Ribs down, blades set, brace."],
   execution:[
-   "Push the hips backward and let the torso descend. DBs stay in contact with or very close to the legs.",
+   "Push the hips backward and let the torso descend. The bar stays in contact with or very close to the legs.",
    "Descend until the hamstrings load and the low back is about to round — that's your range, not a fixed depth.",
    "Drive the hips forward to stand. Glutes finish it.",
    "The weight travels vertically; the movement happens horizontally at the hips."],
@@ -1455,15 +1458,21 @@ function getSession(w,day){
   };
   const meso3HoldRx=(text,note)=>{
     const sets=meso3Phase==="Deload"?1:2;
-    return {sets, rx:sets+" × "+text+(note?" · "+note:"")};
+    return {sets, rx:sets+" × "+text+(note?" · "+note:"")+(meso3Phase==="Deload"?" · retest":"")};
   };
+  /* Week 8 retest (Meso03_Plan.xlsx, Overview): Baseline loads again for the carries, pinch hold
+     and single-arm lifts, both sides logged, to compare against week 1. Shown as a banner on the
+     session page and tagged onto each affected rx so set mode carries it too. */
+  const MESO3_RETEST="Retest: repeat Baseline loads for carries, pinch hold and single-arm lifts; log both sides.";
+  const retestTag=rx=>meso3Phase==="Deload"?rx+" · retest — Baseline load, log both sides":rx;
+  const meso3Retest=meso3Phase==="Deload"?MESO3_RETEST:null;
   if(day==="meso03Mon"){
-    const rp=meso3MainRx("chiro-approved; monitor grip-side"),
-          bss=meso3AccRx("/leg","DB in each hand"),
-          ht=meso3AccRx(),
-          pf=meso3AccRx("/side","anti-rotation core"),
-          sc=meso3HoldRx("40 yd/side","right side first");
-    return {name:"MONDAY — Hinge Lead", type:"lift", blocks:[
+    const rp=meso3MainRx("double overhand · chiro-approved; monitor grip-side"),
+          bss=meso3AccRx("/leg","DB in each hand, arms straight"),
+          ht=meso3AccRx("","full hip extension, pause at top"),
+          pf=meso3AccRx("/side","neutral grip, static hold"),
+          sc=meso3HoldRx("40 yd/side","right side first · log load per side");
+    return {name:"MONDAY — Hinge Lead", type:"lift", retest:meso3Retest, blocks:[
      // Rack Pull's Form Reference entry calls for pull-aparts or Y-raises immediately prior.
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Band Pull-Aparts",n:"Band Pull-Aparts",rx:"2 × 15 · light, first in session",sets:2}]},
@@ -1480,39 +1489,40 @@ function getSession(w,day){
   }
   if(day==="meso03Wed"){
     const sq=meso3MainRx("hands on the handles — never reach back for a straight bar"),
-          cp=meso3AccRx("/side","single-arm floor press, right side first · hard stop at 90° elbow flexion, pain-free only"),
-          tp=meso3AccRx("/side","single-arm, right side first"),
-          po=meso3AccRx(),
-          ph=meso3HoldRx("20–30 s/side","right side first · log plate load × seconds held · set down before the grip goes");
-    return {name:"WEDNESDAY — Squat + Push", type:"lift", blocks:[
+          cp=meso3AccRx("/side","single-arm floor press, right side first · floor sets the 90° stop, pain-free only"),
+          tp=meso3AccRx("/side","single-arm, pushdown only (no overhead), right side first"),
+          po=meso3AccRx("","arms nearly straight — lats without elbow bend"),
+          ph=meso3HoldRx("20–30 s/side","thumb flat on one face, fingers flat on the other, plate off the floor · right side first · log plate load × seconds held · set down before the grip goes");
+    return {name:"WEDNESDAY — Squat + Push", type:"lift", retest:meso3Retest, blocks:[
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
-       {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · first in session",sets:2}]},
+       {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · slow, elbows on the wall · first in session",sets:2}]},
      {letter:"B",t:"Squat",mins:12,bells:sq.sets,ex:[
        {key:"Safety Bar Squat",n:"Safety Bar Squat",rx:sq.rx,sets:sq.sets}]},
      // Single-arm, so it logs under SA Chest Press — per-arm loads would never read as PRs
      // against Chest Press's two-arm history.
      {letter:"C",t:"Push",mins:8,bells:cp.sets,ex:[
-       {key:"SA Chest Press",n:"Chest Press",rx:cp.rx,sets:cp.sets}]},
+       {key:"SA Chest Press",n:"Chest Press",rx:retestTag(cp.rx),sets:cp.sets}]},
      {letter:"D",t:"Triceps",mins:7,bells:tp.sets,ex:[
-       {key:"Rope Triceps Pressdown",n:"Rope Triceps Pressdown",rx:tp.rx,sets:tp.sets}]},
+       {key:"Rope Triceps Pressdown",n:"Rope Triceps Pressdown",rx:retestTag(tp.rx),sets:tp.sets}]},
      {letter:"E",t:"Pullover",mins:6,bells:po.sets,ex:[
        {key:"Cable Pullover",n:"Cable Pullover",rx:po.rx,sets:po.sets}]},
      {letter:"F",t:"Grip",mins:4,bells:ph.sets,ex:[
        {key:"Plate Pinch Hold",n:"Plate Pinch Hold",rx:ph.rx,sets:ph.sets,rUnit:"sec"}]}]};
   }
   if(day==="meso03Fri"){
-    const rdl=meso3MainRx(),
-          ngr=meso3AccRx("/side","single-arm, right side first"),
-          su=meso3AccRx("/leg"),
-          cd=meso3AccRx("/side"),
-          sc=meso3HoldRx("40 yd/side","right side first");
-    return {name:"FRIDAY — Pull + Hinge", type:"lift", blocks:[
+    const rdl=meso3MainRx("barbell"),
+          ngr=meso3AccRx("/side","single-arm, right side first · stop at first sign of pain"),
+          su=meso3AccRx("/leg","DBs at sides, arms straight"),
+          cd=meso3AccRx("/side","ribs down, slow"),
+          sc=meso3HoldRx("40 yd/side","right side first · log load per side");
+    return {name:"FRIDAY — Pull + Hinge", type:"lift", retest:meso3Retest, blocks:[
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Prone Y-Raises",n:"Prone Y-Raises",rx:"2 × 15 · light, first in session",sets:2}]},
+     // Barbell, on the existing key — Meso 02's history under it is already mostly barbell.
      {letter:"B",t:"Hinge",mins:12,bells:rdl.sets,ex:[
-       {key:"Romanian Deadlift (DB)",n:"Romanian Deadlift",rx:rdl.rx,sets:rdl.sets}]},
+       {key:"Romanian Deadlift (DB)",n:"Romanian Deadlift (barbell)",rx:rdl.rx,sets:rdl.sets}]},
      {letter:"C",t:"Pull",mins:8,bells:ngr.sets,ex:[
-       {key:"Neutral-Grip Row",n:"Neutral-Grip Row (cable or DB)",rx:ngr.rx,sets:ngr.sets}]},
+       {key:"Neutral-Grip Row",n:"Neutral-Grip Row (cable or DB)",rx:retestTag(ngr.rx),sets:ngr.sets}]},
      {letter:"D",t:"Unilateral",mins:7,bells:su.sets,ex:[
        {key:"Step-Up",n:"DB Step-Up",rx:su.rx,sets:su.sets}]},
      {letter:"E",t:"Core",mins:6,bells:cd.sets,ex:[
@@ -1522,21 +1532,23 @@ function getSession(w,day){
   }
   if(day==="meso03Sat"){
     // Fixed 3-set prescriptions all block; the Deload week takes two sets of everything.
+    // Tempo per Meso03_Plan.xlsx: none on Band Face Pull, "slightly heavier" on Leg Press only,
+    // and no tempo text in the Deload week.
     const n=v=>meso3Phase==="Deload"?2:v,
-          tempo={Baseline:"3 s lowering",Volume:"1 s pause at the bottom",
-                 Performance:"normal tempo, slightly heavier",Deload:"normal tempo"}[meso3Phase];
+          tempo={Baseline:"3 s lowering",Volume:"1 s pause at the bottom",Performance:"normal tempo",Deload:""}[meso3Phase],
+          t=(rx,extra)=>[rx].concat(tempo?[tempo+(extra||"")]:[]).join(" · ");
     // Cap sits before the " — " so it shows in the top bar and set mode, which keep only that half.
     return {name:"SATURDAY · CAP 7/10 — Full Range", type:"lift", blocks:[
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
-       {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · first in session",sets:2}]},
+       {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · slow, elbows on the wall · effort cap 7/10 all session",sets:2}]},
      {letter:"B",t:"Squat",mins:8,bells:n(3),ex:[
-       {key:"Leg Press",n:"Leg Press",rx:n(3)+" × 10 · full depth · "+tempo,sets:n(3)}]},
+       {key:"Leg Press",n:"Leg Press",rx:t(n(3)+" × 10 · full depth",meso3Phase==="Performance"?", slightly heavier":""),sets:n(3)}]},
      {letter:"C",t:"Hinge",mins:8,bells:n(3),ex:[
-       {key:"SL RDL",n:"Single-Leg RDL",rx:n(3)+" × 8/leg · "+tempo,sets:n(3)}]},
+       {key:"SL RDL",n:"Single-Leg RDL",rx:t(n(3)+" × 8/leg · balance-forward"),sets:n(3)}]},
      {letter:"D",t:"Lunge",mins:8,bells:n(3),ex:[
-       {key:"Backward Walking Lunges",n:"Backward Walking Lunges",rx:n(3)+" × 8/leg · "+tempo,sets:n(3)}]},
+       {key:"Backward Walking Lunges",n:"Backward Walking Lunges",rx:t(n(3)+" × 8/leg · full range"),sets:n(3)}]},
      {letter:"E",t:"Upper back",mins:6,bells:n(3),ex:[
-       {key:"Face Pull",n:"Band Face Pull",rx:n(3)+" × 12 · "+tempo,sets:n(3)}]},
+       {key:"Face Pull",n:"Band Face Pull",rx:n(3)+" × 12 · light band",sets:n(3)}]},
      {letter:"F",t:"Sled",mins:8,bells:n(5),ex:[
        {key:"Sled Push",n:"Sled Push",rx:n(5)+" × 20 yd · arms straight · log load × yards",sets:n(5),rUnit:"yd"}]},
      {letter:"G",t:"Cardio Ramp",mins:10,bells:1,ex:[
@@ -1769,6 +1781,7 @@ const HEP_LEVATOR_NOTE="Supine preferred over seated/standing per 8/11 OT guidan
 const HEP_BICEP_DORMANT_REASON="Deprioritized per 8/11 OT visit, no longer clinically necessary";
 const HEP_LAT_RX="3×/day · 2–3 reps, 10–30+ sec · loose grip right side, don't load hand/wrist";
 const HEP_FINKELSTEIN_RX="3–5 reps · progressive hold · 2×/day (reduced from 3–4×, metacarpal aggravation)";
+const HEP_RETIRE_NOTE="Retire pending — confirm with surgeon. Built for the July radial / lateral-elbow diagnosis.";
 const HEP_PUSHUP_DORMANT_REASON="Goal met 8/12 — floor push-ups now run in training (Meso 02 Wednesday), not as an HEP item";
 const HEP_BLOCKS=[
  {label:"B1 Gym · pre-lift", hepIdx:0, note:"Stop the glides for the day if tingling increases or lingers.", ex:[
@@ -1785,19 +1798,20 @@ const HEP_BLOCKS=[
    {key:"float_nightsplint",n:"Night elbow position",rx:"nightly, both arms · towel wrap or soft splint so the elbows don't stay deeply bent · log 1 when done",type:"reps",unit:" done"}]},
  /* Library: the rest of the July plan, kept as stretch reminders. No hepIdx, so it never counts
     toward the daily score or autoCheckHepBlocks; `library` makes renderHepTab show it read-only
-    and collapsed, dormant items included with their reasons. Items keep their July rx verbatim. */
+    and collapsed, dormant items included with their reasons. Items keep their July rx verbatim.
+    `retire` flags the three July radial/lateral-elbow items awaiting the surgeon's call. */
  {label:"Library · reference", library:true, ex:[
    {key:"b1_pronechest",n:"Prone chest stretch on chair",rx:"3×/day · no aggravation",type:"timed"},
    {key:"b1_wallball",n:"Standing wall ball circles (mini Swiss ball, 2–3 lb)",rx:"1–3×/day · 7×/week · 1 min hold, progress duration",type:"timed"},
-   {key:"b1_elbowdist",n:"Elbow distraction self mobilization",rx:"1–2×/day · 7×/week · 3 sets of 10 oscillations or 10-sec holds · stop on any neural symptoms",type:"reps",unit:" sets"},
-   {key:"b1_wristdev",n:"Wrist AROM: radial–ulnar deviation",rx:"3×/day · 7×/week · 3 sets of 10 reps · stop on any neural symptoms",type:"reps",unit:" sets"},
+   {key:"b1_elbowdist",n:"Elbow distraction self mobilization",rx:"1–2×/day · 7×/week · 3 sets of 10 oscillations or 10-sec holds · stop on any neural symptoms",type:"reps",unit:" sets",retire:true},
+   {key:"b1_wristdev",n:"Wrist AROM: radial–ulnar deviation",rx:"3×/day · 7×/week · 3 sets of 10 reps · stop on any neural symptoms",type:"reps",unit:" sets",retire:true},
    {key:"b1_plankscap",n:"Full plank w/ scapular protraction–retraction AROM",rx:"1×/day · 7×/week · 5 reps · 10–15s hold",type:"reps"},
    {key:"b1_isometricIR",n:"Isometric internal rotation",rx:"1×/day · 5 reps · 10–15s hold · circuited with full plank scapular AROM",type:"reps"},
    {key:"b1_subscap",n:"Standing subscapularis lift-off",rx:"1×/day · 7×/week · 3–5 reps · walk-to-tension hold",type:"reps"},
    {key:"b1_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
    {key:"b1_toothbrush",n:"Vibration desensitization (electric toothbrush)",rx:"along radial distribution · shared 2–3×/day dose w/ the Float self-massage",type:"timed"},
    // The 90° in each is the position held, not the joint moved (7/14 OT source).
-   {key:"float_arom",n:"AROM/PROM: elbow flex–ext (supine, shoulder at 90°) + pronation–supination (seated, elbow at 90°)",rx:"5 reps per bout · log each bout toward the 5×/day prescription",type:"reps",unit:" done",max:5},
+   {key:"float_arom",n:"AROM/PROM: elbow flex–ext (supine, shoulder at 90°) + pronation–supination (seated, elbow at 90°)",rx:"5 reps per bout · log each bout toward the 5×/day prescription",type:"reps",unit:" done",max:5,retire:true},
    // Not pre-lift — don't pre-load radial tissue before lifting.
    {key:"float_finkelstein",n:"Finkelstein stretch",rx:HEP_FINKELSTEIN_RX,type:"timed"},
    {key:"float_cupping",n:"Tennis elbow self massage (silicone cupping)",rx:"5–10 min gentle · shared 2–3×/day radial-nerve dose w/ the B1 vibration desensitization · light pressure only, no hard friction/trigger point work",type:"timed"},
@@ -1885,7 +1899,7 @@ function renderHepTab(m){
     b.ex.forEach(ex=>{
       /* Library is read-only: name, rx and note, plus the reason on a dormant item. */
       if(b.library){
-        h+=`<div class="ex"><div class="ex-name">${ex.n}${ex.dormant?` <span class="hep-dormant">dormant</span>`:""}</div><div class="ex-rx">${ex.rx}</div>${ex.note?`<div class="ex-note">${ex.note}</div>`:""}${ex.dormant?`<div class="ex-note">${ex.reason}</div>`:""}</div>`;
+        h+=`<div class="ex"><div class="ex-name">${ex.n}${ex.dormant?` <span class="hep-dormant">dormant</span>`:""}${ex.retire?` <span class="hep-dormant">retire pending</span>`:""}</div><div class="ex-rx">${ex.rx}</div>${ex.note?`<div class="ex-note">${ex.note}</div>`:""}${ex.dormant?`<div class="ex-note">${ex.reason}</div>`:""}${ex.retire?`<div class="ex-note">${HEP_RETIRE_NOTE}</div>`:""}</div>`;
         return;
       }
       if(ex.dormant) return;
@@ -2943,6 +2957,7 @@ function render(){
   }
 
   /* ---- Lifting days ---- */
+  if(s.retest) h+=`<div class="meta warn"><b>Week 8 retest:</b> ${s.retest.replace(/^Retest: /,"")}</div>`;
   h+=infoBox("ibHow","howto","How it runs",
     `press ▶ when you reach the block's equipment. <b>Bell = start your set.</b> Rest for the remainder of the interval. Link WHOOP up top and RKD scores itself while you follow the bells.`);
   h+=infoBox("ibHr","meta","HR target",hrText(day,w));
@@ -3263,7 +3278,7 @@ const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Suppor
    the identity every saved log entry and PR history is keyed on, same backward-compat rule as
    the pxi/dtp-* internals. Only the label moves on. The wall ladder is retired; the movement has
    been Floor Push-Ups in every template since 8/12. */
-const PR_LABEL={"Wall Push-Up Progression":"Floor Push-Ups"};
+const PR_LABEL={"Wall Push-Up Progression":"Floor Push-Ups","Romanian Deadlift (DB)":"Romanian Deadlift"};
 /* Anatomical grouping for the History PR grid's "everything else" section (see renderHistory) —
    splits it into Upper / Lower / Core sub-headers instead of one long undifferentiated list.
    Covers every PR_KEYS entry that isn't guaranteed to already be in the active block: the

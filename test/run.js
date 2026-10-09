@@ -189,6 +189,23 @@ loadRegions(
   "var hepMem={};",
   region("const hepKey=","/* ---- shared stopwatch")
 );
+/* The real day templates, loaded under another name: getSession itself stays stubbed above for
+   the PR grid, which is testing grouping, not programming. RIGHT_LAT_CUE/nSets/q15 come along
+   because the legacy templates in the same function reference them. */
+loadRegions(region("const RIGHT_LAT_CUE=","// ================= FORM REFERENCE"),
+  region("function getSession(w,day){","const interval=").replace("function getSession(w,day){","function realSession(w,day){"));
+/* Meso 03's templates read the wall clock (meso03Week), so pin it for the duration of fn. */
+function onDate(y,m,d,fn){
+  var Real=Date, at=new Real(y,m-1,d,9,0,0).getTime();
+  Date=function(){ if(!arguments.length) return new Real(at);
+    return new (Function.prototype.bind.apply(Real,[null].concat([].slice.call(arguments))))(); };
+  Date.prototype=Real.prototype; Date.now=function(){return at;};
+  try{ return fn(); } finally{ Date=Real; }
+}
+/* Every exercise of a day as {key,n,rx,sets}, flattened. */
+function exList(day){ var out=[]; realSession(8,day).blocks.forEach(function(b){ b.ex.forEach(function(e){ out.push(e); }); }); return out; }
+function exOf(day,key){ return exList(day).filter(function(e){return e.key===key;})[0]||{}; }
+
 /* The PR grid lives inside renderHistory(); wrap the tile-building slice as a function. */
 loadRegions("function prGrid(logs){\n"+region("  const prs={};","  const totals=weeklyTotals(logs);")+"\n  return h;\n}");
 /* The weekly-RKD block that follows it: bar scaling and the current-block/earlier split. */
@@ -258,6 +275,71 @@ eq(blockTag(blockFor(D(2026,10,25))),"M3·W1·B","Oct 25 (Sun) is still week 1")
 eq(blockFor(D(2026,11,1)).week,2,"Nov 1 (DST ends) -> wk 2");
 eq(blockFor(D(2026,11,2)).week,3,"Nov 2 -> wk 3, not held back by the extra hour");
 eq(blockOf({date:"2026-12-10T18:00:00Z"}).id,"meso03","an unstamped log from the Deload week re-derives to Meso 3");
+
+section("Meso 3 templates — against Meso03_Plan.xlsx");
+var M3DAYS=["meso03Mon","meso03Wed","meso03Fri","meso03Sat"];
+/* One date per phase: wk 1 Baseline, wk 3 Volume, wk 6 Performance, wk 8 Deload (all Mondays). */
+var PHASE_DATES={Baseline:[2026,10,19],Volume:[2026,11,2],Performance:[2026,11,23],Deload:[2026,12,7]};
+var EXCLUDED=/back[ -]squat|goblet|overhead press|shoulder press|military|\bOHP\b|push press|rower|row erg|ski ?erg/i;
+Object.keys(PHASE_DATES).forEach(function(ph){
+  var d=PHASE_DATES[ph];
+  onDate(d[0],d[1],d[2],function(){
+    M3DAYS.forEach(function(day){
+      var s=realSession(8,day), txt=[s.name].concat(exList(day).map(function(e){return e.n+" "+(e.rx||"")+" "+(e.note||"");})).join(" | ");
+      /* "no overhead" is the pushdown rule itself, so only pressing/excluded patterns count. */
+      ok(!EXCLUDED.test(txt.replace(/no overhead/g,"")),ph+" "+day+": no back squat, goblet, overhead pressing or rower/SkiErg");
+    });
+  });
+});
+onDate(2026,10,19,function(){
+  eq(exOf("meso03Mon","Rack Pull").sets,4,"Baseline main lift: 4 sets");
+  ok(/^4 × 6 @ RPE 6–7/.test(exOf("meso03Mon","Rack Pull").rx),"...4 × 6 @ RPE 6–7");
+  ok(/double overhand/.test(exOf("meso03Mon","Rack Pull").rx),"Rack Pull cue: double overhand");
+  ok(/^3 × 8–10\/leg/.test(exOf("meso03Mon","Bulgarian SS").rx),"Baseline accessory: 3 × 8–10/leg");
+  ok(/arms straight/.test(exOf("meso03Mon","Bulgarian SS").rx),"BSS cue: arms straight");
+  ok(/pause at top/.test(exOf("meso03Mon","Hip Thrust").rx),"Hip Thrust cue: pause at top");
+  ok(/neutral grip, static hold/.test(exOf("meso03Mon","Pallof").rx),"Pallof cue: neutral grip, static hold");
+  ok(/log load per side/.test(exOf("meso03Mon","Suitcase Carry").rx),"carry cue: log load per side");
+  ok(/pushdown only/.test(exOf("meso03Wed","Rope Triceps Pressdown").rx),"safety cue: triceps pushdown only");
+  ok(/arms nearly straight/.test(exOf("meso03Wed","Cable Pullover").rx),"safety cue: pullover arms nearly straight");
+  ok(/90° stop/.test(exOf("meso03Wed","SA Chest Press").rx),"safety cue: chest press 90° stop");
+  ok(/stop at first sign of pain/.test(exOf("meso03Fri","Neutral-Grip Row").rx),"safety cue: row stops at first sign of pain");
+  ok(/barbell/i.test(exOf("meso03Fri","Romanian Deadlift (DB)").n+exOf("meso03Fri","Romanian Deadlift (DB)").rx),"RDL is barbell, on the existing key");
+  ok(/arms straight/.test(exOf("meso03Fri","Step-Up").rx),"Step-Up cue: arms straight");
+  ok(/ribs down, slow/.test(exOf("meso03Fri","Bird Dog").rx),"core cue: ribs down, slow");
+  ok(/3 s lowering/.test(exOf("meso03Sat","Leg Press").rx),"Sat Baseline tempo: 3 s lowering");
+  eq(exOf("meso03Sat","Face Pull").rx,"3 × 12 · light band","Band Face Pull: no tempo cue");
+  eq(realSession(8,"meso03Mon").retest,null,"no retest banner outside week 8");
+  ok(!/retest/.test(exOf("meso03Wed","Plate Pinch Hold").rx),"...and no retest tag either");
+});
+onDate(2026,11,2,function(){
+  ok(/^5 × 6–8 @ RPE 7–8/.test(exOf("meso03Wed","Safety Bar Squat").rx),"Volume main lift: 5 × 6–8 @ RPE 7–8");
+  ok(/^3 × 10–12/.test(exOf("meso03Wed","Cable Pullover").rx),"Volume accessory: 3 × 10–12");
+  ok(/1 s pause at the bottom/.test(exOf("meso03Sat","SL RDL").rx),"Sat Volume tempo: 1 s pause");
+});
+onDate(2026,11,23,function(){
+  ok(/^4 × 4–5 @ RPE 8/.test(exOf("meso03Fri","Romanian Deadlift (DB)").rx),"Performance main lift: 4 × 4–5 @ RPE 8");
+  ok(/^3 × 8\/side · heavier/.test(exOf("meso03Fri","Neutral-Grip Row").rx),"Performance accessory: 3 × 8, heavier");
+  ok(/slightly heavier/.test(exOf("meso03Sat","Leg Press").rx),"Sat Performance: Leg Press slightly heavier");
+  ok(!/heavier/.test(exOf("meso03Sat","SL RDL").rx+exOf("meso03Sat","Backward Walking Lunges").rx),"...and only Leg Press");
+});
+onDate(2026,12,7,function(){
+  ok(/^3 × 5 @ RPE 6/.test(exOf("meso03Mon","Rack Pull").rx),"Deload main lift: 3 × 5 @ RPE 6");
+  ok(/^2 × 8/.test(exOf("meso03Mon","Hip Thrust").rx),"Deload accessory: 2 × 8");
+  eq(exOf("meso03Mon","Suitcase Carry").sets,1,"Deload carry: 1 round");
+  eq(exOf("meso03Wed","Plate Pinch Hold").sets,1,"Deload pinch hold: 1 round");
+  eq(exOf("meso03Sat","Sled Push").sets,2,"Deload Sled Push: 2 × 20 yd");
+  eq(exOf("meso03Sat","Leg Press").rx,"2 × 10 · full depth","Deload Saturday: 2 sets, no tempo text");
+  ["meso03Mon","meso03Wed","meso03Fri"].forEach(function(d){
+    ok(/Retest: repeat Baseline loads for carries, pinch hold and single-arm lifts; log both sides\./.test(realSession(8,d).retest||""),"week 8 retest banner on "+d);
+  });
+  eq(realSession(8,"meso03Sat").retest,undefined,"...not on Saturday");
+  ["Suitcase Carry"].forEach(function(k){ ok(/retest/.test(exOf("meso03Fri",k).rx),"retest tag on Fri "+k); });
+  ok(/retest/.test(exOf("meso03Wed","Plate Pinch Hold").rx),"retest tag on the pinch hold");
+  ["SA Chest Press","Rope Triceps Pressdown"].forEach(function(k){ ok(/retest/.test(exOf("meso03Wed",k).rx),"retest tag on single-arm "+k); });
+  ok(/retest/.test(exOf("meso03Fri","Neutral-Grip Row").rx),"retest tag on single-arm Neutral-Grip Row");
+  ok(!/retest/.test(exOf("meso03Fri","Romanian Deadlift (DB)").rx),"...not on the main lift");
+});
 
 section("Meso 3 Saturday — scored like a lift day");
 ok(LIFT_DAYS.indexOf("meso03Sat")>=0,"meso03Sat is medal-eligible");
@@ -824,6 +906,8 @@ eq(B1.ex.map(function(e){return e.key;}).join(","),
    "b1_scapwallslides,b1_pillowcase,b1_levator,b1_fingerspreads,b1_platepinch,b1_ulnarslider,b1_radialglide","B1 runs in the new order");
 eq(HEP_BLOCKS[1].ex.map(function(e){return e.key;}).join(","),"float_nightsplint","Float is night elbow position only");
 ok(LIB.library&&LIB.hepIdx==null,"Library is read-only and has no daily target");
+eq(LIB.ex.filter(function(e){return e.retire;}).map(function(e){return e.key;}).sort().join(","),
+   "b1_elbowdist,b1_wristdev,float_arom","exactly the three July radial/lateral-elbow items are marked retire-pending");
 eq(hepTargetIdx().join(","),"0","only B1 counts toward the daily score");
 /* Auto-complete: Library logs never tick B1, and B1 needs all seven of its own items. */
 var det={}; LIB.ex.forEach(function(e){ det[e.key]=[1]; });

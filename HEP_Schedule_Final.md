@@ -37,20 +37,20 @@ Logged by hand; never auto-completes or counts.
 **Don't lean on elbows · switch hands on long phone holds · light hands on bike bars.**
 
 ## Library — reference
-Collapsed by default. Read-only: no log inputs, not counted, keys unchanged. Doses are the July prescription, verbatim.
+Collapsed by default. Read-only: no log inputs, not counted, keys unchanged. Doses are the July prescription, verbatim. Three items built for the July radial / lateral-elbow diagnosis are tagged **retire pending** in the app until the surgeon confirms.
 
 | Exercise | July dose | Notes |
 |---|---|---|
 | Prone Chest Stretch on Chair | 3x daily | No aggravation |
 | Standing Wall Ball Circles (mini Swiss ball, 2–3 lb) | 1 min, 1–3x daily | Progress duration |
-| Elbow Distraction Self Mobilization | 3 × 10 osc. or 10 s holds, 1–2x daily | Stop on any neural symptoms |
-| Wrist AROM — Radial/Ulnar Deviation | 3 × 10, 3x daily | Stop on any neural symptoms. A slider, not a tensioner: continuous motion, no end-range holds |
+| Elbow Distraction Self Mobilization | 3 × 10 osc. or 10 s holds, 1–2x daily | **Retire pending — confirm with surgeon.** Stop on any neural symptoms |
+| Wrist AROM — Radial/Ulnar Deviation | 3 × 10, 3x daily | **Retire pending — confirm with surgeon.** Stop on any neural symptoms. A slider, not a tensioner: continuous motion, no end-range holds |
 | Full Plank with Scapular AROM | 5 reps, 10–15 s, 1x daily | Circuit with Isometric Internal Rotation |
 | Isometric Internal Rotation | 5 reps, 10–15 s, 1x daily | |
 | Standing Subscapularis Lift-Off | 3–5 reps, walk-to-tension, 1x daily | |
 | Seated Wrist Flexion Stretch | 10–30 s | Fingers as guide |
 | Vibration Desensitization (electric toothbrush) | brief, 2–3x daily | Along the radial distribution |
-| AROM/PROM — elbow flex–ext (supine, shoulder at 90°) + pron/sup (seated, elbow at 90°) | 5 reps per bout, 5x daily | The 90° is the position held, not the joint moved (7/14 OT source) |
+| AROM/PROM — elbow flex–ext (supine, shoulder at 90°) + pron/sup (seated, elbow at 90°) | 5 reps per bout, 5x daily | **Retire pending — confirm with surgeon.** The 90° is the position held, not the joint moved (7/14 OT source) |
 | Finkelstein Stretch | 3–5 reps, 2x daily (reduced) | Not pre-lift. Reduced from 3–4x for metacarpal aggravation |
 | Tennis Elbow Self Massage (silicone cupping) | 5–10 min, 2–3x daily | Light pressure only. **No hard friction or trigger point work** |
 | Doorway Stretch | 3x daily | Progressive, no forward head |

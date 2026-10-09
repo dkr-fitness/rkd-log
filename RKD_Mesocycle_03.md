@@ -43,6 +43,8 @@
 
 **Fixed all block:** activation slots (2 sets). Suitcase Carry and Plate Pinch Hold run 2 rounds, dropping to 1 in the Deload week.
 
+**Week 8 retest (Mon/Wed/Fri):** repeat Baseline loads for carries, pinch hold and single-arm lifts; log both sides. The app shows this as a banner on those days and tags each affected exercise with "retest". Results go in the plan's Right-Side Tracker tab.
+
 ---
 
 ## Session Templates
@@ -54,45 +56,45 @@ Rx below is the Baseline prescription. Main lifts and accessories follow the pro
 | Exercise | Role | Sets × Reps | Note |
 |---|---|---|---|
 | Band Pull-Aparts | Activation | 2×15 | Light, first in session |
-| Rack Pull | Main | 4×6 @ RPE 6–7 | Chiro-approved; monitor grip-side |
-| Bulgarian Split Squat | Accessory | 3×8–10/leg | DB in each hand |
-| Hip Thrust | Accessory | 3×8–10 | |
-| Pallof Press | Accessory | 3×8–10/side | Anti-rotation core |
-| Suitcase Carry | Carry | 2×40 yd/side | Right side first · Deload 1× |
+| Rack Pull | Main | 4×6 @ RPE 6–7 | Double overhand · chiro-approved; monitor grip-side |
+| Bulgarian Split Squat | Accessory | 3×8–10/leg | DB in each hand, arms straight |
+| Hip Thrust | Accessory | 3×8–10 | Full hip extension, pause at top |
+| Pallof Press | Accessory | 3×8–10/side | Neutral grip, static hold |
+| Suitcase Carry | Carry | 2×40 yd/side | Right side first · log load per side · Deload 1×, retest |
 
 ### Wednesday — Squat + Push
 
 | Exercise | Role | Sets × Reps | Note |
 |---|---|---|---|
-| Scapular Wall Slide | Activation | 2×10 | First in session |
+| Scapular Wall Slide | Activation | 2×10 | Slow, elbows on the wall · first in session |
 | Safety Bar Squat | Main | 4×6 @ RPE 6–7 | Hands on the handles, never reach back for a straight bar |
-| Chest Press | Accessory | 3×8–10/side | Single-arm floor press, right side first · hard stop at 90° elbow flexion, pain-free only |
-| Rope Triceps Pressdown | Accessory | 3×8–10/side | Single-arm, right side first |
-| Cable Pullover | Accessory | 3×8–10 | |
-| Plate Pinch Hold | Grip | 2×20–30 s/side | Right side first · log plate load × seconds · Deload 1× |
+| Chest Press | Accessory | 3×8–10/side | Single-arm floor press, right side first · floor sets the 90° stop, pain-free only |
+| Rope Triceps Pressdown | Accessory | 3×8–10/side | Single-arm, **pushdown only (no overhead)**, right side first |
+| Cable Pullover | Accessory | 3×8–10 | **Arms nearly straight — lats without elbow bend** |
+| Plate Pinch Hold | Grip | 2×20–30 s/side | Thumb flat on one face, fingers flat on the other, plate off the floor · right side first · log plate load × seconds · Deload 1×, retest |
 
 ### Friday — Pull + Hinge
 
 | Exercise | Role | Sets × Reps | Note |
 |---|---|---|---|
 | Prone Y-Raises | Activation | 2×15 | Light, first in session |
-| Romanian Deadlift | Main | 4×6 @ RPE 6–7 | |
-| Neutral-Grip Row (cable or DB) | Accessory | 3×8–10/side | Single-arm, right side first |
-| DB Step-Up | Accessory | 3×8–10/leg | |
-| Core (Dead Bug or similar) | Accessory | 3×8–10/side | |
-| Suitcase Carry | Carry | 2×40 yd/side | Right side first · Deload 1× |
+| Romanian Deadlift | Main | 4×6 @ RPE 6–7 | **Barbell** (existing key; Meso 02 history is mostly barbell) |
+| Neutral-Grip Row (cable or DB) | Accessory | 3×8–10/side | Single-arm, right side first · **stop at first sign of pain** |
+| DB Step-Up | Accessory | 3×8–10/leg | DBs at sides, arms straight |
+| Core (Dead Bug or similar) | Accessory | 3×8–10/side | Ribs down, slow |
+| Suitcase Carry | Carry | 2×40 yd/side | Right side first · log load per side · Deload 1×, retest |
 
 ### Saturday — Full Range (effort cap 7/10)
 
-Fixed sets all block. It doesn't follow the progression table. Only the tempo cue changes by phase.
+Fixed sets all block; the Deload week takes 2 sets of everything (Sled Push 2×20 yd). It doesn't follow the progression table. Only the tempo cue changes by phase, and Band Face Pull has none.
 
 | Exercise | Sets × Reps | Note |
 |---|---|---|
-| Scapular Wall Slide | 2×10 | Activation |
+| Scapular Wall Slide | 2×10 | Activation · slow, elbows on the wall · effort cap 7/10 all session |
 | Leg Press | 3×10 | Full depth |
-| Single-Leg RDL | 3×8/leg | |
-| Backward Walking Lunges | 3×8/leg | |
-| Band Face Pull | 3×12 | |
+| Single-Leg RDL | 3×8/leg | Balance-forward |
+| Backward Walking Lunges | 3×8/leg | Full range |
+| Band Face Pull | 3×12 | Light band · no tempo cue |
 | Sled Push | 5×20 yd | Arms straight · log load × yards |
 | Cardio Ramp | 8–10 min | Zone 2 bike or incline walk |
 
@@ -100,8 +102,8 @@ Fixed sets all block. It doesn't follow the progression table. Only the tempo cu
 |---|---|
 | Baseline | 3 s lowering |
 | Volume | 1 s pause at the bottom |
-| Performance | Normal tempo, slightly heavier |
-| Deload | 2 sets each |
+| Performance | Normal tempo (Leg Press: slightly heavier) |
+| Deload | No tempo cue; 2 sets each |
 
 ---
 
