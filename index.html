@@ -3111,7 +3111,8 @@ function saveSession(){
     /* Sun: completion badge only, never a score */
     pxi=null; medal="Done ✓";
   } else if(pxi!=null&&LIFT_DAYS.includes(day)){
-    /* medals otherwise only exist on lifting days — Sat is capped effort, reference only */
+    /* medals otherwise only exist on LIFT_DAYS — the shared Sat Conditioning Sub is capped effort,
+       reference only; Meso 3's meso03Sat is in LIFT_DAYS and medals like any lift day */
     const md=medalFor(pxi,pxiSet.target); medal=md?md.t:null;
   }
   const strainEl=document.getElementById("strain");
@@ -3240,12 +3241,12 @@ function renderPxiPage(m){
     <div class="fieldrow"><span>Target RKD (lifting days)</span><input type="number" id="setTarget" min="10" max="500" value="${pxiSet.target}"></div>
     <div class="fieldrow"><span>Curve</span>
       <select id="setModel" style="flex:0 0 200px">
-        <option value="auto"${pxiSet.model==="auto"?" selected":""}>Auto — strength Mon–Fri, cardio Sat</option>
+        <option value="auto"${pxiSet.model==="auto"?" selected":""}>Auto (by day)</option>
         <option value="strength"${pxiSet.model==="strength"?" selected":""}>Strength (peaks Z2)</option>
         <option value="cardio"${pxiSet.model==="cardio"?" selected":""}>Cardio ramp</option>
         <option value="summit"${pxiSet.model==="summit"?" selected":""}>Summit (Z4 boost)</option>
       </select></div>
-    <div class="meta px" style="margin:8px 0 0"><b>${curModel().toUpperCase()}:</b> ${MODEL_DESC[curModel()]} Medals — Gold ±5% · Silver 6–10% · Bronze 11–15%, vs. Target RKD on lift days or vs. 100% time-in-Z2 on Tue/Thu. Sat is reference only, no medal.</div>
+    <div class="meta px" style="margin:8px 0 0"><b>${curModel().toUpperCase()}:</b> ${MODEL_DESC[curModel()]} Medals — Gold ±5% · Silver 6–10% · Bronze 11–15%, vs. Target RKD on lift days (incl. Meso 3's Full Range Sat) or vs. 100% time-in-Z2 on Tue/Thu. The Sat Conditioning Sub is reference only, no medal.</div>
   </div>`;
   document.getElementById("setMaxHr").addEventListener("change",e=>{pxiSet.maxHr=+e.target.value||185;savePxiSet();});
   document.getElementById("setRestHr").addEventListener("change",e=>{pxiSet.restingHr=+e.target.value||46;savePxiSet();});

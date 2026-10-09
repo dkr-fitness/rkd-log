@@ -342,6 +342,9 @@ onDate(2026,12,7,function(){
 });
 
 section("Meso 3 Saturday — scored like a lift day");
+/* Rule text on the RKD tab isn't in a loaded region, so guard its wording at the source. */
+ok(SRC.indexOf("Sat is reference only")<0&&SRC.indexOf("cardio Sat<")<0,"RKD tab no longer says every Saturday is unscored cardio");
+ok(SRC.indexOf("The Sat Conditioning Sub is reference only, no medal.")>=0,"...it names the Conditioning Sub as the unscored one");
 ok(LIFT_DAYS.indexOf("meso03Sat")>=0,"meso03Sat is medal-eligible");
 ok(LIFT_DAYS.indexOf("sat")<0,"...the shared Sat Conditioning Sub still is not");
 DAY="meso03Sat"; eq(curModel(),"strength","meso03Sat scores on the strength curve");
