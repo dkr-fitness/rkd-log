@@ -2652,14 +2652,14 @@ function restoreSessionDraft(){
        back used to drop everything typed on the first day. Fall back to today's durable draft
        for the day now selected. */
     /* ...but never while draftHold is set. A session was just closed out (saveSession/logRest)
-       and the render that follows must leave an empty form. Adopting here would be a HALF
-       adoption anyway — unlike adoptTodayDraft()/resumeDraft() this restores fields but not
-       zoneSecs/pxi/secs/duration/freeform, so the next edit would persist a zeroed live block
-       over that draft's accrued zone time and RKD. It also reaches setRPE() below, which calls
-       onSetInput() and would clear the hold. First real edit lifts this. */
+       and the render that follows must leave an empty form. Adopting would also reach setRPE()
+       below, which calls onSetInput() and would clear the hold. First real edit lifts this. */
     if(draftHold) return;
-    const d=readDraft(DRAFT_PREFIX+todayStr()+"_"+curDay());
+    const k=DRAFT_PREFIX+todayStr()+"_"+curDay(), d=readDraft(k);
     if(!d) return;
+    /* Whole record, not just the fields (see applyDraft). Skipped when it is already the draft
+       in hand, so a plain re-render can't roll back live zone time accrued since the last save. */
+    if(curDraft.key!==k) applyDraft(d,k,false);
     sessionDraft={key:draftKey(),day:curDay(),fields:d.fields||{},rpe:d.rpe||0,
       strain:d.strain||"",note:d.note||"",activity:d.activity==null?null:d.activity};
   }
@@ -2706,6 +2706,42 @@ function draftSlot(day){
   return {id:(prev&&prev.draftId)||newDraftId(),
           startedAt:(prev&&prev.startedAt)||new Date().toISOString(),
           date,day,key:k,resumed:false};
+}
+/* Puts a durable draft's WHOLE record back into the live session: the exercise list a pasted
+   Freeform depends on, added sets, symptoms, notes, zone time, RKD and the clock. One routine for
+   every way a draft gets picked up — load, Resume, and switching to a day that has one — because
+   the old day-switch path restored only the typed fields. That half-adoption rendered a pasted
+   Freeform with no set rows, and the first edit then wrote an empty draft over the real one. */
+function applyDraft(d,k,resumed){
+  freeformNames=normalizeFreeform(d.freeform).slice();
+  extraSets=Object.assign({},d.extra||{});
+  painEvents=JSON.parse(JSON.stringify(d.pain||{}));
+  exNotes=Object.assign({},d.exNotes||{});
+  live.zoneSecs=(d.zoneSecs||[0,0,0,0,0,0]).slice(); live.pxi=d.pxi||0; live.secs=d.secs||0;
+  /* The clock picks up where the draft left off; feeds entry.duration. If it is already running
+     (switching days mid-session), restart its interval so time before the switch isn't added. */
+  sessAcc=(d.duration||0)*1000; if(sessInt) sessStart=Date.now();
+  curDraft={id:d.draftId,startedAt:d.startedAt,date:d.date,day:d.day,key:k,resumed:!!resumed};
+}
+/* Today's drafts for any day, most recently edited first. */
+function todayDrafts(){
+  const pre=DRAFT_PREFIX+todayStr()+"_";
+  return allDraftKeys().filter(k=>k.indexOf(pre)===0)
+    .map(k=>{ const d=readDraft(k); if(d) d._key=k; return d; }).filter(d=>d&&d.day)
+    .sort((a,b)=>String(b.savedAt||"").localeCompare(String(a.savedAt||"")));
+}
+/* On load: if today has an unfinished draft for ANY day, open it instead of the weekday's default
+   template — a reload must land back in the workout, not beside it. Only looking under the
+   default day's key is what lost a pasted Freeform on a Saturday: the page reopened on "sat",
+   and the strap then wrote the rest of the session into a second, "sat" draft. The most
+   recently edited draft wins; any others today show in the banner (pendingDrafts). */
+function adoptTodayDraft(){
+  const sel=document.getElementById("daySel");
+  const d=todayDrafts().find(x=>{ const prev=sel.value; sel.value=x.day; const ok=sel.value===x.day; if(!ok) sel.value=prev; return ok; });
+  if(!d) return null;
+  if(d.week) document.getElementById("weekSel").value=d.week;
+  applyDraft(d,d._key,false);
+  return d._key;
 }
 /* Set by logRest(): a rest day logged over an in-progress draft must not quietly delete it.
    The conflict is surfaced in the banner instead. Cleared as soon as real editing resumes. */
@@ -2774,13 +2810,17 @@ function draftExerciseCount(d){
 function restLoggedFor(d){
   return loadLogs().some(l=>l.type==="rest"&&l.day===d.day&&String(l.date||"").slice(0,10)===d.date);
 }
-/* Anything started before today and not finished. The active draft is hidden only while it is
-   actually being resumed — not merely because it is the one in hand. Otherwise a tab left open
-   past midnight would suppress the banner for exactly the session you forgot to finish. */
+/* Anything started before today and not finished, plus any other draft from today that isn't
+   the one open — on reload only the most recent is adopted, so the rest need a way back. A
+   previous-day draft is hidden only while it is actually being resumed — not merely because it
+   is the one in hand. Otherwise a tab left open past midnight would suppress the banner for
+   exactly the session you forgot to finish. */
 function pendingDrafts(){
   const today=todayStr();
   return allDraftKeys().map(k=>{ const d=readDraft(k); if(d) d._key=k; return d; })
-    .filter(d=>d&&d.date&&d.date<today&&!(curDraft.resumed&&d._key===curDraft.key))
+    .filter(d=>d&&d.date&&(d.date<today
+      ? !(curDraft.resumed&&d._key===curDraft.key)
+      : d.date===today&&d._key!==curDraft.key&&d.day!==curDay()))
     .sort((a,b)=>a.date<b.date?1:-1);
 }
 let discardArmKey=null;
@@ -2792,17 +2832,14 @@ function discardDraft(k){
 }
 function resumeDraft(k){
   const d=readDraft(k); if(!d) return;
+  /* Save the session being left before replacing it, or its last few seconds are dropped —
+     Resume can now switch between two drafts from the same day. */
+  flushDraft();
   /* daySel must be set before render(): w_<block>_<ex>_<set> ids are positional, so restoring
      against the wrong day's template would drop values onto the wrong exercises. */
   document.getElementById("daySel").value=d.day;
   if(d.week) document.getElementById("weekSel").value=d.week;
-  freeformNames=normalizeFreeform(d.freeform).slice();
-  extraSets=Object.assign({},d.extra||{});
-  painEvents=JSON.parse(JSON.stringify(d.pain||{}));
-  exNotes=Object.assign({},d.exNotes||{});
-  live.zoneSecs=(d.zoneSecs||[0,0,0,0,0,0]).slice(); live.pxi=d.pxi||0; live.secs=d.secs||0;
-  sessAcc=(d.duration||0)*1000; /* clock picks up where it left off; feeds entry.duration */
-  curDraft={id:d.draftId,startedAt:d.startedAt,date:d.date,day:d.day,key:k,resumed:true};
+  applyDraft(d,k,true);
   sessionDraft={key:draftKey(),day:d.day,fields:d.fields||{},rpe:d.rpe||0,
     strain:d.strain||"",note:d.note||"",activity:d.activity==null?null:d.activity};
   discardArmKey=null; draftHold=false; setView("session");
@@ -3751,20 +3788,9 @@ const mesoDefaultDay=inMeso01Window()?{1:"fullBodyA",3:"fullBodyB",5:"fullBodyC"
                     :inMeso03Window()?{1:"meso03Mon",3:"meso03Wed",5:"meso03Fri",6:"meso03Sat"}[now.getDay()]:null;
 if(mesoDefaultDay) daySel.value=mesoDefaultDay;
 /* Same-day draft (tab was killed mid-session, reopened the same day): adopt it silently — that's
-   continuity, not a decision worth prompting over. Only previous-day drafts get the banner.
+   continuity, not a decision worth prompting over. Whichever day it was on, the page opens there.
    render() -> restoreSessionDraft() then refills the inputs from it. */
-(function adoptTodayDraft(){
-  const k=DRAFT_PREFIX+todayStr()+"_"+daySel.value, d=readDraft(k);
-  if(!d) return;
-  freeformNames=normalizeFreeform(d.freeform).slice();
-  extraSets=Object.assign({},d.extra||{});
-  painEvents=JSON.parse(JSON.stringify(d.pain||{}));
-  exNotes=Object.assign({},d.exNotes||{});
-  live.zoneSecs=(d.zoneSecs||[0,0,0,0,0,0]).slice(); live.pxi=d.pxi||0; live.secs=d.secs||0;
-  sessAcc=(d.duration||0)*1000;
-  curDraft={id:d.draftId,startedAt:d.startedAt,date:d.date,day:d.day,key:k,resumed:false};
-  const clk=document.getElementById("clock"); if(clk) clk.textContent=fmt(elapsedSec());
-})();
+if(adoptTodayDraft()){ const clk=document.getElementById("clock"); if(clk) clk.textContent=fmt(elapsedSec()); }
 render();
 </script>
 </body>

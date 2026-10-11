@@ -89,7 +89,7 @@ function emptyForm(ids){
 /* App globals the extracted regions read. Tests set these directly. */
 var pxiSet={maxHr:185,restingHr:46,target:105,model:"auto"};
 var live={zoneSecs:[0,0,0,0,0,0],pxi:0,lastBpm:null,secs:0,tick:null};
-var sessionDraft=null, freeformNames=[], curRPE=0, sessAcc=0;
+var sessionDraft=null, freeformNames=[], curRPE=0, sessAcc=0, sessInt=null, sessStart=null;
 /* Mirrors the real one-liner in source (not extracted — it lives outside the durable-drafts
    region resumeDraft() is sliced from) so that region's normalizeFreeform() call resolves. */
 function normalizeFreeform(f){ return !Array.isArray(f)?[]:Array.isArray(f[0])?[].concat.apply([],f):f; }
@@ -183,6 +183,7 @@ loadRegions(
   region("function restoreSessionDraft(){","/* ================= DURABLE SESSION DRAFTS"),
   region("const DRAFT_PREFIX=","function setView(v){"),             /* durable drafts        */
   region("function focusStepsFor(blocks,extraOf){","let focusIdx=null;"), /* set-mode walk order */
+  region("const PASTE_WORKOUT_EXERCISES=","/* ================= INIT"),   /* Paste Workout import */
   /* HEP tracker + detail tab, skipping the todayStr/todayLabel lines between them — todayStr is
      stubbed above to pin the date, and the real one would overwrite the stub. */
   region("const HEP_LABELS=","let hepMem={};"),
@@ -835,6 +836,97 @@ eq(lastLineText("70","10","L 75, R elbow fine"),"Last time: 70 × 10 · note: L 
 eq(lastLineText("70","10",""),"Last time: 70 × 10","...and reads as before without one");
 eq(lastLineText("","","bar slipped"),"Last time: note: bar slipped","a note shows even with no numbers for this set");
 eq(lastLineText("","",""),"No previous numbers for this set","...and nothing at all reads as before");
+
+section("Reload — today's draft opens, whichever day it is on");
+/* The Sat 10/10 report: a pasted Freeform, sets logged, then Bluefy reloaded the page. It opened
+   the weekday's default ("sat"), the Freeform draft looked gone, and the strap wrote the rest of
+   the session into a second "sat" draft. */
+resetState();
+TODAY="2026-10-10"; DAY="sat"; DOM.daySel.value="sat";
+DOM.daySel.options=["sat","strengthFree","tue"]; /* values the selector can actually take */
+Object.defineProperty(DOM.daySel,"value",{get:function(){return this._v;},set:function(v){ this._v=this.options.indexOf(v)>=0?v:""; },configurable:true});
+DOM.daySel.value="sat";
+DOM.pasteWorkoutInput={id:"pasteWorkoutInput",value:"RKD-WORKOUT\nDATE: 2026-10-10\nGoblet Squat | 3x10 |\nHip Thrust | 3x10 |\nEND-WORKOUT"};
+DOM.pasteWorkoutOut={id:"pasteWorkoutOut",innerHTML:""};
+importPastedWorkout(); confirmPastedWorkout();
+DAY=DOM.daySel.value;                                   /* curDay() reads the selector in the app */
+eq(DAY,"strengthFree","paste for today opens the Freeform session");
+eq(freeformNames.length,2,"...with the pasted exercises");
+fillForm({"w_0_0_0":"50","r_0_0_0":"10","w_0_1_0":"95","r_0_1_0":"10"});
+onSetInput(); live.secs=840; live.zoneSecs=[0,60,600,180,0,0]; live.pxi=40; flushDraft();
+var FKEY="dtp-draft_2026-10-10_strengthFree";
+eq(Object.keys(parseLS(FKEY).fields||{}).length,4,"sets are autosaved to the Freeform draft");
+/* Reload: memory is gone, the selector is back on the weekday default. */
+freeformNames=[]; extraSets={}; painEvents={}; exNotes={}; sessionDraft=null; resetCurDraft();
+live={zoneSecs:[0,0,0,0,0,0],pxi:0,lastBpm:null,secs:0,tick:null}; sessAcc=0;
+DOM.daySel.value="sat"; DAY="sat"; emptyForm([]);
+eq(adoptTodayDraft(),FKEY,"reload adopts today's Freeform draft, not the default day");
+DAY=DOM.daySel.value;
+eq(DAY,"strengthFree","...and opens the session on it");
+eq(freeformNames.length,2,"...with its pasted exercises, so its set rows render");
+eq(live.secs,840,"...and its tracked time");
+eq(live.zoneSecs[2],600,"...and its zone time");
+emptyForm(["w_0_0_0","r_0_0_0","w_0_1_0","r_0_1_0"]);  /* what render() builds for 2 exercises */
+restoreSessionDraft();
+eq(DOM.w_0_0_0.value,"50","...and the typed sets come back into the form");
+/* The strap keeps ticking after the reload: the time lands in the same draft, not a new one. */
+live.secs=1200; live.zoneSecs[2]=900; flushDraft();
+eq(Object.keys(LS).filter(function(k){return k.indexOf("dtp-draft_2026-10-10_")===0;}).join(","),FKEY,"post-reload time stays in ONE draft — no second \"sat\" draft");
+eq(parseLS(FKEY).secs,1200,"...which keeps accruing");
+eq(Object.keys(parseLS(FKEY).fields||{}).length,4,"...without losing the sets");
+eq(pendingDrafts().length,0,"the open draft is not also offered in the banner");
+
+section("Reload — several drafts today: newest opens, the rest are offered");
+resetState(); TODAY="2026-10-10";
+DOM.daySel.options=["sat","strengthFree","tue"];
+Object.defineProperty(DOM.daySel,"value",{get:function(){return this._v;},set:function(v){ this._v=this.options.indexOf(v)>=0?v:""; },configurable:true});
+DOM.daySel.value="sat"; DAY="sat";
+LS["dtp-draft_2026-10-10_sat"]=JSON.stringify({draftId:"dSat",date:"2026-10-10",day:"sat",savedAt:"2026-10-10T09:10:00.000Z",fields:{},secs:300,zoneSecs:[0,0,300,0,0,0]});
+LS["dtp-draft_2026-10-10_strengthFree"]=JSON.stringify({draftId:"dFree",date:"2026-10-10",day:"strengthFree",savedAt:"2026-10-10T09:40:00.000Z",
+  fields:{"w_0_0_0":"50"},freeform:[{n:"Goblet Squat",key:"Goblet Squat",sets:3,rx:"3 × 10"}],secs:840,zoneSecs:[0,0,600,0,0,0]});
+LS["dtp-draft_2026-10-09_tue"]=JSON.stringify({draftId:"dTue",date:"2026-10-09",day:"tue",savedAt:"2026-10-09T18:00:00.000Z",fields:{"w_0_0_0":"1"}});
+eq(adoptTodayDraft(),"dtp-draft_2026-10-10_strengthFree","the most recently edited of today's drafts opens");
+DAY=DOM.daySel.value;
+var pend=pendingDrafts().map(function(d){return d._key.slice(10);}).sort().join(",");
+eq(pend,"2026-10-09_tue,2026-10-10_sat","the banner offers today's other draft alongside yesterday's");
+eq(curDraft.resumed,false,"adopted, not resumed");
+/* Resume the other one from the banner: the open session is saved first, then swapped. */
+live.secs=900; resumeDraft("dtp-draft_2026-10-10_sat"); DAY=DOM.daySel.value;
+eq(parseLS("dtp-draft_2026-10-10_strengthFree").secs,900,"resuming another draft saves the open one first");
+eq(DAY,"sat","...then opens the resumed one");
+eq(live.secs,300,"...with its own tracked time");
+eq(pendingDrafts().map(function(d){return d._key.slice(10);}).sort().join(","),"2026-10-09_tue,2026-10-10_strengthFree","...and the Freeform moves to the banner");
+/* A draft whose day the selector can't take (a template since removed) is skipped, not forced. */
+resetState(); TODAY="2026-10-10";
+DOM.daySel.options=["sat"];
+Object.defineProperty(DOM.daySel,"value",{get:function(){return this._v;},set:function(v){ this._v=this.options.indexOf(v)>=0?v:""; },configurable:true});
+DOM.daySel.value="sat";
+LS["dtp-draft_2026-10-10_gone"]=JSON.stringify({draftId:"x",date:"2026-10-10",day:"gone",savedAt:"2026-10-10T09:00:00.000Z",fields:{}});
+eq(adoptTodayDraft(),null,"a draft for a day the selector lacks is not adopted");
+eq(DOM.daySel.value,"sat","...and the default day is left selected");
+
+section("Day switch — full adoption, never a half one");
+/* The known gap: switching to a day with a same-day draft restored the typed fields only. For a
+   pasted Freeform that meant no set rows, and the first edit wiped the draft. */
+resetState(); TODAY="2026-10-10"; DAY="sat";
+LS[FKEY]=JSON.stringify({draftId:"dFree",date:"2026-10-10",day:"strengthFree",savedAt:"2026-10-10T09:40:00.000Z",
+  fields:{"w_0_0_0":"50","r_0_0_0":"10"},freeform:[{n:"Goblet Squat",key:"Goblet Squat",sets:3,rx:"3 × 10"},{n:"Hip Thrust",key:"Hip Thrust",sets:3,rx:"3 × 10"}],
+  secs:840,zoneSecs:[0,0,600,0,0,0],pxi:40,duration:840,exNotes:{"strengthFree|0_0":"DB"}});
+live.secs=300; live.zoneSecs=[0,0,300,0,0,0];
+sessionDraft={key:draftKey(),day:"sat",fields:{},rpe:0,strain:"",note:"",activity:null};
+DAY="strengthFree"; emptyForm(["w_0_0_0","r_0_0_0","w_0_1_0","r_0_1_0"]);
+restoreSessionDraft();
+eq(freeformNames.length,2,"switching to the Freeform day restores its exercise list");
+eq(live.zoneSecs[2],600,"...its zone time");
+eq(exNoteFor(0,0),"DB","...and its exercise notes");
+eq(DOM.w_0_0_0.value,"50","...and its sets");
+onSetInput(); flushDraft();
+eq((parseLS(FKEY).freeform||[]).length,2,"one edit after the switch keeps the exercise list in the draft");
+eq(Object.keys(parseLS(FKEY).fields||{}).length,2,"...and its sets");
+eq(parseLS(FKEY).secs,840,"...and its tracked time, not the other day's");
+/* A plain re-render of the same day must not roll live time back to the last save. */
+live.secs=870; sessionDraft=null; restoreSessionDraft();
+eq(live.secs,870,"re-rendering the draft already in hand doesn't reset its live time");
 
 section("Extra sets — two-tap removal");
 resetState();
