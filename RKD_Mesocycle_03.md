@@ -12,7 +12,7 @@
 
 **Unilateral work.** Single-arm and per-side work runs right side first. The movement names stay as they were, with the single-arm or per-side detail in the prescription, so PR history carries over. The exception is Chest Press, which logs under the existing `SA Chest Press` key so per-arm loads aren't compared against two-arm history.
 
-**Saturday.** Meso 01 and 02 had no scored Saturday; the shared Conditioning Sub was cardio-ramp reference only. In Meso 03, Saturday is a full-range session scored like a lifting day: strength curve, a medal against the RKD target, and it counts in weekly totals. Effort is still capped at 7/10.
+**Saturday.** Meso 01 and 02 had no scored Saturday; the shared Conditioning Sub was cardio-ramp reference only. In Meso 03, Saturday is a full-range session scored like a lifting day: strength curve, a plan-completion medal (see Lift-day medal, below), and it counts in weekly totals. Effort is still capped at 7/10.
 
 ---
 
@@ -114,6 +114,8 @@ Fixed sets all block; the Deload week takes 2 sets of everything (Sled Push 2×2
 **Saturday:** see above. This block's Saturday is its own template (`meso03Sat`). The shared Sat Conditioning Sub stays as-is for history and outside this window, and it's still unscored.
 
 **Sunday:** CS4, active recovery. Never scored.
+
+**Lift-day medal (Mon/Wed/Fri/Sat):** plan completion, not heart rate. RKD still accrues on the strength curve and counts in weekly totals, but the medal is sets done ÷ sets prescribed across every exercise, activation and the right-side slots included. A pain entry not marked "went away" counts that exercise as complete. A progression is a top set that beats Last time on load, or on reps at the same load, with no pain logged on it. Gold = 100% + a progression · Silver = 100% · Bronze = 80%+ · below that, Partial. Saturday (cap 7/10) and the week 8 Deload take Gold at 100% with no progression needed.
 
 ---
 

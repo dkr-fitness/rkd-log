@@ -211,6 +211,7 @@ body.ivt-amb .selects, body.ivt-amb .tabs{background:transparent}
 .hist-card .sub{color:var(--muted); font-size:13px}
 .pxi-pill{font-family:var(--disp); font-weight:700; font-size:15px; color:var(--z4); white-space:nowrap}
 .medal-pill{display:inline-block; padding:2px 8px; border-radius:999px; font-size:10px; font-weight:800; letter-spacing:.08em; background:var(--surface); border:1px solid var(--line)}
+.plan-chip{display:inline-block; margin:0 0 12px; padding:4px 12px; border-radius:999px; font-family:var(--disp); font-weight:700; font-size:14px; letter-spacing:.04em; background:var(--surface); border:1px solid var(--line)}
 .note-ic{color:var(--muted); vertical-align:middle; flex-shrink:0}
 .note-full{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-top:8px; font-size:13px; white-space:pre-wrap}
 .pr-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px}
@@ -574,7 +575,7 @@ function hrText(day,w){
    meso03Mon:`Hinge lead — strength curve, Z1–Z2 base, Rack Pull spikes to Z3 OK. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
    meso03Wed:`Squat + push — strength curve throughout, stay pain-free through the Chest Press cap. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
    meso03Fri:`Pull + hinge — strength curve throughout. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
-   meso03Sat:`Full range — effort cap 7/10. Strength curve, scored and medalled like a lift day (target RKD ≈ 105). ${mesoPhase3().label} — ${mesoPhase3().label==="Deload Phase"?"2 sets of everything this week.":"fixed sets all block; only the tempo cue changes (none on Face Pull)."}`}[day];
+   meso03Sat:`Full range — effort cap 7/10. Strength curve, RKD counts in weekly totals; medal on plan completion (Gold = every set done, no progression needed). ${mesoPhase3().label} — ${mesoPhase3().label==="Deload Phase"?"2 sets of everything this week.":"fixed sets all block; only the tempo cue changes (none on Face Pull)."}`}[day];
 }
 // Shared pre-activation cue — surfaces on every exercise where the right lat
 // coordination gap shows up (confirmed 8/11 across Deadlift + DB Shoulder Press).
@@ -1485,7 +1486,7 @@ function getSession(w,day){
      {letter:"E",t:"Core",mins:6,bells:pf.sets,ex:[
        {key:"Pallof",n:"Pallof Press",rx:pf.rx,sets:pf.sets}]},
      {letter:"F",t:"Carry",mins:5,bells:sc.sets,ex:[
-       {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets}]}]};
+       {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets,rUnit:"yd"}]}]};
   }
   if(day==="meso03Wed"){
     const sq=meso3MainRx("hands on the handles — never reach back for a straight bar"),
@@ -1528,7 +1529,7 @@ function getSession(w,day){
      {letter:"E",t:"Core",mins:6,bells:cd.sets,ex:[
        {key:"Bird Dog",n:"Core (Dead Bug or similar)",rx:cd.rx,sets:cd.sets}]},
      {letter:"F",t:"Carry",mins:5,bells:sc.sets,ex:[
-       {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets}]}]};
+       {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets,rUnit:"yd"}]}]};
   }
   if(day==="meso03Sat"){
     // Fixed 3-set prescriptions all block; the Deload week takes two sets of everything.
@@ -1643,6 +1644,58 @@ function pctZ2(mins){ const total=mins.reduce((a,b)=>a+(b||0),0); return total>0
 function zone2MedalFor(mins){ return medalFor(pctZ2(mins),100); }
 const LIFT_DAYS=["upper","lower","mixed","fullBodyA","fullBodyB","fullBodyC","meso02Mon","meso02Wed","meso02Fri",
                  "meso03Mon","meso03Wed","meso03Fri","meso03Sat"];
+/* Meso 03 lift days medal on doing the plan, not on heart rate. RKD still accrues and still
+   counts in weekly totals; it just no longer sets the medal on these days. Stamped at Finish and
+   never re-graded, so earlier blocks' logs keep the medals they were saved with. */
+const PLAN_DAYS=["meso03Mon","meso03Wed","meso03Fri","meso03Sat"];
+/* Heaviest set that was actually done (second box > 0), most reps breaking a tie. */
+function topSet(sets){
+  let t=null;
+  (sets||[]).forEach(s=>{ const w=parseFloat(s.w)||0, r=parseFloat(s.r)||0;
+    if(r>0&&(!t||w>t.w||(w===t.w&&r>t.r))) t={w,r}; });
+  return t;
+}
+/* entries are Finish-shaped ({key,sets,programmed?,symptoms?}); lastOf(key) is "Last time".
+   A set is done when its reps/seconds/yards box is > 0, capped at the prescription so an extra
+   set can't cover a skipped exercise. Any symptom not marked "went away" credits the exercise's
+   full prescription — stopping for symptoms is never penalised, and "Check later" counts too, so
+   keeping the medal never needs a second tap mid-symptom. A progression is a top set beating last
+   time's on load, or on reps at the same load, on an exercise with no symptom logged today. */
+function planScore(entries,lastOf){
+  let done=0,total=0,prog=0;
+  entries.forEach(e=>{
+    const rx=e.programmed||e.sets.length, sym=e.symptoms||[];
+    total+=rx;
+    done+=sym.some(x=>x.resolved!==true)?rx:Math.min(rx,e.sets.filter(s=>parseFloat(s.r)>0).length);
+    if(sym.length) return;
+    const t=topSet(e.sets), l=topSet(lastOf(e.key));
+    if(t&&l&&(t.w>l.w||(t.w===l.w&&t.r>l.r))) prog++;
+  });
+  return {done,total,prog};
+}
+/* Saturday (7/10 cap) and the Deload week take Gold at 100% with no progression, so the medal
+   never asks for more than the cap or the deload allows. There's no Silver on those days. */
+const planCapped=day=>day==="meso03Sat"||phaseForWeek(meso03Week(),"meso03")==="Deload";
+function planMedalFor(p,capped){
+  if(!p||!p.total) return null;
+  if(p.done>=p.total) return capped||p.prog>0?{t:"GOLD",c:"var(--gold)"}:{t:"SILVER",c:"var(--silver)"};
+  if(p.done*5>=p.total*4) return {t:"BRONZE",c:"var(--bronze)"}; /* 80%, exact — no rounding up */
+  return {t:"Partial",c:"var(--muted)"};
+}
+const planText=p=>"Sets "+p.done+"/"+p.total+" · "+p.prog+" progression"+(p.prog===1?"":"s");
+/* The medal a Finish stamps. Plan days medal whenever anything was done, strap or no strap;
+   other lift days still need an RKD to grade. */
+function finishMedal(day,type,entries,pxi,zoneMins,lastOf){
+  if(type==="zone2"){ const md=zoneMins?zone2MedalFor(zoneMins):null; return {medal:md?md.t:null}; }
+  if(type==="recovery") return {medal:"Done ✓"}; /* Sun: completion badge only, never a score */
+  if(PLAN_DAYS.includes(day)){
+    const plan=planScore(entries,lastOf), md=plan.done>0?planMedalFor(plan,planCapped(day)):null;
+    return {medal:md?md.t:null,plan};
+  }
+  /* the shared Sat Conditioning Sub isn't in LIFT_DAYS — capped effort, reference only */
+  if(pxi!=null&&LIFT_DAYS.includes(day)){ const md=medalFor(pxi,pxiSet.target); return {medal:md?md.t:null}; }
+  return {medal:null};
+}
 /* The only templates that still read weekSel — DL[w-1], OHP(w), ROW(w), the w<=2 rehab
    variants, the w<8 finisher. Every mesocycle day is calendar-driven and ignores w. */
 const LEGACY_DAYS=["upper","lower","mixed"];
@@ -2793,7 +2846,7 @@ function flushDraft(){ if(draftTimer){clearTimeout(draftTimer);draftTimer=null;}
 /* Every set/rpe/note/strain/activity edit. captureSessionDraft() runs synchronously so the
    in-memory buffer is always current — that alone fixes typed sets being dropped on a day
    switch — while the localStorage write is throttled. */
-function onSetInput(){ draftHold=false; captureSessionDraft(); scheduleDraftSave(); }
+function onSetInput(){ draftHold=false; captureSessionDraft(); scheduleDraftSave(); updatePlanChip(); }
 /* pagehide + visibilitychange are the reliable backgrounding hooks on iOS/Bluefy; beforeunload
    is not. This is the actual defense against the phone killing the tab mid-session. */
 window.addEventListener("pagehide",flushDraft);
@@ -2877,8 +2930,9 @@ function setView(v){
   document.getElementById("tabP").className="tab"+(v==="pxi"?" active":"");
   document.getElementById("tabH").className="tab"+(v==="history"?" active":"");
   document.getElementById("tabHep").className="tab"+(v==="hep"?" active":"");render();}
-function lastFor(key){
-  const logs=loadLogs();
+/* logs is optional — the plan count passes one parse in rather than re-reading per exercise. */
+function lastFor(key,logs){
+  logs=logs||loadLogs();
   for(let i=logs.length-1;i>=0;i--){const e=(logs[i].entries||[]).find(x=>x.key===key);
     if(e&&e.sets.some(s=>s.w||s.r))return e.sets;}
   return null;
@@ -2998,16 +3052,35 @@ function render(){
   h+=infoBox("ibHow","howto","How it runs",
     `press ▶ when you reach the block's equipment. <b>Bell = start your set.</b> Rest for the remainder of the interval. Link WHOOP up top and RKD scores itself while you follow the bells.`);
   h+=infoBox("ibHr","meta","HR target",hrText(day,w));
+  const planDay=PLAN_DAYS.includes(day);
   h+=infoBox("ibScore","meta px","Scoring", day==="strengthFree"
     ? `${MODEL_DESC[curModel()]} RKD reference only — no target/medal, nothing prescribed to grade against.`
+    : planDay
+    ? `${MODEL_DESC[curModel()]} RKD accrues and counts in weekly totals, but the medal is the plan: sets done ÷ sets prescribed, every exercise. A ⚠ Pain entry not marked "went away" counts that exercise as complete. A progression = top set beats Last time on load, or on reps at the same load, with no pain logged on it. `
+      +(planCapped(day)
+        ? `${day==="meso03Sat"?"Saturday (cap 7/10)":"Deload week"}: Gold = 100%, no progression needed · Bronze 80%+ · below that, Partial.`
+        : `Gold = 100% + a progression · Silver 100% · Bronze 80%+ · below that, Partial.`)
     : `${MODEL_DESC[curModel()]} Target ${pxiSet.target} · Gold ±5%.`);
+  if(planDay) h+=`<div class="plan-chip" id="planChip"></div>`;
   h+=infoBox("ibEq","meta eq","Equipment",EQ[day]);
   h+=`<button class="focusbtn" onclick="openFocus()">Set mode — one set at a time</button>`;
   s.blocks.forEach((b,bi)=>{ h+=blockHtml(s,bi);
     if(day==="strengthFree") h+=`<div class="row2" style="margin:-6px 0 14px"><button class="btn2" onclick="addFreeformEx()">+ Add exercise</button></div>`;
   });
   h+=rpeNoteSaveHtml();
-  m.innerHTML=h; curRPE=0; restoreSessionDraft();
+  m.innerHTML=h; curRPE=0; restoreSessionDraft(); updatePlanChip();
+}
+/* Meso 03's live plan count, recounted from the form on every edit. livePlan keeps the last
+   count for the RKD tab, which has no session form to read. */
+let livePlan=null;
+function updatePlanChip(){
+  const el=document.getElementById("planChip"), day=curDay();
+  if(!el||!PLAN_DAYS.includes(day)) return;
+  const prior=loadLogs(), plan=planScore(sessionEntries(focusSession()),k=>lastFor(k,prior));
+  const md=plan.done>0?planMedalFor(plan,planCapped(day)):null;
+  livePlan={day,plan,md};
+  el.textContent=planText(plan)+(md?" · "+md.t:"");
+  el.style.color=md?md.c:"var(--muted)";
 }
 function blockHtml(s,bi){
   const b=s.blocks[bi], ivl=interval(b);
@@ -3118,9 +3191,10 @@ function zone2ActivityHtml(){
 }
 function setRPE(v){curRPE=v;for(let i=6;i<=10;i++)document.getElementById("rpe"+i).className="rpe"+(i===v?" on":"");onSetInput();}
 
-function saveSession(){
-  const w=+document.getElementById("weekSel").value, day=curDay();
-  const s=getSession(w,day); const entries=[];
+/* The session form as log entries — what Finish saves, and what the live plan chip counts, so
+   the two can't disagree. */
+function sessionEntries(s){
+  const entries=[];
   s.blocks.forEach((b,bi)=>b.ex.forEach((ex,ei)=>{
     if(ex.sets>0&&ex.n){const sets=[];
       /* Sets you added beyond the prescription are saved with the rest — the entry records how
@@ -3135,23 +3209,20 @@ function saveSession(){
       const sym=painFor(bi,ei); if(sym.length) rec.symptoms=sym.map(e=>Object.assign({},e));
       const xn=exNoteFor(bi,ei).trim(); if(xn) rec.note=xn;
       entries.push(rec);}}));
+  return entries;
+}
+function saveSession(){
+  const w=+document.getElementById("weekSel").value, day=curDay();
+  const s=getSession(w,day), entries=sessionEntries(s);
   /* RKD: live wins; else attached manual entry */
-  let pxi=null, zoneMins=null, model=curModel(), medal=null;
+  let pxi=null, zoneMins=null, model=curModel();
   if(live.secs>0){ pxi=Math.round(live.pxi); zoneMins=live.zoneSecs.map(x=>Math.round(x/6)/10); }
   else if(pendingManual){ pxi=pendingManual.pxi; zoneMins=pendingManual.mins; model=pendingManual.model; }
-  /* Tue/Thu: pxi is already the live strength-curve accrual from above — medal is graded
-     separately, on % of session time in Z2 vs. a 100% target, not on pxi vs. pxiSet.target */
-  if(s.type==="zone2"){
-    const md=zoneMins?zone2MedalFor(zoneMins):null;
-    medal=md?md.t:null;
-  } else if(s.type==="recovery"){
-    /* Sun: completion badge only, never a score */
-    pxi=null; medal="Done ✓";
-  } else if(pxi!=null&&LIFT_DAYS.includes(day)){
-    /* medals otherwise only exist on LIFT_DAYS — the shared Sat Conditioning Sub is capped effort,
-       reference only; Meso 3's meso03Sat is in LIFT_DAYS and medals like any lift day */
-    const md=medalFor(pxi,pxiSet.target); medal=md?md.t:null;
-  }
+  if(s.type==="recovery") pxi=null;
+  /* Tue/Thu: pxi is the live strength-curve accrual, but the medal is % of session time in Z2.
+     Meso 03 lift days medal on the plan (finishMedal); earlier lift days on pxi vs. the target. */
+  const prior=loadLogs(), fm=finishMedal(day,s.type,entries,pxi,zoneMins,k=>lastFor(k,prior));
+  const medal=fm.medal, plan=fm.plan||null;
   const strainEl=document.getElementById("strain");
   const strain=strainEl&&strainEl.value!==""?Math.min(21,Math.max(0,Math.round(+strainEl.value*10)/10)):null;
   /* A resumed session keeps the timestamp it was actually trained at, so blockFor() files it in
@@ -3166,7 +3237,8 @@ function saveSession(){
     day,name:s.name,type:s.type,entries,rpe:curRPE,
     note:document.getElementById("note").value,strain,duration:elapsedSec(),
     pxi,zoneMins,pxiModel:pxi!=null?model:null,medal,
-    target:medal==null?null:(s.type==="zone2"?100:pxiSet.target)};
+    target:medal==null||plan?null:(s.type==="zone2"?100:pxiSet.target)};
+  if(plan) entry.plan=plan; /* {done,total,prog} — History and Copy summary read it */
   const actEl=document.getElementById("z2act"); if(actEl)entry.activity=actEl.value;
   const logs=loadLogs();
   /* A fresh (never-resumed) session carries no draftId, so the check below cannot catch a second
@@ -3233,6 +3305,12 @@ function renderLiveScore(){
     else { me.textContent=""; me.style.color="var(--muted)"; }
     return;
   }
+  if(PLAN_DAYS.includes(curDay())){
+    const lp=livePlan&&livePlan.day===curDay()?livePlan:null;
+    me.textContent=lp?planText(lp.plan)+(lp.md?" · "+lp.md.t:""):"Medal from plan completion";
+    me.style.color=lp&&lp.md?lp.md.c:"var(--muted)";
+    return;
+  }
   if(!LIFT_DAYS.includes(curDay())){
     me.textContent=live.secs>0?"Reference only — no medal on this day":"";
     me.style.color="var(--muted)";
@@ -3275,7 +3353,7 @@ function renderPxiPage(m){
     <label>Scoring settings</label>
     <div class="fieldrow"><span>Max heart rate</span><input type="number" id="setMaxHr" min="120" max="220" value="${pxiSet.maxHr}"></div>
     <div class="fieldrow"><span>Resting heart rate (WHOOP baseline)</span><input type="number" id="setRestHr" min="30" max="90" value="${pxiSet.restingHr}"></div>
-    <div class="fieldrow"><span>Target RKD (lifting days)</span><input type="number" id="setTarget" min="10" max="500" value="${pxiSet.target}"></div>
+    <div class="fieldrow"><span>Target RKD (lift days before Meso 3)</span><input type="number" id="setTarget" min="10" max="500" value="${pxiSet.target}"></div>
     <div class="fieldrow"><span>Curve</span>
       <select id="setModel" style="flex:0 0 200px">
         <option value="auto"${pxiSet.model==="auto"?" selected":""}>Auto (by day)</option>
@@ -3283,7 +3361,7 @@ function renderPxiPage(m){
         <option value="cardio"${pxiSet.model==="cardio"?" selected":""}>Cardio ramp</option>
         <option value="summit"${pxiSet.model==="summit"?" selected":""}>Summit (Z4 boost)</option>
       </select></div>
-    <div class="meta px" style="margin:8px 0 0"><b>${curModel().toUpperCase()}:</b> ${MODEL_DESC[curModel()]} Medals — Gold ±5% · Silver 6–10% · Bronze 11–15%, vs. Target RKD on lift days (incl. Meso 3's Full Range Sat) or vs. 100% time-in-Z2 on Tue/Thu. The Sat Conditioning Sub is reference only, no medal.</div>
+    <div class="meta px" style="margin:8px 0 0"><b>${curModel().toUpperCase()}:</b> ${MODEL_DESC[curModel()]} Medals — Meso 3 lift days (incl. its Full Range Sat) medal on plan completion, not RKD: Gold 100% + a progression · Silver 100% · Bronze 80%+ · else Partial; Saturday and the Deload week take Gold at 100%. Earlier lift days: Gold ±5% · Silver 6–10% · Bronze 11–15% vs. Target RKD. Tue/Thu: the same ± tiers vs. 100% time-in-Z2. RKD still counts in weekly totals on every scored day. The Sat Conditioning Sub is reference only, no medal.</div>
   </div>`;
   document.getElementById("setMaxHr").addEventListener("change",e=>{pxiSet.maxHr=+e.target.value||185;savePxiSet();});
   document.getElementById("setRestHr").addEventListener("change",e=>{pxiSet.restingHr=+e.target.value||46;savePxiSet();});
@@ -3298,7 +3376,8 @@ function manualScore(){
   const pxi=Math.round(scoreZones(mins,model));
   const lift=LIFT_DAYS.includes(curDay()), zone2Day=curDay()==="tue"||curDay()==="thu";
   let md=null, tag="reference only";
-  if(lift){ md=medalFor(pxi,pxiSet.target); tag=md?md.t+" · target "+pxiSet.target:tag; }
+  if(PLAN_DAYS.includes(curDay())) tag="RKD only · medal is plan completion";
+  else if(lift){ md=medalFor(pxi,pxiSet.target); tag=md?md.t+" · target "+pxiSet.target:tag; }
   else if(zone2Day){ const pz=pctZ2(mins); md=medalFor(pz,100); tag=md?md.t+" · "+pz+"% in Z2":tag; }
   pendingManual={pxi,mins,model};
   document.getElementById("manualOut").innerHTML=
@@ -3473,7 +3552,7 @@ END-WORKOUT"></textarea>
     const noteIcon=l.note?`<svg class="note-ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="${escAttr(l.note)}" style="cursor:pointer" onclick="toggleNote(${idx})"><path d="M4 4h13l3 3v13H4z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>`:"";
     h+=`<div class="hist-card"><div class="h"><span>${blockTag(blockOf(l))}${dl?" · "+dl:""} · ${l.name}</span>
       <span style="display:flex;align-items:center;gap:8px">${l.pxi!=null?`<span class="pxi-pill"${l.pxi<0?' style="color:var(--red)"':''}>RKD ${l.pxi}</span>`:""}${l.medal?`<span class="medal-pill" style="color:${medalColor}">${l.medal}</span>`:""}${strainPill}${symPill}${noteIcon}<span style="font-weight:400;color:var(--muted);font-size:13px">${dt.toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span></span></div>
-    <div class="sub">${l.duration?fmt(l.duration)+" · ":""}${l.rpe?"RPE "+l.rpe:""}${l.activity?" · "+l.activity:""}${l.zoneMins?" · "+l.zoneMins.map((z,i)=>i>0&&z>=0.5?"Z"+i+" "+Math.round(z)+"m":null).filter(Boolean).join(" "):""}</div>
+    <div class="sub">${l.duration?fmt(l.duration)+" · ":""}${l.rpe?"RPE "+l.rpe:""}${l.plan?(l.rpe?" · ":"")+planText(l.plan):""}${l.activity?" · "+l.activity:""}${l.zoneMins?" · "+l.zoneMins.map((z,i)=>i>0&&z>=0.5?"Z"+i+" "+Math.round(z)+"m":null).filter(Boolean).join(" "):""}</div>
     ${(l.entries||[]).map(e=>(e.symptoms||[]).map(x=>`<div class="ex-pain">⚠ ${escAttr(e.name)}: ${escAttr(painText(x))}</div>`).join("")
       +(e.note?`<div class="ex-xnote">✎ ${escAttr(e.name)}: ${escAttr(e.note)}</div>`:"")).join("")}
     ${l.note?`<div class="note-full" id="noteFull${idx}" style="display:none">${escAttr(l.note)}</div>`:""}
@@ -3527,8 +3606,8 @@ function buildSummary(logs,idx){
 Date: ${dt.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"})}
 Block: ${blockText(blockOf(l))}
 Session: ${l.name}
-RKD: ${l.pxi!=null?l.pxi:"not logged"} (${l.medal||"no medal"})
-Zone minutes: ${zoneLine}
+RKD: ${l.pxi!=null?l.pxi:"not logged"}${l.plan?"":` (${l.medal||"no medal"})`}
+${l.plan?`Plan: ${planText(l.plan)} (${l.medal||"no medal"})\n`:""}Zone minutes: ${zoneLine}
 Strain: ${l.strain!=null?l.strain.toFixed(1):"not logged"}
 Exercises:
 ${exLines}

@@ -104,13 +104,16 @@ var LOGS=[], TODAY="2026-09-20", DAY="meso02Wed", TOASTS=[];
 /* saveSession() locals the extracted save-path slice closes over. Its own `const w=..., day=...`
    line sits above the slice, so they're supplied here instead. */
 var day="meso02Wed", w=8, s={name:"WEDNESDAY — Upper Push",type:"lift"}, entries=[],
-    strain=null, zoneMins=null, pxi=103, model="strength", medal="GOLD";
+    strain=null, zoneMins=null, pxi=103, model="strength", medal="GOLD", plan=null;
 function todayStr(){return TODAY;}
 function curDay(){return DAY;}
 function loadLogs(){return LOGS;}
 function saveLogs(l){LOGS=l;}
 function toast(m){TOASTS.push(m);}
 function render(){}
+/* The live plan chip's DOM update. onSetInput() calls it; the counting it shows is planScore(),
+   which is loaded from source and tested on its own. */
+function updatePlanChip(){}
 function setView(){}
 /* Real enough to matter: the source setRPE() ends in onSetInput(), which clears draftHold. That
    side effect is load-bearing — it is how restoreSessionDraft() could undo the post-Finish hold. */
@@ -211,12 +214,17 @@ function exOf(day,key){ return exList(day).filter(function(e){return e.key===key
 loadRegions("function prGrid(logs){\n"+region("  const prs={};","  const totals=weeklyTotals(logs);")+"\n  return h;\n}");
 /* The weekly-RKD block that follows it: bar scaling and the current-block/earlier split. */
 loadRegions("function weeklyBlock(logs){\n  let h=\"\";\n"+region("  const totals=weeklyTotals(logs);","  if(!logs.length)h+=")+"\n  return h;\n}");
-/* The entry-collection half of saveSession(): how many set rows get read, and how an extra set
-   beyond the prescription is recorded. */
-loadRegions("function collectEntries(s){\n  const entries=[];\n"+region("  s.blocks.forEach((b,bi)=>b.ex.forEach((ex,ei)=>{","  /* RKD: live wins; else attached manual entry */")+"\n  return entries;\n}");
+/* The entry-collection half of saveSession(), now its own function so the live plan chip counts
+   the same entries Finish saves: how many set rows get read, and how an extra set beyond the
+   prescription is recorded. */
+loadRegions(region("function sessionEntries(s){","function saveSession(){"));
+var collectEntries=sessionEntries;
 /* Likewise the stamping/dedupe half of saveSession(), which is what the no-duplicates and
    correct-block guarantees actually live in. */
 loadRegions("function saveEntry(){\n"+region("  /* A resumed session keeps the timestamp","\n  live.zoneSecs=[0,0,0,0,0,0];")+"\n}");
+
+/* Copy summary — the text block that carries the medal and the plan line out of the app. */
+loadRegions(region("function priorBestValue(logs,uptoIdx,key){","function copySummary(idx){"));
 
 var D=function(y,m,d){return new Date(y,m-1,d,12,0,0);};
 
@@ -386,6 +394,138 @@ eq(pctZ2([0,0,0,0,0,0]),0,"no time logged -> 0, no divide-by-zero");
 eq(zone2MedalFor([0,0,30,0,0,0]).t,"GOLD","fully compliant session -> gold");
 eq(zone2MedalFor([0,2,28,0,0,0]).t,"SILVER","93% in Z2 -> silver");
 eq(zone2MedalFor([0,10,20,0,0,0]).t,"OFF TARGET","67% in Z2 -> off target");
+
+section("Meso 3 lift days — medal on plan completion");
+/* A Finish-shaped entry: rx prescribed sets, the first `done` of them with reps, then any extras.
+   top is the [load,reps] every done set carries. */
+function PE(key,rx,done,top,opts){
+  opts=opts||{}; var sets=[], n=rx+(opts.extra||0);
+  for(var i=0;i<n;i++) sets.push(i<done?{w:String(top[0]),r:String(top[1])}:{w:"",r:""});
+  var e={key:key,sets:sets};
+  if(opts.extra){ e.extra=opts.extra; e.programmed=rx; }
+  if(opts.sym) e.symptoms=opts.sym;
+  return e;
+}
+var NOLAST=function(){return null;};
+function lastAt(map){ return function(k){ return map[k]?[{w:String(map[k][0]),r:String(map[k][1])}]:null; }; }
+var sym=function(resolved,kind){ return {set:2,kind:kind||"tingling",side:"Right",resolved:resolved,at:"2026-10-19T18:00:00Z"}; };
+ok(PLAN_DAYS.join()==="meso03Mon,meso03Wed,meso03Fri,meso03Sat","plan-scored days are exactly Meso 3's four lift templates");
+
+/* Tiers at the boundaries — one 100-set exercise, so done is the percentage. */
+var pct=function(d,prog){ return planMedalFor({done:d,total:100,prog:prog||0},false).t; };
+eq(pct(79),"Partial","79% -> Partial, not OFF TARGET");
+eq(pct(80),"BRONZE","80% -> Bronze");
+eq(pct(99,3),"BRONZE","99% -> Bronze, even with progressions");
+eq(pct(100),"SILVER","100% with no progression -> Silver");
+eq(pct(100,1),"GOLD","100% + 1 progression -> Gold");
+eq(planMedalFor({done:15,total:19,prog:0},false).t,"Partial","15/19 = 78.9% -> Partial (no rounding up to 80)");
+eq(planMedalFor({done:16,total:20,prog:0},false).t,"BRONZE","16/20 -> Bronze");
+eq(planMedalFor({done:0,total:0,prog:0},false),null,"nothing prescribed -> no medal");
+eq(planText({done:12,total:18,prog:1}),"Sets 12/18 · 1 progression","chip text, singular");
+eq(planText({done:18,total:18,prog:2}),"Sets 18/18 · 2 progressions","...and plural");
+
+/* Counting */
+var c=planScore([PE("Rack Pull",4,4,[225,6]),PE("Hip Thrust",3,1,[135,10])],NOLAST);
+eq(c.done+"/"+c.total,"5/7","done = sets with reps, across every exercise");
+c=planScore([{key:"Rack Pull",sets:[{w:"225",r:""},{w:"225",r:"0"},{w:"",r:"6"}]}],NOLAST);
+eq(c.done,1,"a load with no reps, or 0 reps, is not a done set");
+c=planScore([PE("Rack Pull",4,6,[225,6],{extra:2}),PE("Hip Thrust",3,0,[0,0])],NOLAST);
+eq(c.done+"/"+c.total,"4/7","extra sets are capped at the prescription — they can't cover a skipped exercise");
+c=planScore([PE("Band Pull-Aparts",2,2,[0,15]),PE("Plate Pinch Hold",2,2,[25,30])],NOLAST);
+eq(c.done+"/"+c.total,"4/4","activation (bodyweight) and seconds-box holds count like any set");
+
+/* Pain rule: anything not marked "went away" credits the whole prescription. */
+c=planScore([PE("Neutral-Grip Row",3,1,[40,10],{sym:[sym(false)]})],NOLAST);
+eq(c.done+"/"+c.total,"3/3","stopped for pain (\"Still there\") -> remaining sets count as done");
+c=planScore([PE("Neutral-Grip Row",3,1,[40,10],{sym:[sym(null)]})],NOLAST);
+eq(c.done+"/"+c.total,"3/3","unchecked (\"Check later\") -> also full credit, no second tap needed");
+c=planScore([PE("Neutral-Grip Row",3,0,[0,0],{sym:[sym(false)]})],NOLAST);
+eq(c.done+"/"+c.total,"3/3","...even if it stopped before a set was typed");
+c=planScore([PE("Neutral-Grip Row",3,1,[40,10],{sym:[sym(true,"ache")]})],NOLAST);
+eq(c.done+"/"+c.total,"1/3","marked \"went away\" -> no credit, the sets still have to be done");
+c=planScore([PE("Neutral-Grip Row",3,1,[40,10],{sym:[sym(true),sym(false)]})],NOLAST);
+eq(c.done,3,"one unresolved entry among several is enough");
+
+/* Progression */
+var L=lastAt({"Rack Pull":[225,6]});
+eq(planScore([PE("Rack Pull",4,4,[235,5])],L).prog,1,"heavier top set -> progression, even on fewer reps");
+eq(planScore([PE("Rack Pull",4,4,[225,7])],L).prog,1,"same load, more reps -> progression");
+eq(planScore([PE("Rack Pull",4,4,[225,6])],L).prog,0,"matching last time -> not a progression");
+eq(planScore([PE("Rack Pull",4,4,[215,10])],L).prog,0,"more reps at a lighter load -> not a progression");
+eq(planScore([PE("Rack Pull",4,4,[235,5])],NOLAST).prog,0,"no Last time -> nothing to beat");
+eq(planScore([{key:"Rack Pull",sets:[{w:"185",r:"8"},{w:"235",r:"4"},{w:"225",r:"6"}]}],L).prog,1,"the top set is the heaviest, not the last");
+eq(planScore([{key:"Rack Pull",sets:[{w:"245",r:""},{w:"225",r:"6"}]}],L).prog,0,"a load with no reps can't be the top set");
+eq(planScore([PE("Rack Pull",4,4,[235,5],{sym:[sym(true,"ache")]})],L).prog,0,"progression voided by a pain entry — even one that went away");
+eq(planScore([PE("Rack Pull",4,4,[235,5],{sym:[sym(false)]})],L).done,4,"...though the sets still count");
+eq(planScore([PE("Suitcase Carry",2,2,[105,40])],lastAt({"Suitcase Carry":[105,30]})).prog,1,"carry: same load, more yards -> progression");
+
+/* Saturday and the Deload week: Gold at 100%, no progression asked for. */
+var FULL=[PE("Leg Press",3,3,[180,10])];
+eq(planCapped("meso03Sat"),true,"Saturday is capped");
+onDate(2026,11,2,function(){
+  eq(planCapped("meso03Mon"),false,"a Volume-week Monday is not");
+  eq(finishMedal("meso03Mon","lift",FULL,null,null,NOLAST).medal,"SILVER","...so 100% with no progression is Silver");
+  eq(finishMedal("meso03Sat","lift",FULL,null,null,NOLAST).medal,"GOLD","Saturday: 100% with no progression is Gold");
+  eq(finishMedal("meso03Sat","lift",[PE("Leg Press",5,4,[180,10])],null,null,NOLAST).medal,"BRONZE","Saturday at 80% -> Bronze (no Silver there)");
+});
+onDate(2026,12,7,function(){
+  eq(planCapped("meso03Mon"),true,"week 8 Deload is capped");
+  eq(finishMedal("meso03Fri","lift",FULL,null,null,NOLAST).medal,"GOLD","Deload: 100% with no progression is Gold");
+  eq(finishMedal("meso03Wed","lift",[PE("Cable Pullover",2,1,[30,8])],null,null,NOLAST).medal,"Partial","Deload: 50% -> Partial");
+});
+
+/* finishMedal — the stamp Finish writes */
+onDate(2026,10,21,function(){
+  var fm=finishMedal("meso03Wed","lift",FULL,140,[0,5,20,10,0,0],lastAt({"Leg Press":[170,10]}));
+  eq(fm.medal,"GOLD","a plan day medals on the plan, whatever RKD came to (140 vs target 105)");
+  eq(fm.plan&&planText(fm.plan),"Sets 3/3 · 1 progression","...and returns the count to stamp");
+  eq(finishMedal("meso03Wed","lift",FULL,null,null,NOLAST).medal,"SILVER","no strap -> still a medal");
+  eq(finishMedal("meso03Wed","lift",[PE("Leg Press",3,0,[0,0])],103,null,NOLAST).medal,null,"nothing done -> no medal, even with RKD");
+});
+eq(finishMedal("meso02Mon","lift",FULL,103,null,NOLAST).medal,"GOLD","Meso 2 lift days still medal on RKD vs target");
+eq(finishMedal("meso02Mon","lift",FULL,80,null,NOLAST).medal,"OFF TARGET","...including OFF TARGET");
+eq(finishMedal("meso02Mon","lift",FULL,103,null,NOLAST).plan,undefined,"...and stamp no plan");
+eq(finishMedal("tue","zone2",[],50,[0,0,30,0,0,0]).medal,"GOLD","Zone 2 unchanged: all time in Z2 -> Gold");
+eq(finishMedal("thu","zone2",[],50,[0,2,28,0,0,0]).medal,"SILVER","...93% in Z2 -> Silver");
+eq(finishMedal("tue","zone2",[],50,[0,10,20,0,0,0]).medal,"OFF TARGET","...67% -> OFF TARGET");
+eq(finishMedal("tue","zone2",[],50,[0,0,30,0,0,0]).plan,undefined,"...with no plan count");
+eq(finishMedal("sun","recovery",[],null,null).medal,"Done ✓","Sunday is still Done ✓");
+eq(finishMedal("sat","class",[],60,null).medal,null,"the shared Sat Conditioning Sub still has no medal");
+
+/* The chip and Finish read the same entries off the form. */
+resetState();
+var CSESS={blocks:[{ex:[{key:"Rack Pull",n:"Rack Pull",rx:"4 × 6",sets:2},{key:"Suitcase Carry",n:"Suitcase Carry",rx:"2 × 40 yd",sets:2,rUnit:"yd"}]}]};
+fillForm({"w_0_0_0":"225","r_0_0_0":"6","w_0_0_1":"225","r_0_0_1":"6","w_0_1_0":"105","r_0_1_0":"40","w_0_1_1":"105","r_0_1_1":""});
+eq(planText(planScore(collectEntries(CSESS),NOLAST)),"Sets 3/4 · 0 progressions","counted straight off the session form");
+["meso03Mon","meso03Fri"].forEach(function(d){ eq(exOf(d,"Suitcase Carry").rUnit,"yd","Suitcase Carry's second box reads yd on "+d); });
+
+/* Stamped, never re-graded */
+resetState(); DAY="meso03Mon"; day="meso03Mon"; medal="SILVER"; plan={done:18,total:18,prog:0};
+saveEntry();
+eq(LOGS[0].medal,"SILVER","Finish stamps the plan medal");
+eq(LOGS[0].plan&&planText(LOGS[0].plan),"Sets 18/18 · 0 progressions","...and the count");
+eq(LOGS[0].target,null,"...with no RKD target, since RKD didn't set it");
+resetState(); day="meso02Wed"; medal="GOLD"; plan=null;
+saveEntry();
+eq(LOGS[0].plan,undefined,"a non-plan day stamps no plan");
+eq(LOGS[0].target,105,"...and keeps its RKD target");
+var OLD={date:"2026-09-28T18:00:00Z",block:"meso02",blockLabel:"Meso 2",blockWeek:4,day:"meso02Mon",name:"MONDAY",
+  entries:[],pxi:80,medal:"OFF TARGET",target:105,zoneMins:null,strain:null,note:""};
+var NEW={date:"2026-10-19T18:00:00Z",block:"meso03",blockLabel:"Meso 3",blockWeek:1,day:"meso03Mon",name:"MONDAY",
+  entries:[],pxi:131,medal:"GOLD",plan:{done:18,total:18,prog:2},target:null,zoneMins:null,strain:null,note:""};
+var sOld=buildSummary([OLD],0), sNew=buildSummary([OLD,NEW],1);
+ok(sOld.indexOf("RKD: 80 (OFF TARGET)")>=0,"an old log's summary keeps the medal it was stamped with");
+ok(sOld.indexOf("Plan:")<0,"...and grows no Plan line");
+ok(sNew.indexOf("RKD: 131\n")>=0,"a plan log shows RKD on its own…");
+ok(sNew.indexOf("Plan: Sets 18/18 · 2 progressions (GOLD)\n")>=0,"…and the medal on the Plan line");
+resetState(); day="meso02Wed"; medal="GOLD"; plan=null;
+
+/* Rule text that states the scoring isn't in a loaded region, so guard the wording at the source. */
+ok(SRC.indexOf("scored and medalled like a lift day (target RKD")<0,"meso03Sat's HR text no longer promises an RKD-target medal");
+ok(SRC.indexOf("medal on plan completion (Gold = every set done, no progression needed)")>=0,"...it states the plan rule");
+ok(SRC.indexOf("vs. Target RKD on lift days (incl. Meso 3's Full Range Sat)")<0,"RKD tab no longer says Meso 3 Sat medals on Target RKD");
+ok(SRC.indexOf("Meso 3 lift days (incl. its Full Range Sat) medal on plan completion, not RKD")>=0,"...it states the plan rule");
+ok(SRC.indexOf("Target RKD (lift days before Meso 3)")>=0,"the target setting says which days it grades");
 
 section("Karvonen zone boundaries (RHR 46 / max 185)");
 eq(zoneOfBpm(129),1,"129 bpm is still Z1");
