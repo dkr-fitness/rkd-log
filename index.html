@@ -491,10 +491,15 @@ function inMeso03Window(){
    before 10/19 instead of borrowing Meso 02's week number. phaseForWeek() clamps either end. */
 function meso03Week(){ return Math.floor((new Date()-MESO03_START)/864e5/7)+1; }
 const MESO03_PHASE_CUE={
- Baseline:"RPE 6–7. Establish working loads; leave reps in reserve.",
+ Baseline:"RPE 6–7. Establish working loads; leave reps in reserve. First working set RPE 8+ → drop 10%. RPE 5 → add 5–10 lb.",
  Volume:"RPE 7–8. Fill the rep range before adding load.",
  Performance:"RPE 8. Heavier, fewer reps — still no grinding.",
  Deload:"RPE 6. Less volume, same patterns, crisp reps. Leave fresh."};
+/* Meso 03's load progression, shown once in the Scoring box on its lift days. */
+const MESO03_LOADING_RULE="Main lifts: all sets at RPE 7 or easier → add 5 lb next week (Rack Pull 10 lb). Accessories: stay at one weight until every set hits the top of the rep range, then go up. Single-arm: right side sets the load; left matches.";
+/* Saturday's Baseline calibration. The weekday line ("RPE 8+ → drop 10%") is already over
+   Saturday's 7/10 cap, so this one is fitted to the cap instead. */
+const MESO03_SAT_CALIBRATION="First working set above 7/10 → drop 10%.";
 function mesoPhase3(){
   const p=phaseForWeek(meso03Week(),"meso03");
   return {label:p+" Phase",rpe:MESO03_PHASE_CUE[p]};
@@ -575,7 +580,7 @@ function hrText(day,w){
    meso03Mon:`Hinge lead — strength curve, Z1–Z2 base, Rack Pull spikes to Z3 OK. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
    meso03Wed:`Squat + push — strength curve throughout, stay pain-free through the Chest Press cap. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
    meso03Fri:`Pull + hinge — strength curve throughout. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
-   meso03Sat:`Full range — effort cap 7/10. Strength curve, RKD counts in weekly totals; medal on plan completion (Gold = every set done, no progression needed). ${mesoPhase3().label} — ${mesoPhase3().label==="Deload Phase"?"2 sets of everything this week.":"fixed sets all block; only the tempo cue changes (none on Face Pull)."}`}[day];
+   meso03Sat:`Full range — effort cap 7/10. Strength curve, RKD counts in weekly totals; medal on plan completion (Gold = every set done, no progression needed). ${mesoPhase3().label} — ${mesoPhase3().label==="Deload Phase"?"2 sets of everything this week.":"fixed sets all block; only the tempo cue changes (none on Face Pull)."}${mesoPhase3().label==="Baseline Phase"?" "+MESO03_SAT_CALIBRATION:""}`}[day];
 }
 // Shared pre-activation cue — surfaces on every exercise where the right lat
 // coordination gap shows up (confirmed 8/11 across Deadlift + DB Shoulder Press).
@@ -1444,22 +1449,25 @@ function getSession(w,day){
   // slots stay fixed; the carries and the pinch hold drop to one round in the Deload week.
   // Saturday holds fixed sets all block and only its tempo cue follows the phase.
   const meso3Phase=phaseForWeek(meso03Week(),"meso03");
-  const meso3MainRx=suffix=>{
+  /* Starting-weight hint, Baseline weeks 1–2 only — from week 3 the Last time line takes over. */
+  const startTag=st=>meso3Phase==="Baseline"&&st?" · Start "+st:"";
+  const meso3MainRx=(suffix,start)=>{
     const o={Baseline:{sets:4,base:"4 × 6 @ RPE 6–7"},
              Volume:{sets:5,base:"5 × 6–8 @ RPE 7–8"},
              Performance:{sets:4,base:"4 × 4–5 @ RPE 8"},
              Deload:{sets:3,base:"3 × 5 @ RPE 6"}}[meso3Phase];
-    return {sets:o.sets, rx:o.base+" · max 2 warm-up ramp sets, not logged — log working sets only"+(suffix?" · "+suffix:"")};
+    /* Ramp sets are never set rows, so they can't count toward the plan score's set total. */
+    return {sets:o.sets, rx:o.base+startTag(start)+" · 1–2 ramp sets, not logged · then all working sets at one weight"+(suffix?" · "+suffix:"")};
   };
   // per is the unit suffix on the reps ("/leg", "/side") — the movement name stays clean.
-  const meso3AccRx=(per,note)=>{
+  const meso3AccRx=(per,note,start)=>{
     const o={Baseline:{sets:3,reps:"8–10"},Volume:{sets:3,reps:"10–12"},
              Performance:{sets:3,reps:"8",cue:"heavier"},Deload:{sets:2,reps:"8"}}[meso3Phase];
-    return {sets:o.sets, rx:o.sets+" × "+o.reps+(per||"")+(o.cue?" · "+o.cue:"")+(note?" · "+note:"")};
+    return {sets:o.sets, rx:o.sets+" × "+o.reps+(per||"")+(o.cue?" · "+o.cue:"")+startTag(start)+(note?" · "+note:"")};
   };
-  const meso3HoldRx=(text,note)=>{
+  const meso3HoldRx=(text,note,start)=>{
     const sets=meso3Phase==="Deload"?1:2;
-    return {sets, rx:sets+" × "+text+(note?" · "+note:"")+(meso3Phase==="Deload"?" · retest":"")};
+    return {sets, rx:sets+" × "+text+startTag(start)+(note?" · "+note:"")+(meso3Phase==="Deload"?" · retest":"")};
   };
   /* Week 8 retest (Meso03_Plan.xlsx, Overview): Baseline loads again for the carries, pinch hold
      and single-arm lifts, both sides logged, to compare against week 1. Shown as a banner on the
@@ -1468,11 +1476,11 @@ function getSession(w,day){
   const retestTag=rx=>meso3Phase==="Deload"?rx+" · retest — Baseline load, log both sides":rx;
   const meso3Retest=meso3Phase==="Deload"?MESO3_RETEST:null;
   if(day==="meso03Mon"){
-    const rp=meso3MainRx("double overhand · chiro-approved; monitor grip-side"),
-          bss=meso3AccRx("/leg","DB in each hand, arms straight"),
-          ht=meso3AccRx("","full hip extension, pause at top"),
+    const rp=meso3MainRx("double overhand · chiro-approved; monitor grip-side","~185 lb"),
+          bss=meso3AccRx("/leg","DB in each hand, arms straight","~25 lb each hand"),
+          ht=meso3AccRx("","full hip extension, pause at top","light — find it"),
           pf=meso3AccRx("/side","neutral grip, static hold"),
-          sc=meso3HoldRx("40 yd/side","right side first · log load per side");
+          sc=meso3HoldRx("40 yd/side","right side first · log load per side","~45 lb/side");
     return {name:"MONDAY — Hinge Lead", type:"lift", retest:meso3Retest, blocks:[
      // Rack Pull's Form Reference entry calls for pull-aparts or Y-raises immediately prior.
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
@@ -1489,11 +1497,11 @@ function getSession(w,day){
        {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets,rUnit:"yd"}]}]};
   }
   if(day==="meso03Wed"){
-    const sq=meso3MainRx("hands on the handles — never reach back for a straight bar"),
-          cp=meso3AccRx("/side","single-arm floor press, right side first · floor sets the 90° stop, pain-free only"),
-          tp=meso3AccRx("/side","single-arm, pushdown only (no overhead), right side first"),
-          po=meso3AccRx("","arms nearly straight — lats without elbow bend"),
-          ph=meso3HoldRx("20–30 s/side","thumb flat on one face, fingers flat on the other, plate off the floor · right side first · log plate load × seconds held · set down before the grip goes");
+    const sq=meso3MainRx("hands on the handles — never reach back for a straight bar","~135–145 lb"),
+          cp=meso3AccRx("/side","single-arm floor press, right side first · floor sets the 90° stop, pain-free only","~40–45 lb"),
+          tp=meso3AccRx("/side","single-arm, pushdown only (no overhead), right side first","~12.5–15 lb"),
+          po=meso3AccRx("","arms nearly straight — lats without elbow bend","~12.5–15 lb"),
+          ph=meso3HoldRx("20–30 s/side","thumb flat on one face, fingers flat on the other, plate off the floor · right side first · log plate load × seconds held · set down before the grip goes","5 lb");
     return {name:"WEDNESDAY — Squat + Push", type:"lift", retest:meso3Retest, blocks:[
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · slow, elbows on the wall · first in session",sets:2}]},
@@ -1511,11 +1519,11 @@ function getSession(w,day){
        {key:"Plate Pinch Hold",n:"Plate Pinch Hold",rx:ph.rx,sets:ph.sets,rUnit:"sec"}]}]};
   }
   if(day==="meso03Fri"){
-    const rdl=meso3MainRx("barbell"),
-          ngr=meso3AccRx("/side","single-arm, right side first · stop at first sign of pain"),
+    const rdl=meso3MainRx("barbell","~135 lb"),
+          ngr=meso3AccRx("/side","single-arm, right side first · stop at first sign of pain","~40–45 lb"),
           su=meso3AccRx("/leg","DBs at sides, arms straight"),
           cd=meso3AccRx("/side","ribs down, slow"),
-          sc=meso3HoldRx("40 yd/side","right side first · log load per side");
+          sc=meso3HoldRx("40 yd/side","right side first · log load per side","~45 lb/side");
     return {name:"FRIDAY — Pull + Hinge", type:"lift", retest:meso3Retest, blocks:[
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Prone Y-Raises",n:"Prone Y-Raises",rx:"2 × 15 · light, first in session",sets:2}]},
@@ -1543,7 +1551,7 @@ function getSession(w,day){
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · slow, elbows on the wall · effort cap 7/10 all session",sets:2}]},
      {letter:"B",t:"Squat",mins:8,bells:n(3),ex:[
-       {key:"Leg Press",n:"Leg Press",rx:t(n(3)+" × 10 · full depth",meso3Phase==="Performance"?", slightly heavier":""),sets:n(3)}]},
+       {key:"Leg Press",n:"Leg Press",rx:t(n(3)+" × 10"+startTag("~180–200 lb")+" · full depth",meso3Phase==="Performance"?", slightly heavier":""),sets:n(3)}]},
      {letter:"C",t:"Hinge",mins:8,bells:n(3),ex:[
        {key:"SL RDL",n:"Single-Leg RDL",rx:t(n(3)+" × 8/leg · balance-forward"),sets:n(3)}]},
      {letter:"D",t:"Lunge",mins:8,bells:n(3),ex:[
@@ -3060,6 +3068,7 @@ function render(){
       +(planCapped(day)
         ? `${day==="meso03Sat"?"Saturday (cap 7/10)":"Deload week"}: Gold = 100%, no progression needed · Bronze 80%+ · below that, Partial.`
         : `Gold = 100% + a progression · Silver 100% · Bronze 80%+ · below that, Partial.`)
+      +`<br><br><b>Loading:</b> ${MESO03_LOADING_RULE}`
     : `${MODEL_DESC[curModel()]} Target ${pxiSet.target} · Gold ±5%.`);
   if(planDay) h+=`<div class="plan-chip" id="planChip"></div>`;
   h+=infoBox("ibEq","meta eq","Equipment",EQ[day]);

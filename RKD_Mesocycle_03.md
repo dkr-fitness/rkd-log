@@ -39,7 +39,11 @@
 | 6–7 | Performance | 4×4–5 @ RPE 8 | 3×8, heavier |
 | 8 | Deload | 3×5 @ RPE 6 | 2×8 |
 
-**Main lifts:** at most 2 warm-up ramp sets, not logged. Logged sets are working sets.
+**Main lifts:** 1–2 ramp sets, not logged, then all working sets at one weight. Ramp sets are never set rows in the app, so they don't count toward the plan score.
+
+**Loading progression** (shown in the app's Scoring box on every Meso 03 lift day): Main lifts: all sets at RPE 7 or easier → add 5 lb next week (Rack Pull 10 lb). Accessories: stay at one weight until every set hits the top of the rep range, then go up. Single-arm: right side sets the load; left matches.
+
+**Starting weights (Baseline, weeks 1–2 only):** each session table below has a Start column, and the app shows it in the rx as "Start ~X". From week 3 it's dropped and set mode's Last time line takes over. Calibrate on the first working set: RPE 8+ → drop 10%. RPE 5 → add 5–10 lb. That line is in the Baseline phase cue (the app's HR target box, Mon/Wed/Fri). Saturday's is fitted to its 7/10 cap instead: first working set above 7/10 → drop 10%.
 
 **Fixed all block:** activation slots (2 sets). Suitcase Carry and Plate Pinch Hold run 2 rounds, dropping to 1 in the Deload week.
 
@@ -49,54 +53,54 @@
 
 ## Session Templates
 
-Rx below is the Baseline prescription. Main lifts and accessories follow the progression table.
+Rx below is the Baseline prescription. Main lifts and accessories follow the progression table. Start is the Baseline-only starting weight.
 
 ### Monday — Hinge Lead
 
-| Exercise | Role | Sets × Reps | Note |
-|---|---|---|---|
-| Band Pull-Aparts | Activation | 2×15 | Light, first in session |
-| Rack Pull | Main | 4×6 @ RPE 6–7 | Double overhand · chiro-approved; monitor grip-side |
-| Bulgarian Split Squat | Accessory | 3×8–10/leg | DB in each hand, arms straight |
-| Hip Thrust | Accessory | 3×8–10 | Full hip extension, pause at top |
-| Pallof Press | Accessory | 3×8–10/side | Neutral grip, static hold |
-| Suitcase Carry | Carry | 2×40 yd/side | Right side first · log load per side · Deload 1×, retest |
+| Exercise | Role | Sets × Reps | Start | Note |
+|---|---|---|---|---|
+| Band Pull-Aparts | Activation | 2×15 | — | Light, first in session |
+| Rack Pull | Main | 4×6 @ RPE 6–7 | ~185 lb | Double overhand · chiro-approved; monitor grip-side · 1–2 ramp sets, not logged · then all working sets at one weight |
+| Bulgarian Split Squat | Accessory | 3×8–10/leg | ~25 lb each hand | DB in each hand, arms straight |
+| Hip Thrust | Accessory | 3×8–10 | Light — find it | Full hip extension, pause at top |
+| Pallof Press | Accessory | 3×8–10/side | — | Neutral grip, static hold |
+| Suitcase Carry | Carry | 2×40 yd/side | ~45 lb/side | Right side first · log load per side · Deload 1×, retest |
 
 ### Wednesday — Squat + Push
 
-| Exercise | Role | Sets × Reps | Note |
-|---|---|---|---|
-| Scapular Wall Slide | Activation | 2×10 | Slow, elbows on the wall · first in session |
-| Safety Bar Squat | Main | 4×6 @ RPE 6–7 | Hands on the handles, never reach back for a straight bar |
-| Chest Press | Accessory | 3×8–10/side | Single-arm floor press, right side first · floor sets the 90° stop, pain-free only |
-| Rope Triceps Pressdown | Accessory | 3×8–10/side | Single-arm, **pushdown only (no overhead)**, right side first |
-| Cable Pullover | Accessory | 3×8–10 | **Arms nearly straight — lats without elbow bend** |
-| Plate Pinch Hold | Grip | 2×20–30 s/side | Thumb flat on one face, fingers flat on the other, plate off the floor · right side first · log plate load × seconds · Deload 1×, retest |
+| Exercise | Role | Sets × Reps | Start | Note |
+|---|---|---|---|---|
+| Scapular Wall Slide | Activation | 2×10 | — | Slow, elbows on the wall · first in session |
+| Safety Bar Squat | Main | 4×6 @ RPE 6–7 | ~135–145 lb | Hands on the handles, never reach back for a straight bar · 1–2 ramp sets, not logged · then all working sets at one weight |
+| Chest Press | Accessory | 3×8–10/side | ~40–45 lb | Single-arm floor press, right side first · floor sets the 90° stop, pain-free only |
+| Rope Triceps Pressdown | Accessory | 3×8–10/side | ~12.5–15 lb | Single-arm, **pushdown only (no overhead)**, right side first |
+| Cable Pullover | Accessory | 3×8–10 | ~12.5–15 lb | **Arms nearly straight — lats without elbow bend** |
+| Plate Pinch Hold | Grip | 2×20–30 s/side | 5 lb | Thumb flat on one face, fingers flat on the other, plate off the floor · right side first · log plate load × seconds · Deload 1×, retest |
 
 ### Friday — Pull + Hinge
 
-| Exercise | Role | Sets × Reps | Note |
-|---|---|---|---|
-| Prone Y-Raises | Activation | 2×15 | Light, first in session |
-| Romanian Deadlift | Main | 4×6 @ RPE 6–7 | **Barbell** (existing key; Meso 02 history is mostly barbell) |
-| Neutral-Grip Row (cable or DB) | Accessory | 3×8–10/side | Single-arm, right side first · **stop at first sign of pain** |
-| DB Step-Up | Accessory | 3×8–10/leg | DBs at sides, arms straight |
-| Core (Dead Bug or similar) | Accessory | 3×8–10/side | Ribs down, slow |
-| Suitcase Carry | Carry | 2×40 yd/side | Right side first · log load per side · Deload 1×, retest |
+| Exercise | Role | Sets × Reps | Start | Note |
+|---|---|---|---|---|
+| Prone Y-Raises | Activation | 2×15 | — | Light, first in session |
+| Romanian Deadlift | Main | 4×6 @ RPE 6–7 | ~135 lb | **Barbell** (existing key; Meso 02 history is mostly barbell) · 1–2 ramp sets, not logged · then all working sets at one weight |
+| Neutral-Grip Row (cable or DB) | Accessory | 3×8–10/side | ~40–45 lb | Single-arm, right side first · **stop at first sign of pain** |
+| DB Step-Up | Accessory | 3×8–10/leg | — | DBs at sides, arms straight |
+| Core (Dead Bug or similar) | Accessory | 3×8–10/side | — | Ribs down, slow |
+| Suitcase Carry | Carry | 2×40 yd/side | ~45 lb/side | Right side first · log load per side · Deload 1×, retest |
 
 ### Saturday — Full Range (effort cap 7/10)
 
 Fixed sets all block; the Deload week takes 2 sets of everything (Sled Push 2×20 yd). It doesn't follow the progression table. Only the tempo cue changes by phase, and Band Face Pull has none.
 
-| Exercise | Sets × Reps | Note |
-|---|---|---|
-| Scapular Wall Slide | 2×10 | Activation · slow, elbows on the wall · effort cap 7/10 all session |
-| Leg Press | 3×10 | Full depth |
-| Single-Leg RDL | 3×8/leg | Balance-forward |
-| Backward Walking Lunges | 3×8/leg | Full range |
-| Band Face Pull | 3×12 | Light band · no tempo cue |
-| Sled Push | 5×20 yd | Arms straight · log load × yards |
-| Cardio Ramp | 8–10 min | Zone 2 bike or incline walk |
+| Exercise | Sets × Reps | Start | Note |
+|---|---|---|---|
+| Scapular Wall Slide | 2×10 | — | Activation · slow, elbows on the wall · effort cap 7/10 all session |
+| Leg Press | 3×10 | ~180–200 lb | Full depth |
+| Single-Leg RDL | 3×8/leg | — | Balance-forward |
+| Backward Walking Lunges | 3×8/leg | — | Full range |
+| Band Face Pull | 3×12 | — | Light band · no tempo cue |
+| Sled Push | 5×20 yd | — | Arms straight · log load × yards |
+| Cardio Ramp | 8–10 min | — | Zone 2 bike or incline walk |
 
 | Phase | Tempo cue |
 |---|---|

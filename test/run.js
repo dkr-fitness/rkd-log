@@ -173,6 +173,7 @@ function eq(actual,expected,msg){
 /* ---------------------------------------------------------------- load logic under test */
 loadRegions(
   region("const MESO01_START=","function hrText(day,w){"),          /* block/week identity   */
+  region("function hrText(day,w){","// Shared pre-activation cue"),    /* HR target box text    */
   region("const PTS=","const LIFT_DAYS="),                          /* curves, medals, zones */
   region("const LIFT_DAYS=","/* The only templates that still read"), /* medal-eligible days */
   region("function curModel(){","/* ================= STATE"),      /* curve per day         */
@@ -349,6 +350,58 @@ onDate(2026,12,7,function(){
   ok(/retest/.test(exOf("meso03Fri","Neutral-Grip Row").rx),"retest tag on single-arm Neutral-Grip Row");
   ok(!/retest/.test(exOf("meso03Fri","Romanian Deadlift (DB)").rx),"...not on the main lift");
 });
+
+section("Meso 3 loading guidance — on screen mid-session");
+var MAINS=[["meso03Mon","Rack Pull"],["meso03Wed","Safety Bar Squat"],["meso03Fri","Romanian Deadlift (DB)"]];
+var STARTS=[["meso03Mon","Rack Pull","Start ~185 lb"],["meso03Wed","Safety Bar Squat","Start ~135–145 lb"],
+  ["meso03Fri","Romanian Deadlift (DB)","Start ~135 lb"],["meso03Wed","SA Chest Press","Start ~40–45 lb"],
+  ["meso03Fri","Neutral-Grip Row","Start ~40–45 lb"],["meso03Wed","Rope Triceps Pressdown","Start ~12.5–15 lb"],
+  ["meso03Wed","Cable Pullover","Start ~12.5–15 lb"],["meso03Mon","Bulgarian SS","Start ~25 lb each hand"],
+  ["meso03Mon","Suitcase Carry","Start ~45 lb/side"],["meso03Fri","Suitcase Carry","Start ~45 lb/side"],
+  ["meso03Wed","Plate Pinch Hold","Start 5 lb"],["meso03Sat","Leg Press","Start ~180–200 lb"],
+  ["meso03Mon","Hip Thrust","Start light — find it"]];
+Object.keys(PHASE_DATES).forEach(function(ph){
+  var d=PHASE_DATES[ph];
+  onDate(d[0],d[1],d[2],function(){
+    MAINS.forEach(function(m){
+      ok(/1–2 ramp sets, not logged · then all working sets at one weight/.test(exOf(m[0],m[1]).rx),ph+" "+m[1]+": ramp sets + one working weight");
+    });
+  });
+});
+/* Ramp sets are cues, not set rows — the plan score's set total is working sets only. */
+onDate(2026,10,19,function(){
+  MAINS.forEach(function(m){
+    var e=exOf(m[0],m[1]), rows=[]; for(var i=0;i<e.sets;i++) rows.push({w:"",r:""});
+    eq(planScore([{key:e.key,sets:rows}],function(){return null;}).total,4,
+       m[1]+": plan total = 4 working sets, ramps not counted");
+  });
+});
+[[2026,10,19,"wk 1"],[2026,10,26,"wk 2"]].forEach(function(d){
+  onDate(d[0],d[1],d[2],function(){
+    STARTS.forEach(function(x){ ok(exOf(x[0],x[1]).rx.indexOf(x[2])>=0,"Baseline "+d[3]+": "+x[1]+" shows "+x[2]); });
+    ok(/First working set RPE 8\+ → drop 10%\. RPE 5 → add 5–10 lb\./.test(mesoPhase3().rpe),"Baseline "+d[3]+": calibration line in the phase cue");
+  });
+});
+[[2026,11,2,"Volume wk 3"],[2026,12,7,"Deload wk 8"]].forEach(function(d){
+  onDate(d[0],d[1],d[2],function(){
+    var txt=M3DAYS.map(function(day){ return exList(day).map(function(e){return e.rx||"";}).join(" | "); }).join(" | ");
+    ok(txt.indexOf("Start ")<0,d[3]+": no Start hints — Last time takes over");
+    ok(!/First working set/.test(mesoPhase3().rpe),d[3]+": no calibration line");
+  });
+});
+onDate(2026,10,19,function(){
+  ok(!/Start/.test(exOf("meso03Mon","Pallof").rx+exOf("meso03Fri","Step-Up").rx+exOf("meso03Mon","Band Pull-Aparts").rx),"no Start hint where none was given");
+});
+[[2026,10,19,"wk 1"],[2026,10,26,"wk 2"]].forEach(function(d){ onDate(d[0],d[1],d[2],function(){
+  ok(hrText("meso03Sat",8).indexOf("First working set above 7/10 → drop 10%.")>=0,"Baseline "+d[3]+": Saturday's calibration line, fitted to the cap");
+  ok(!/RPE 8\+/.test(hrText("meso03Sat",8)),"...and not the weekday RPE 8+ line");
+  ok(hrText("meso03Mon",8).indexOf("First working set RPE 8+ → drop 10%.")>=0,"...while Monday's HR box carries the weekday line");
+});});
+[[2026,11,2,"Volume wk 3"],[2026,12,7,"Deload wk 8"]].forEach(function(d){ onDate(d[0],d[1],d[2],function(){
+  ok(!/First working set/.test(hrText("meso03Sat",8)+hrText("meso03Wed",8)),d[3]+": no calibration line on Saturday or weekdays");
+});});
+eq(MESO03_LOADING_RULE,"Main lifts: all sets at RPE 7 or easier → add 5 lb next week (Rack Pull 10 lb). Accessories: stay at one weight until every set hits the top of the rep range, then go up. Single-arm: right side sets the load; left matches.","progression rule text");
+ok(SRC.indexOf("<b>Loading:</b> ${MESO03_LOADING_RULE}")>=0,"...shown in the Scoring box on plan days");
 
 section("Meso 3 Saturday — scored like a lift day");
 /* Rule text on the RKD tab isn't in a loaded region, so guard its wording at the source. */
