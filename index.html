@@ -438,9 +438,9 @@ const EQ={
  meso02Wed:"Chest press machine or DBs · bodyweight (floor push-ups, wall slides) · cable or DB (triceps extension)",
  meso02Fri:"Light band or light DBs (Y-raise/pull-apart) · cable or DB (neutral-grip row) · DBs (RDL) or hip thrust setup · bodyweight (dead bug)",
  meso03Mon:"Light band (pull-aparts) · rack pull station · DBs (Bulgarian split squat) · bench + bar or DB (hip thrust) · cable or band (Pallof) · KB or DB (suitcase carry)",
- meso03Wed:"Safety squat bar + rack · DB + floor (single-arm floor press) · cable + rope (pressdown, pullover) · two smooth plates (pinch hold)",
+ meso03Wed:"Safety squat bar + rack · DB + floor (single-arm floor press) · cable + rope (pressdown, pullover)",
  meso03Fri:"Light DBs or bodyweight (Y-raise) · DBs (RDL, step-up) · box or bench (step-up) · cable or DB (neutral-grip row) · KB or DB (suitcase carry)",
- meso03Sat:"Leg press machine · DB (single-leg RDL) · open floor (backward lunges) · light band (face pull) · sled · bike or treadmill (cardio ramp)"};
+ meso03Sat:"Leg press machine · DB (single-leg RDL) · open floor (backward lunges) · cable + rope (face pull) · sled or treadmill · bike or treadmill (cardio ramp)"};
 // Mesocycle 01 (rebuild block, Dr. Zak 8/14 functional clearance) — a fixed 3-week structure
 // running 8/17–9/6, ending at the 9/3 ortho appointment. Its own week phase is computed from
 // the real calendar date, deliberately independent of weekSel (which is the OLD 8-week
@@ -490,6 +490,9 @@ function inMeso03Window(){
 /* Meso 03's week by its own calendar rather than blockFor(), so its templates preview as week 1
    before 10/19 instead of borrowing Meso 02's week number. phaseForWeek() clamps either end. */
 function meso03Week(){ return Math.floor((new Date()-MESO03_START)/864e5/7)+1; }
+/* Thursday's Zone 2 is gated on WHOOP recovery in Meso 03 only; Tue and other blocks unchanged. */
+const MESO03_THU_RECOVERY="Check WHOOP recovery first: green → Zone 2, 25–35 min · yellow/red → easy walk or mobility 20–30 min instead.";
+const thuRuleText=()=>(inMeso03Window()?MESO03_THU_RECOVERY+" ":"")+"If you did Tuesday, strongly consider full rest today — one optional session per week is plenty during heavy weeks (6–8).";
 const MESO03_PHASE_CUE={
  Baseline:"RPE 6–7. Establish working loads; leave reps in reserve. First working set RPE 8+ → drop 10%. RPE 5 → add 5–10 lb.",
  Volume:"RPE 7–8. Fill the rep range before adding load.",
@@ -1446,7 +1449,7 @@ function getSession(w,day){
   }
   // Mesocycle 03 — Mon/Wed/Fri split plus a scored Saturday. The three main lifts (Rack Pull,
   // Safety Bar Squat, Romanian Deadlift) and the accessories branch on Meso 03's phase; activation
-  // slots stay fixed; the carries and the pinch hold drop to one round in the Deload week.
+  // slots stay fixed; the carries drop to one round in the Deload week.
   // Saturday holds fixed sets all block and only its tempo cue follows the phase.
   const meso3Phase=phaseForWeek(meso03Week(),"meso03");
   /* Starting-weight hint, Baseline weeks 1–2 only — from week 3 the Last time line takes over. */
@@ -1469,12 +1472,16 @@ function getSession(w,day){
     const sets=meso3Phase==="Deload"?1:2;
     return {sets, rx:sets+" × "+text+startTag(start)+(note?" · "+note:"")+(meso3Phase==="Deload"?" · retest":"")};
   };
-  /* Week 8 retest (Meso03_Plan.xlsx, Overview): Baseline loads again for the carries, pinch hold
-     and single-arm lifts, both sides logged, to compare against week 1. Shown as a banner on the
+  /* Week 8 retest (Meso03_Plan.xlsx, Overview): Baseline loads again for the carries and
+     single-arm lifts, both sides logged, to compare against week 1. The pinch hold left the
+     lift days for the HEP (b1_platepinch), so it retests there. Shown as a banner on the
      session page and tagged onto each affected rx so set mode carries it too. */
-  const MESO3_RETEST="Retest: repeat Baseline loads for carries, pinch hold and single-arm lifts; log both sides.";
+  const MESO3_RETEST="Retest: repeat Baseline loads for carries and single-arm lifts; log both sides. Pinch hold retests in the HEP.";
   const retestTag=rx=>meso3Phase==="Deload"?rx+" · retest — Baseline load, log both sides":rx;
   const meso3Retest=meso3Phase==="Deload"?MESO3_RETEST:null;
+  /* Right-arm top-up on the single-arm lifts. Logged with + Set, so the plan score (capped at the
+     prescription) and the set count don't move. */
+  const SA_EXTRA="optional extra set, right arm only";
   if(day==="meso03Mon"){
     const rp=meso3MainRx("double overhand · chiro-approved; monitor grip-side","~185 lb"),
           bss=meso3AccRx("/leg","DB in each hand, arms straight","~25 lb each hand"),
@@ -1498,10 +1505,9 @@ function getSession(w,day){
   }
   if(day==="meso03Wed"){
     const sq=meso3MainRx("hands on the handles — never reach back for a straight bar","~135–145 lb"),
-          cp=meso3AccRx("/side","single-arm floor press, right side first · floor sets the 90° stop, pain-free only","~40–45 lb"),
-          tp=meso3AccRx("/side","single-arm, pushdown only (no overhead), right side first","~12.5–15 lb"),
-          po=meso3AccRx("","arms nearly straight — lats without elbow bend","~12.5–15 lb"),
-          ph=meso3HoldRx("20–30 s/side","thumb flat on one face, fingers flat on the other, plate off the floor · right side first · log plate load × seconds held · set down before the grip goes","5 lb");
+          cp=meso3AccRx("/side","single-arm floor press, right side first · floor sets the 90° stop, pain-free only · "+SA_EXTRA,"~40–45 lb"),
+          tp=meso3AccRx("/side","single-arm, pushdown only (no overhead), right side first · "+SA_EXTRA,"~12.5–15 lb"),
+          po=meso3AccRx("","arms nearly straight — lats without elbow bend","~12.5–15 lb");
     return {name:"WEDNESDAY — Squat + Push", type:"lift", retest:meso3Retest, blocks:[
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · slow, elbows on the wall · first in session",sets:2}]},
@@ -1514,14 +1520,14 @@ function getSession(w,day){
      {letter:"D",t:"Triceps",mins:7,bells:tp.sets,ex:[
        {key:"Rope Triceps Pressdown",n:"Rope Triceps Pressdown",rx:retestTag(tp.rx),sets:tp.sets}]},
      {letter:"E",t:"Pullover",mins:6,bells:po.sets,ex:[
-       {key:"Cable Pullover",n:"Cable Pullover",rx:po.rx,sets:po.sets}]},
-     {letter:"F",t:"Grip",mins:4,bells:ph.sets,ex:[
-       {key:"Plate Pinch Hold",n:"Plate Pinch Hold",rx:ph.rx,sets:ph.sets,rUnit:"sec"}]}]};
+       {key:"Cable Pullover",n:"Cable Pullover",rx:po.rx,sets:po.sets}]}]};
+     // Plate Pinch Hold left Wednesday 2026-10-26 — it's logged daily in the HEP (b1_platepinch).
+     // Its key, PR tile and history are unchanged.
   }
   if(day==="meso03Fri"){
     const rdl=meso3MainRx("barbell","~135 lb"),
-          ngr=meso3AccRx("/side","single-arm, right side first · stop at first sign of pain","~40–45 lb"),
-          su=meso3AccRx("/leg","DBs at sides, arms straight"),
+          ngr=meso3AccRx("/side","single-arm, right side first · stop at first sign of pain · sit tall ~90°, no rocking · quick squeeze, no long hold at the end · "+SA_EXTRA,"~40–45 lb"),
+          su=meso3AccRx("/leg","two DBs at sides, arms straight · working foot flat on box, trailing foot toe-taps only","~20 lb each hand"),
           cd=meso3AccRx("/side","ribs down, slow"),
           sc=meso3HoldRx("40 yd/side","right side first · log load per side","~45 lb/side");
     return {name:"FRIDAY — Pull + Hinge", type:"lift", retest:meso3Retest, blocks:[
@@ -1541,7 +1547,7 @@ function getSession(w,day){
   }
   if(day==="meso03Sat"){
     // Fixed 3-set prescriptions all block; the Deload week takes two sets of everything.
-    // Tempo per Meso03_Plan.xlsx: none on Band Face Pull, "slightly heavier" on Leg Press only,
+    // Tempo per Meso03_Plan.xlsx: none on Face Pull, "slightly heavier" on Leg Press only,
     // and no tempo text in the Deload week.
     const n=v=>meso3Phase==="Deload"?2:v,
           tempo={Baseline:"3 s lowering",Volume:"1 s pause at the bottom",Performance:"normal tempo",Deload:""}[meso3Phase],
@@ -1551,15 +1557,16 @@ function getSession(w,day){
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · slow, elbows on the wall · effort cap 7/10 all session",sets:2}]},
      {letter:"B",t:"Squat",mins:8,bells:n(3),ex:[
-       {key:"Leg Press",n:"Leg Press",rx:t(n(3)+" × 10"+startTag("~180–200 lb")+" · full depth",meso3Phase==="Performance"?", slightly heavier":""),sets:n(3)}]},
+       {key:"Leg Press",n:"Leg Press",rx:t(n(3)+" × 10"+startTag("~180–200 lb")+" · full depth · log plates only, same machine weekly · tailbone stays on pad",meso3Phase==="Performance"?", slightly heavier":""),sets:n(3)}]},
      {letter:"C",t:"Hinge",mins:8,bells:n(3),ex:[
-       {key:"SL RDL",n:"Single-Leg RDL",rx:t(n(3)+" × 8/leg · balance-forward"),sets:n(3)}]},
+       {key:"SL RDL",n:"Single-Leg RDL",rx:t(n(3)+" × 8/leg"+startTag("~35 lb")+" · balance-forward · DB in the hand opposite the working leg"),sets:n(3)}]},
      {letter:"D",t:"Lunge",mins:8,bells:n(3),ex:[
-       {key:"Backward Walking Lunges",n:"Backward Walking Lunges",rx:t(n(3)+" × 8/leg · full range"),sets:n(3)}]},
+       {key:"Backward Walking Lunges",n:"Backward Walking Lunges",rx:t(n(3)+" × 8/leg"+startTag("~15 lb each hand, arms straight")+" · full range"),sets:n(3)}]},
      {letter:"E",t:"Upper back",mins:6,bells:n(3),ex:[
-       {key:"Face Pull",n:"Band Face Pull",rx:n(3)+" × 12 · light band",sets:n(3)}]},
-     {letter:"F",t:"Sled",mins:8,bells:n(5),ex:[
-       {key:"Sled Push",n:"Sled Push",rx:n(5)+" × 20 yd · arms straight · log load × yards",sets:n(5),rUnit:"yd"}]},
+       {key:"Face Pull",n:"Face Pull (cable rope)",rx:n(3)+" × 12 · rope at eye level · neutral grip, thumbs back, loose hands · split stance · elbows lead to shoulder height, hands by ears · 1 s pause, no long hold",sets:n(3)}]},
+     // 50 s work / 60 s rest: the bell starts each 1:50 round. ivl bypasses q15's 15 s rounding.
+     {letter:"F",t:"Sled",mins:Math.round(n(5)*110/60),ivl:110,bells:n(5),ex:[
+       {key:"Sled Push",n:"Sled Push (or treadmill push)",rx:n(5)+" × 50 s work / 60 s rest · sled: arms straight · Treadmill option: motor on, 0.8 mph, hands low on the curved rails, slight elbow bend OK, short steps, safety clip on · ~50 s ≈ 20 yd · shoulders down, drive with legs · log load × yards",sets:n(5),rUnit:"yd"}]},
      {letter:"G",t:"Cardio Ramp",mins:10,bells:1,ex:[
        {n:"Cardio Ramp — Zone 2 bike or incline walk",rx:"8–10 min · cap 7/10 effort",sets:0}]}]};
   }
@@ -1619,7 +1626,7 @@ function getSession(w,day){
   if(inMeso01Window()) return {name:"SUN — Gentle Yoga · Active Recovery", type:"recovery", blocks:[]};
   return {name:"SUN — CS4 · Active Recovery", type:"recovery", blocks:[]};
 }
-const interval=b=>b.bells>0?q15(b.mins*60/b.bells):0;
+const interval=b=>b.bells>0?(b.ivl||q15(b.mins*60/b.bells)):0;
 
 /* ================= RKD ENGINE ================= */
 /* Strength curve per program sheet: Z0≈1 · Z1≈2 · Z2≈4 (peak) · Z3≈3 · Z4≈1.5 · Z5≈0.8 pts/min */
@@ -3010,7 +3017,7 @@ function render(){
   /* ---- Tue / Thu: optional Zone 2 ---- */
   if(s.type==="zone2"){
     h+=infoBox("ibZ2Rules","meta","Rules",`Optional 25–35 min in Zone 2 — Peloton class, jog, ski, row, assault runner. ≤5 min Z3, zero Z4/Z5. Conversational pace. Skip freely — it must make the next lift better, not worse.`);
-    if(day==="thu") h+=infoBox("ibZ2Thu","meta warn","Thursday rule",`If you did Tuesday, strongly consider full rest today — one optional session per week is plenty during heavy weeks (6–8).`);
+    if(day==="thu") h+=infoBox("ibZ2Thu","meta warn","Thursday rule",thuRuleText());
     h+=infoBox("ibZ2Score","meta px","Scoring",`Same strength curve as lift days (Z2 peaks ~4 pts/min) — RKD accrues live. Medal on Finish is graded on % of session time in Z2 (target 100%): GOLD ±5%, SILVER ±10%, BRONZE ±15%. The 25–35 min / Z3 cap / zero Z4-Z5 card below still tracks compliance the same way it always has.`);
     h+=zone2ActivityHtml();
     h+=blockHtml(s,0);
@@ -3736,7 +3743,7 @@ function importLogs(){
    with no entry here has no key in any getSession() template either (warm-up filler or an
    uncapped/unscored finisher even natively), so it falls back to the untracked placeholder,
    same as always. */
-const PASTE_WORKOUT_EXERCISES=["Scapular Wall Isometric","Band Pull-Aparts","Prone Y-Raises","Deadlift","Chest-Supported DB Row","Goblet Squat","Floor Push-Ups","Single-Arm DB Row","Suitcase Carry","Neutral-Grip Cable Row","Romanian Deadlift (DB)","DB Shoulder Press","Cable Pullover","Leg Press","Rope Triceps Pressdown","Glute Bridges","Broad Jump","Backward Walking Lunges","Rack Pull","Bulgarian Split Squat","Pallof Press","Chest Press","Scapular Wall Slide","Triceps Extension (pushdown or overhead)","Neutral-Grip Row (cable or DB)","Core (Dead Bug or similar)","Scapular Wall Slides x5","Pillowcase Wall Isometric x5","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)","Box Jump","DB Step-Up","Sled Push","Single-KB RDL","Conventional Deadlift","Single-Leg RDL","Band Row","Band Face Pull","Bird Dog / Dead Bug","Sled Drag","Cardio Ramp","Farmer Carry","Neutral-Grip DB Row","Safety Bar Squat","Hip Thrust","Plate Pinch Hold"];
+const PASTE_WORKOUT_EXERCISES=["Scapular Wall Isometric","Band Pull-Aparts","Prone Y-Raises","Deadlift","Chest-Supported DB Row","Goblet Squat","Floor Push-Ups","Single-Arm DB Row","Suitcase Carry","Neutral-Grip Cable Row","Romanian Deadlift (DB)","DB Shoulder Press","Cable Pullover","Leg Press","Rope Triceps Pressdown","Glute Bridges","Broad Jump","Backward Walking Lunges","Rack Pull","Bulgarian Split Squat","Pallof Press","Chest Press","Scapular Wall Slide","Triceps Extension (pushdown or overhead)","Neutral-Grip Row (cable or DB)","Core (Dead Bug or similar)","Scapular Wall Slides x5","Pillowcase Wall Isometric x5","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)","Box Jump","DB Step-Up","Sled Push","Single-KB RDL","Conventional Deadlift","Single-Leg RDL","Band Row","Band Face Pull","Bird Dog / Dead Bug","Sled Drag","Cardio Ramp","Farmer Carry","Neutral-Grip DB Row","Safety Bar Squat","Hip Thrust","Plate Pinch Hold","Face Pull (cable rope)","Sled Push (or treadmill push)"];
 /* Exercises with their own PR_KEYS entry but no Mon/Wed/Fri day template to inherit a key from —
    self-keyed (name === key) rather than needing a PASTE_WORKOUT_KEYS mapping. Grows over time.
    The block below is BFT class-history exercises pulled in wholesale: final names, side/left-
@@ -3763,7 +3770,7 @@ const EXTRA_EXERCISES=["SA Chest Press","SA RDL",
 /* Every EXTRA_EXERCISES entry gets a real, e1RM-tracked PR_KEYS slot (self-keyed to its name) —
    registered here rather than duplicated into the PR_KEYS literal above. */
 EXTRA_EXERCISES.forEach(n=>{ if(!(n in PR_KEYS)) PR_KEYS[n]="lb"; });
-const PASTE_WORKOUT_KEYS={"Scapular Wall Isometric":"Scapular Wall Isometric","Band Pull-Aparts":"Band Pull-Aparts","Prone Y-Raises":"Prone Y-Raises","Deadlift":"Deadlift","Chest-Supported DB Row":"Chest-Supported Row","Goblet Squat":"Goblet Squat","Floor Push-Ups":"Wall Push-Up Progression","Single-Arm DB Row":"Single-Arm DB Row","Suitcase Carry":"Suitcase Carry","Neutral-Grip Cable Row":"Neutral-Grip Cable Row","Romanian Deadlift (DB)":"Romanian Deadlift (DB)","DB Shoulder Press":"DB Shoulder Press","Cable Pullover":"Cable Pullover","Leg Press":"Leg Press","Rope Triceps Pressdown":"Rope Triceps Pressdown","Glute Bridges":"Glute Bridges","Broad Jump":"Broad Jump","Backward Walking Lunges":"Backward Walking Lunges","Rack Pull":"Rack Pull","Bulgarian Split Squat":"Bulgarian SS","Pallof Press":"Pallof","Chest Press":"Chest Press","Scapular Wall Slide":"Scapular Wall Slide","Triceps Extension (pushdown or overhead)":"Triceps Extension","Neutral-Grip Row (cable or DB)":"Neutral-Grip Row","Core (Dead Bug or similar)":"Bird Dog","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)":"DB Shoulder Press","Box Jump":"Jump","DB Step-Up":"Step-Up","Single-KB RDL":"SKB RDL","Conventional Deadlift":"Deadlift","Single-Leg RDL":"SL RDL","Band Row":"Band Row","Band Face Pull":"Face Pull","Bird Dog / Dead Bug":"Bird Dog","Neutral-Grip DB Row":"DB Row","Safety Bar Squat":"Safety Bar Squat","Hip Thrust":"Hip Thrust","Sled Push":"Sled Push","Plate Pinch Hold":"Plate Pinch Hold"};
+const PASTE_WORKOUT_KEYS={"Scapular Wall Isometric":"Scapular Wall Isometric","Band Pull-Aparts":"Band Pull-Aparts","Prone Y-Raises":"Prone Y-Raises","Deadlift":"Deadlift","Chest-Supported DB Row":"Chest-Supported Row","Goblet Squat":"Goblet Squat","Floor Push-Ups":"Wall Push-Up Progression","Single-Arm DB Row":"Single-Arm DB Row","Suitcase Carry":"Suitcase Carry","Neutral-Grip Cable Row":"Neutral-Grip Cable Row","Romanian Deadlift (DB)":"Romanian Deadlift (DB)","DB Shoulder Press":"DB Shoulder Press","Cable Pullover":"Cable Pullover","Leg Press":"Leg Press","Rope Triceps Pressdown":"Rope Triceps Pressdown","Glute Bridges":"Glute Bridges","Broad Jump":"Broad Jump","Backward Walking Lunges":"Backward Walking Lunges","Rack Pull":"Rack Pull","Bulgarian Split Squat":"Bulgarian SS","Pallof Press":"Pallof","Chest Press":"Chest Press","Scapular Wall Slide":"Scapular Wall Slide","Triceps Extension (pushdown or overhead)":"Triceps Extension","Neutral-Grip Row (cable or DB)":"Neutral-Grip Row","Core (Dead Bug or similar)":"Bird Dog","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)":"DB Shoulder Press","Box Jump":"Jump","DB Step-Up":"Step-Up","Single-KB RDL":"SKB RDL","Conventional Deadlift":"Deadlift","Single-Leg RDL":"SL RDL","Band Row":"Band Row","Band Face Pull":"Face Pull","Bird Dog / Dead Bug":"Bird Dog","Neutral-Grip DB Row":"DB Row","Safety Bar Squat":"Safety Bar Squat","Hip Thrust":"Hip Thrust","Sled Push":"Sled Push","Plate Pinch Hold":"Plate Pinch Hold","Face Pull (cable rope)":"Face Pull","Sled Push (or treadmill push)":"Sled Push"};
 function parsePastedSets(setsReps){
   const m=String(setsReps).trim().match(/^(\d+)/);
   return m?Math.max(1,parseInt(m[1],10)):3;

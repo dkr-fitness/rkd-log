@@ -45,9 +45,11 @@
 
 **Starting weights (Baseline, weeks 1–2 only):** each session table below has a Start column, and the app shows it in the rx as "Start ~X". From week 3 it's dropped and set mode's Last time line takes over. Calibrate on the first working set: RPE 8+ → drop 10%. RPE 5 → add 5–10 lb. That line is in the Baseline phase cue (the app's HR target box, Mon/Wed/Fri). Saturday's is fitted to its 7/10 cap instead: first working set above 7/10 → drop 10%.
 
-**Fixed all block:** activation slots (2 sets). Suitcase Carry and Plate Pinch Hold run 2 rounds, dropping to 1 in the Deload week.
+**Fixed all block:** activation slots (2 sets). Suitcase Carry runs 2 rounds, dropping to 1 in the Deload week.
 
-**Week 8 retest (Mon/Wed/Fri):** repeat Baseline loads for carries, pinch hold and single-arm lifts; log both sides. The app shows this as a banner on those days and tags each affected exercise with "retest". Results go in the plan's Right-Side Tracker tab.
+**Single-arm lifts** (Chest Press, Rope Triceps Pressdown, Neutral-Grip Row): optional extra set, right arm only. Log it with + Set; it doesn't change the prescribed sets or the plan score.
+
+**Week 8 retest (Mon/Wed/Fri):** repeat Baseline loads for carries and single-arm lifts; log both sides. The pinch hold retests in the HEP, where it's now logged. The app shows this as a banner on those days and tags each affected exercise with "retest". Results go in the plan's Right-Side Tracker tab.
 
 ---
 
@@ -72,10 +74,11 @@ Rx below is the Baseline prescription. Main lifts and accessories follow the pro
 |---|---|---|---|---|
 | Scapular Wall Slide | Activation | 2×10 | — | Slow, elbows on the wall · first in session |
 | Safety Bar Squat | Main | 4×6 @ RPE 6–7 | ~135–145 lb | Hands on the handles, never reach back for a straight bar · 1–2 ramp sets, not logged · then all working sets at one weight |
-| Chest Press | Accessory | 3×8–10/side | ~40–45 lb | Single-arm floor press, right side first · floor sets the 90° stop, pain-free only |
-| Rope Triceps Pressdown | Accessory | 3×8–10/side | ~12.5–15 lb | Single-arm, **pushdown only (no overhead)**, right side first |
+| Chest Press | Accessory | 3×8–10/side | ~40–45 lb | Single-arm floor press, right side first · floor sets the 90° stop, pain-free only · optional extra set, right arm only |
+| Rope Triceps Pressdown | Accessory | 3×8–10/side | ~12.5–15 lb | Single-arm, **pushdown only (no overhead)**, right side first · optional extra set, right arm only |
 | Cable Pullover | Accessory | 3×8–10 | ~12.5–15 lb | **Arms nearly straight — lats without elbow bend** |
-| Plate Pinch Hold | Grip | 2×20–30 s/side | 5 lb | Thumb flat on one face, fingers flat on the other, plate off the floor · right side first · log plate load × seconds · Deload 1×, retest |
+
+Plate Pinch Hold was dropped from Wednesday on 2026-10-26. It's logged daily in the HEP Gym block (`b1_platepinch`), so it no longer counts in Wednesday's plan total. The key, PR tile and history are unchanged.
 
 ### Friday — Pull + Hinge
 
@@ -83,23 +86,23 @@ Rx below is the Baseline prescription. Main lifts and accessories follow the pro
 |---|---|---|---|---|
 | Prone Y-Raises | Activation | 2×15 | — | Light, first in session |
 | Romanian Deadlift | Main | 4×6 @ RPE 6–7 | ~135 lb | **Barbell** (existing key; Meso 02 history is mostly barbell) · 1–2 ramp sets, not logged · then all working sets at one weight |
-| Neutral-Grip Row (cable or DB) | Accessory | 3×8–10/side | ~40–45 lb | Single-arm, right side first · **stop at first sign of pain** |
-| DB Step-Up | Accessory | 3×8–10/leg | — | DBs at sides, arms straight |
+| Neutral-Grip Row (cable or DB) | Accessory | 3×8–10/side | ~40–45 lb | Single-arm, right side first · **stop at first sign of pain** · sit tall ~90°, no rocking · quick squeeze, no long hold at the end · optional extra set, right arm only |
+| DB Step-Up | Accessory | 3×8–10/leg | ~20 lb each hand | Two DBs at sides, arms straight · working foot flat on box, trailing foot toe-taps only |
 | Core (Dead Bug or similar) | Accessory | 3×8–10/side | — | Ribs down, slow |
 | Suitcase Carry | Carry | 2×40 yd/side | ~45 lb/side | Right side first · log load per side · Deload 1×, retest |
 
 ### Saturday — Full Range (effort cap 7/10)
 
-Fixed sets all block; the Deload week takes 2 sets of everything (Sled Push 2×20 yd). It doesn't follow the progression table. Only the tempo cue changes by phase, and Band Face Pull has none.
+Fixed sets all block; the Deload week takes 2 sets of everything (Sled Push 2 rounds). It doesn't follow the progression table. Only the tempo cue changes by phase, and Face Pull has none.
 
 | Exercise | Sets × Reps | Start | Note |
 |---|---|---|---|
 | Scapular Wall Slide | 2×10 | — | Activation · slow, elbows on the wall · effort cap 7/10 all session |
-| Leg Press | 3×10 | ~180–200 lb | Full depth |
-| Single-Leg RDL | 3×8/leg | — | Balance-forward |
-| Backward Walking Lunges | 3×8/leg | — | Full range |
-| Band Face Pull | 3×12 | — | Light band · no tempo cue |
-| Sled Push | 5×20 yd | — | Arms straight · log load × yards |
+| Leg Press | 3×10 | ~180–200 lb | Full depth · log plates only, same machine weekly · tailbone stays on pad |
+| Single-Leg RDL | 3×8/leg | ~35 lb | Balance-forward · DB in the hand opposite the working leg |
+| Backward Walking Lunges | 3×8/leg | ~15 lb each hand, arms straight | Full range |
+| Face Pull (cable rope) | 3×12 | — | Rope at eye level · neutral grip, thumbs back, loose hands · split stance · elbows lead to shoulder height, hands by ears · 1 s pause, no long hold · no tempo cue |
+| Sled Push (or treadmill push) | 5 × 50 s work / 60 s rest | — | Sled: arms straight · Treadmill option: motor on, 0.8 mph, hands low on the curved rails, slight elbow bend OK, short steps, safety clip on · ~50 s ≈ 20 yd · shoulders down, drive with legs · log load × yards · bell every 1:50 |
 | Cardio Ramp | 8–10 min | — | Zone 2 bike or incline walk |
 
 | Phase | Tempo cue |
@@ -113,7 +116,7 @@ Fixed sets all block; the Deload week takes 2 sets of everything (Sled Push 2×2
 
 ## Conditioning
 
-**Tue/Thu Zone 2:** unchanged and shared with every block. Strength curve, medal on % of session time in Z2.
+**Tue/Thu Zone 2:** shared with every block. Strength curve, medal on % of session time in Z2. **Thursday in this block:** check WHOOP recovery first: green → Zone 2, 25–35 min · yellow/red → easy walk or mobility 20–30 min instead. The app shows that in Thursday's rule box inside the Meso 03 window only.
 
 **Saturday:** see above. This block's Saturday is its own template (`meso03Sat`). The shared Sat Conditioning Sub stays as-is for history and outside this window, and it's still unscored.
 
@@ -126,12 +129,12 @@ Fixed sets all block; the Deload week takes 2 sets of everything (Sled Push 2×2
 ## Exercises
 
 **New this block:**
-- Plate Pinch Hold: new key, PR = longest hold in seconds. Cleared: it causes no pain. Its Form Reference entry is drafted and not clinician-reviewed.
+- Plate Pinch Hold: new key, PR = longest hold in seconds. On Wednesday until 2026-10-26, now HEP-only. Cleared: it causes no pain. Its Form Reference entry is drafted and not clinician-reviewed.
 - Sled Push now has a key (`Sled Push`), so its sets are logged structurally. It isn't PR-tracked.
 
 **Newly PR-tracked:** Safety Bar Squat (e1RM). It had a key and a Form Reference entry from Meso 01 but no PR slot.
 
-**Reused keys (PR history carries over):** Rack Pull, Bulgarian SS, Hip Thrust, Pallof, Suitcase Carry, Band Pull-Aparts, Scapular Wall Slide, SA Chest Press (displayed as Chest Press), Rope Triceps Pressdown, Cable Pullover, Prone Y-Raises, Romanian Deadlift (DB), Neutral-Grip Row, Step-Up, Bird Dog, Leg Press, SL RDL, Backward Walking Lunges, Face Pull.
+**Reused keys (PR history carries over):** Rack Pull, Bulgarian SS, Hip Thrust, Pallof, Suitcase Carry, Band Pull-Aparts, Scapular Wall Slide, SA Chest Press (displayed as Chest Press), Rope Triceps Pressdown, Cable Pullover, Prone Y-Raises, Romanian Deadlift (DB), Neutral-Grip Row, Step-Up, Bird Dog, Leg Press, SL RDL, Backward Walking Lunges, Face Pull (displayed as Face Pull (cable rope)), Sled Push (displayed as Sled Push (or treadmill push)).
 
 **Not in this block:** Back Squat, Goblet Squat, Floor Push-Ups.
 

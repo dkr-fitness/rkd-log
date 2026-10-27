@@ -318,9 +318,9 @@ onDate(2026,10,19,function(){
   ok(/arms straight/.test(exOf("meso03Fri","Step-Up").rx),"Step-Up cue: arms straight");
   ok(/ribs down, slow/.test(exOf("meso03Fri","Bird Dog").rx),"core cue: ribs down, slow");
   ok(/3 s lowering/.test(exOf("meso03Sat","Leg Press").rx),"Sat Baseline tempo: 3 s lowering");
-  eq(exOf("meso03Sat","Face Pull").rx,"3 × 12 · light band","Band Face Pull: no tempo cue");
+  ok(!/3 s lowering|pause at the bottom|normal tempo/.test(exOf("meso03Sat","Face Pull").rx),"Face Pull: no tempo cue");
   eq(realSession(8,"meso03Mon").retest,null,"no retest banner outside week 8");
-  ok(!/retest/.test(exOf("meso03Wed","Plate Pinch Hold").rx),"...and no retest tag either");
+  ok(!/retest/.test(exOf("meso03Wed","SA Chest Press").rx),"...and no retest tag either");
 });
 onDate(2026,11,2,function(){
   ok(/^5 × 6–8 @ RPE 7–8/.test(exOf("meso03Wed","Safety Bar Squat").rx),"Volume main lift: 5 × 6–8 @ RPE 7–8");
@@ -337,19 +337,57 @@ onDate(2026,12,7,function(){
   ok(/^3 × 5 @ RPE 6/.test(exOf("meso03Mon","Rack Pull").rx),"Deload main lift: 3 × 5 @ RPE 6");
   ok(/^2 × 8/.test(exOf("meso03Mon","Hip Thrust").rx),"Deload accessory: 2 × 8");
   eq(exOf("meso03Mon","Suitcase Carry").sets,1,"Deload carry: 1 round");
-  eq(exOf("meso03Wed","Plate Pinch Hold").sets,1,"Deload pinch hold: 1 round");
-  eq(exOf("meso03Sat","Sled Push").sets,2,"Deload Sled Push: 2 × 20 yd");
-  eq(exOf("meso03Sat","Leg Press").rx,"2 × 10 · full depth","Deload Saturday: 2 sets, no tempo text");
+  eq(exOf("meso03Sat","Sled Push").sets,2,"Deload Sled Push: 2 rounds");
+  ok(/^2 × 50 s work \/ 60 s rest/.test(exOf("meso03Sat","Sled Push").rx),"...of 50 s work / 60 s rest");
+  eq(exOf("meso03Sat","Leg Press").rx,"2 × 10 · full depth · log plates only, same machine weekly · tailbone stays on pad","Deload Saturday: 2 sets, no tempo text");
   ["meso03Mon","meso03Wed","meso03Fri"].forEach(function(d){
-    ok(/Retest: repeat Baseline loads for carries, pinch hold and single-arm lifts; log both sides\./.test(realSession(8,d).retest||""),"week 8 retest banner on "+d);
+    ok(/Retest: repeat Baseline loads for carries and single-arm lifts; log both sides\. Pinch hold retests in the HEP\./.test(realSession(8,d).retest||""),"week 8 retest banner on "+d);
   });
   eq(realSession(8,"meso03Sat").retest,undefined,"...not on Saturday");
   ["Suitcase Carry"].forEach(function(k){ ok(/retest/.test(exOf("meso03Fri",k).rx),"retest tag on Fri "+k); });
-  ok(/retest/.test(exOf("meso03Wed","Plate Pinch Hold").rx),"retest tag on the pinch hold");
   ["SA Chest Press","Rope Triceps Pressdown"].forEach(function(k){ ok(/retest/.test(exOf("meso03Wed",k).rx),"retest tag on single-arm "+k); });
   ok(/retest/.test(exOf("meso03Fri","Neutral-Grip Row").rx),"retest tag on single-arm Neutral-Grip Row");
   ok(!/retest/.test(exOf("meso03Fri","Romanian Deadlift (DB)").rx),"...not on the main lift");
 });
+
+section("Meso 3 cues — 2026-10-26 revision");
+/* Every key unchanged, so history and PRs carry over; only names, rx and cues moved. */
+Object.keys(PHASE_DATES).forEach(function(ph){
+  var d=PHASE_DATES[ph];
+  onDate(d[0],d[1],d[2],function(){
+    eq(exList("meso03Sat").map(function(e){return e.key;}).join(),"Scapular Wall Slide,Leg Press,SL RDL,Backward Walking Lunges,Face Pull,Sled Push,","Sat "+ph+": keys unchanged");
+    ok(!exList("meso03Wed").some(function(e){return e.key==="Plate Pinch Hold";}),"Wed "+ph+": no Plate Pinch Hold (it's in the HEP)");
+    var sb=realSession(8,"meso03Sat").blocks.filter(function(b){return b.t==="Sled";})[0];
+    eq(sb.ivl,110,"Sat "+ph+": sled bell every 1:50 (50 s work / 60 s rest)");
+    eq(sb.bells,ph==="Deload"?2:5,"...× "+(ph==="Deload"?2:5));
+    ["SA Chest Press","Rope Triceps Pressdown"].forEach(function(k){
+      ok(/optional extra set, right arm only/.test(exOf("meso03Wed",k).rx),ph+" "+k+": optional right-arm extra set");
+    });
+    ok(/optional extra set, right arm only/.test(exOf("meso03Fri","Neutral-Grip Row").rx),ph+" Neutral-Grip Row: optional right-arm extra set");
+    eq(exOf("meso03Wed","SA Chest Press").sets,ph==="Deload"?2:3,"...prescribed sets unchanged");
+  });
+});
+onDate(2026,10,19,function(){
+  eq(exOf("meso03Sat","Sled Push").n,"Sled Push (or treadmill push)","sled display name");
+  ok(/0\.8 mph/.test(exOf("meso03Sat","Sled Push").rx)&&/safety clip on/.test(exOf("meso03Sat","Sled Push").rx)&&/~50 s ≈ 20 yd/.test(exOf("meso03Sat","Sled Push").rx),"treadmill option cue");
+  eq(exOf("meso03Sat","Sled Push").rUnit,"yd","...still logs yards");
+  eq(exOf("meso03Sat","Face Pull").n,"Face Pull (cable rope)","face pull display name");
+  ok(/rope at eye level/.test(exOf("meso03Sat","Face Pull").rx)&&/1 s pause, no long hold/.test(exOf("meso03Sat","Face Pull").rx),"face pull cue");
+  ok(/log plates only, same machine weekly · tailbone stays on pad/.test(exOf("meso03Sat","Leg Press").rx),"leg press cue");
+  ok(/DB in the hand opposite the working leg/.test(exOf("meso03Sat","SL RDL").rx),"SL RDL cue");
+  ok(/two DBs at sides/.test(exOf("meso03Fri","Step-Up").rx)&&/trailing foot toe-taps only/.test(exOf("meso03Fri","Step-Up").rx),"step-up cue");
+  ok(/sit tall ~90°, no rocking · quick squeeze, no long hold at the end/.test(exOf("meso03Fri","Neutral-Grip Row").rx),"row cue");
+  eq(PASTE_WORKOUT_KEYS["Face Pull (cable rope)"]+","+PASTE_WORKOUT_KEYS["Sled Push (or treadmill push)"],"Face Pull,Sled Push","paste import knows the new display names");
+});
+/* Wednesday's plan total: 2 activation + 4 squat + 3 × 3 accessories, no pinch. */
+onDate(2026,10,19,function(){
+  var rows=exList("meso03Wed").filter(function(e){return e.sets>0;}).map(function(e){var r=[];for(var i=0;i<e.sets;i++)r.push({w:"",r:""});return {key:e.key,sets:r};});
+  eq(planScore(rows,function(){return null;}).total,15,"Wed plan total = 15 sets, pinch hold no longer counted");
+});
+onDate(2026,10,22,function(){ ok(thuRuleText().indexOf(MESO03_THU_RECOVERY)===0,"Meso 3 Thursday: WHOOP recovery check leads the rule"); });
+onDate(2026,10,8,function(){ ok(thuRuleText().indexOf("WHOOP")<0,"Meso 2 Thursday: no recovery check"); });
+onDate(2026,12,17,function(){ ok(thuRuleText().indexOf("WHOOP")<0,"after Meso 3: no recovery check"); });
+eq(MESO03_THU_RECOVERY,"Check WHOOP recovery first: green → Zone 2, 25–35 min · yellow/red → easy walk or mobility 20–30 min instead.","recovery check wording");
 
 section("Meso 3 loading guidance — on screen mid-session");
 var MAINS=[["meso03Mon","Rack Pull"],["meso03Wed","Safety Bar Squat"],["meso03Fri","Romanian Deadlift (DB)"]];
@@ -358,7 +396,8 @@ var STARTS=[["meso03Mon","Rack Pull","Start ~185 lb"],["meso03Wed","Safety Bar S
   ["meso03Fri","Neutral-Grip Row","Start ~40–45 lb"],["meso03Wed","Rope Triceps Pressdown","Start ~12.5–15 lb"],
   ["meso03Wed","Cable Pullover","Start ~12.5–15 lb"],["meso03Mon","Bulgarian SS","Start ~25 lb each hand"],
   ["meso03Mon","Suitcase Carry","Start ~45 lb/side"],["meso03Fri","Suitcase Carry","Start ~45 lb/side"],
-  ["meso03Wed","Plate Pinch Hold","Start 5 lb"],["meso03Sat","Leg Press","Start ~180–200 lb"],
+  ["meso03Sat","Leg Press","Start ~180–200 lb"],["meso03Fri","Step-Up","Start ~20 lb each hand"],
+  ["meso03Sat","SL RDL","Start ~35 lb"],["meso03Sat","Backward Walking Lunges","Start ~15 lb each hand, arms straight"],
   ["meso03Mon","Hip Thrust","Start light — find it"]];
 Object.keys(PHASE_DATES).forEach(function(ph){
   var d=PHASE_DATES[ph];
@@ -390,7 +429,7 @@ onDate(2026,10,19,function(){
   });
 });
 onDate(2026,10,19,function(){
-  ok(!/Start/.test(exOf("meso03Mon","Pallof").rx+exOf("meso03Fri","Step-Up").rx+exOf("meso03Mon","Band Pull-Aparts").rx),"no Start hint where none was given");
+  ok(!/Start/.test(exOf("meso03Mon","Pallof").rx+exOf("meso03Sat","Face Pull").rx+exOf("meso03Mon","Band Pull-Aparts").rx),"no Start hint where none was given");
 });
 [[2026,10,19,"wk 1"],[2026,10,26,"wk 2"]].forEach(function(d){ onDate(d[0],d[1],d[2],function(){
   ok(hrText("meso03Sat",8).indexOf("First working set above 7/10 → drop 10%.")>=0,"Baseline "+d[3]+": Saturday's calibration line, fitted to the cap");
