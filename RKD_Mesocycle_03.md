@@ -41,6 +41,8 @@
 
 **Main lifts:** 1–2 ramp sets, not logged, then all working sets at one weight. Ramp sets are never set rows in the app, so they don't count toward the plan score.
 
+**Weight hints (app, every Meso 03 exercise):** set 1's grey hint is last time's top working weight. Once set 1 has a weight, sets 2+ hint that same weight instead of last time's pyramid. They're hints only: a typed value is never overwritten, and tapping Same as last (or ±5) in set mode turns the hint into a value. Set 1's reps hint comes from that same top set, so Same as last fills a pair you actually lifted. Sets 2+ keep last time's reps, set for set.
+
 **Loading progression** (shown in the app's Scoring box on every Meso 03 lift day): Main lifts: all sets at RPE 7 or easier → add 5 lb next week (Rack Pull 10 lb). Accessories: stay at one weight until every set hits the top of the rep range, then go up. Single-arm: right side sets the load; left matches.
 
 **Starting weights (Baseline, weeks 1–2 only):** each session table below has a Start column, and the app shows it in the rx as "Start ~X". From week 3 it's dropped and set mode's Last time line takes over. Calibrate on the first working set: RPE 8+ → drop 10%. RPE 5 → add 5–10 lb. That line is in the Baseline phase cue (the app's HR target box, Mon/Wed/Fri). Saturday's is fitted to its 7/10 cap instead: first working set above 7/10 → drop 10%.

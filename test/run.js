@@ -1282,6 +1282,59 @@ ok(/Remove set 4\?/.test(armed),"...naming which set goes");
 ok(!/addSet\(0,0\)/.test(armed),"...and + Set steps aside so the confirming tap can't mis-hit");
 setArmDel=null;
 
+section("Meso 3 set pre-fill — grey weight hints follow set 1");
+/* Last time: a pyramid, with a heavier set that wasn't done (no reps) — top working weight is 145. */
+var PYR=[{w:"135",r:"8"},{w:"145",r:"6"},{w:"155",r:""}];
+eq(weightHint("meso03Mon",PYR,0,""),"145","set 1 hints last time's top working weight, not set 1's");
+eq(weightHint("meso03Mon",PYR,1,""),"","...and sets 2+ hint no weight before set 1 has one");
+eq(weightHint("meso03Mon",PYR,2,"150"),"150","once set 1 has a weight, later sets hint it, not last time's pyramid");
+eq(weightHint("meso03Mon",PYR,5," 150 "),"150","...extra sets too");
+eq(weightHint("meso03Mon",null,0,""),"","no Last time: no hint");
+eq(weightHint("meso03Sat",[{w:"",r:"10"}],0,""),"","bodyweight last time: no weight hint");
+eq(weightHint("meso02Wed",PYR,1,"150"),"145","other days keep last time's set-for-set numbers");
+eq(weightHint("meso02Wed",PYR,2,""),"155","...even an undone set's");
+/* Set 1's reps come from the same top set, so Same as last fills a real pair. */
+var PYR2=[{w:"175",r:"6"},{w:"185",r:"6"},{w:"195",r:"5"},{w:"205",r:""}];
+eq(weightHint("meso03Mon",PYR2,0,"")+" × "+repsHint("meso03Mon",PYR2,0),"195 × 5","set 1 hints the top set as a pair: 195 × 5, not 195 × 6");
+eq(repsHint("meso03Mon",PYR2,1),"6","sets 2+ keep last time's reps for that set");
+eq(repsHint("meso03Sat",[{w:"",r:"10"},{w:"",r:"12"}],0),"12","bodyweight: set 1 hints the best set's reps");
+eq(repsHint("meso03Mon",[{w:"20",r:""}],0),"","no done set last time: no reps hint");
+eq(repsHint("meso02Wed",PYR2,0),"6","other days: set 1's reps are last time's set 1");
+
+resetState(); DAY="meso03Mon";
+var realLastFor=lastFor; lastFor=function(){ return PYR; };
+var PB={blocks:[{letter:"B",t:"Hinge",mins:12,bells:3,ex:[{key:"Rack Pull",n:"Rack Pull",rx:"",sets:3}]}]};
+var ph=blockHtml(PB,0), wph=ph.match(/placeholder="[^"]*" id="w_0_0_\d"/g).map(function(x){return x.split('"')[1];});
+var rph=ph.match(/placeholder="[^"]*" id="r_0_0_\d"/g).map(function(x){return x.split('"')[1];});
+eq(wph.join(),"145,wt,wt","rendered rows: set 1 hints 145, sets 2–3 wait for set 1");
+eq(rph.join(),"6,6,reps","...set 1's reps hint comes from that same top set (145 × 6); sets 2+ keep last time's reps");
+DAY="meso02Wed"; ph=blockHtml(PB,0);
+eq(ph.match(/placeholder="[^"]*" id="w_0_0_\d"/g).map(function(x){return x.split('"')[1];}).join(),"135,145,155","non-Meso 3 day: the pyramid, unchanged");
+lastFor=realLastFor;
+
+/* Live: typing set 1 re-points the hints; a typed value is never touched. */
+resetState(); DAY="meso03Mon"; extraSets[setKey(0,0)]=1;
+DOM.w_0_0_0={id:"w_0_0_0",value:"150",placeholder:"145"};
+DOM.w_0_0_1={id:"w_0_0_1",value:"",placeholder:"wt"};
+DOM.w_0_0_2={id:"w_0_0_2",value:"140",placeholder:"wt"};
+DOM.w_0_0_3={id:"w_0_0_3",value:"",placeholder:"wt"};
+refreshWeightHints(PB.blocks);
+eq([1,2,3].map(function(i){return DOM["w_0_0_"+i].placeholder;}).join(),"150,150,150","set 1 = 150 → sets 2, 3 and the extra hint 150");
+eq(DOM.w_0_0_2.value,"140","...a typed set keeps its own value");
+eq(DOM.w_0_0_0.placeholder+"|"+DOM.w_0_0_0.value,"145|150","...and set 1 itself is left alone");
+DOM.w_0_0_0.value="";
+refreshWeightHints(PB.blocks);
+eq(DOM.w_0_0_1.placeholder,"wt","clearing set 1 takes the hint away again");
+DAY="meso02Wed"; DOM.w_0_0_0.value="150"; refreshWeightHints(PB.blocks);
+eq(DOM.w_0_0_1.placeholder,"wt","other days: no live re-pointing");
+resetState();
+/* The wiring lives outside loaded regions; guard it at the source. */
+ok(SRC.indexOf("function onSetInput(){ draftHold=false; captureSessionDraft(); scheduleDraftSave(); updatePlanChip(); refreshWeightHints(); }")>=0,"every set edit re-points the hints");
+ok(SRC.indexOf("restoreSessionDraft(); updatePlanChip(); refreshWeightHints();")>=0,"...and so does a render, after the draft is restored");
+ok(SRC.indexOf('placeholder="${escAttr(hr)}"')>=0&&SRC.indexOf("hr=repsHint(curDay(),last,st.i)")>=0,"set mode's reps hint uses the same top set on set 1");
+ok(SRC.indexOf('placeholder="${escAttr(hw)}"')>=0&&SRC.indexOf("hw=weightHint(curDay(),last,st.i,s1?s1.value:\"\")")>=0,"set mode's weight hint follows set 1 too (so Same as last and ±5 use it)");
+ok(SRC.indexOf("lastLineText(lw,lr,")>=0,"...while its Last time line still shows last time's real numbers");
+
 section("HEP — rebuilt for cubital tunnel, keys unchanged");
 resetState();
 /* Every key the July plan logged under, so old hepDetail_* history still has a home. */

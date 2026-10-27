@@ -1701,6 +1701,34 @@ function topSet(sets){
     if(r>0&&(!t||w>t.w||(w===t.w&&r>t.r))) t={w,r}; });
   return t;
 }
+/* The grey weight hint (placeholder only — never a value, so nothing typed is ever overwritten)
+   for set i. Meso 03 lifts all working sets at one weight, so last time's pyramid is the wrong
+   hint there: set 1 hints last time's top working weight (topSet, the progression rule), and once
+   set 1 has a weight every later set hints that. Before then, later sets hint no weight. Other days
+   keep last time's set-for-set numbers. */
+function weightHint(day,last,i,set1W){
+  if(!PLAN_DAYS.includes(day)) return last&&last[i]?last[i].w:"";
+  if(i===0){ const t=topSet(last); return t&&t.w?String(t.w):""; }
+  return String(set1W||"").trim();
+}
+/* Set 1's reps hint comes from that same top set, so Same as last fills a pair that was actually
+   lifted together. Sets 2+ (and other days) keep last time's reps set for set. */
+function repsHint(day,last,i){
+  const t=i===0&&PLAN_DAYS.includes(day)?topSet(last):null;
+  return t?String(t.r):last&&last[i]?last[i].r:"";
+}
+/* Re-points sets 2+'s weight hints at set 1 as it's typed. Plan days only; the rows themselves are
+   drawn by blockHtml(), which can't know set 1's value until the draft is restored into them. */
+function refreshWeightHints(blocks){
+  const day=curDay(); if(!PLAN_DAYS.includes(day)) return;
+  (blocks||focusSession().blocks).forEach((b,bi)=>b.ex.forEach((ex,ei)=>{
+    const s1=document.getElementById("w_"+bi+"_"+ei+"_0"); if(!(ex.sets>0)||!s1) return;
+    for(let i=1;i<ex.sets+extraFor(bi,ei);i++){
+      const el=document.getElementById("w_"+bi+"_"+ei+"_"+i);
+      if(el) el.placeholder=weightHint(day,null,i,s1.value)||"wt";
+    }
+  }));
+}
 /* entries are Finish-shaped ({key,sets,programmed?,symptoms?}); lastOf(key) is "Last time".
    A set is done when its reps/seconds/yards box is > 0, capped at the prescription so an extra
    set can't cover a skipped exercise. Any symptom not marked "went away" credits the exercise's
@@ -2698,6 +2726,8 @@ function renderFocus(){
     return;
   }
   const last=lastFor(ex.key), lw=last&&last[st.i]?last[st.i].w:"", lr=last&&last[st.i]?last[st.i].r:"";
+  /* lw/lr stay last time's real numbers for the Last time line; the inputs' hints follow set 1. */
+  const s1=focusInput("w",{bi:st.bi,ei:st.ei,i:0}), hw=weightHint(curDay(),last,st.i,s1?s1.value:""), hr=repsHint(curDay(),last,st.i);
   const nx=steps[focusIdx+1], nxEx=nx?s.blocks[nx.bi].ex[nx.ei]:null;
   const isRun=run&&run.bi===st.bi;
   const nowSym=painFor(st.bi,st.ei), lastSym=nowSym.length?[]:lastSymptomsFor(ex.key);
@@ -2713,10 +2743,10 @@ function renderFocus(){
     ${nowSym.map(e=>`<div class="p-line">⚠ Today: ${escAttr(painText(e))}</div>`).join("")}
     ${lastSym.map(e=>`<div class="p-line">⚠ Last session: ${escAttr(painText(e))}</div>`).join("")}
     <div class="f-row"><label>Weight</label><button class="f-step" onclick="focusStep('w',-5)">−5</button>
-      <input id="fW" inputmode="decimal" value="${escAttr(w?w.value:"")}" placeholder="${escAttr(lw)}"><button class="f-step" onclick="focusStep('w',5)">+5</button></div>
+      <input id="fW" inputmode="decimal" value="${escAttr(w?w.value:"")}" placeholder="${escAttr(hw)}"><button class="f-step" onclick="focusStep('w',5)">+5</button></div>
     <div class="f-row"><label>${ex.rUnit==="sec"?"Seconds":ex.rUnit==="yd"?"Yards":"Reps"}</label><button class="f-step" onclick="focusStep('r',-1)">−1</button>
-      <input id="fR" inputmode="numeric" value="${escAttr(r?r.value:"")}" placeholder="${escAttr(lr)}"><button class="f-step" onclick="focusStep('r',1)">+1</button></div>
-    <div class="f-act">${lw||lr?`<button class="f-same" onclick="focusDone(true)">Same as last ✓</button>`:""}<button class="f-done" onclick="focusDone(false)">Done ✓</button></div>
+      <input id="fR" inputmode="numeric" value="${escAttr(r?r.value:"")}" placeholder="${escAttr(hr)}"><button class="f-step" onclick="focusStep('r',1)">+1</button></div>
+    <div class="f-act">${hw||hr?`<button class="f-same" onclick="focusDone(true)">Same as last ✓</button>`:""}<button class="f-done" onclick="focusDone(false)">Done ✓</button></div>
     ${noteOpen
       ?`<textarea class="n-text" id="fNote" rows="3" placeholder="Note for this exercise — any set" oninput="focusNoteInput(this.value)">${escAttr(note)}</textarea>
         <button class="n-open" onclick="focusNoteToggle()">Close note</button>`
@@ -2892,7 +2922,7 @@ function flushDraft(){ if(draftTimer){clearTimeout(draftTimer);draftTimer=null;}
 /* Every set/rpe/note/strain/activity edit. captureSessionDraft() runs synchronously so the
    in-memory buffer is always current — that alone fixes typed sets being dropped on a day
    switch — while the localStorage write is throttled. */
-function onSetInput(){ draftHold=false; captureSessionDraft(); scheduleDraftSave(); updatePlanChip(); }
+function onSetInput(){ draftHold=false; captureSessionDraft(); scheduleDraftSave(); updatePlanChip(); refreshWeightHints(); }
 /* pagehide + visibilitychange are the reliable backgrounding hooks on iOS/Bluefy; beforeunload
    is not. This is the actual defense against the phone killing the tab mid-session. */
 window.addEventListener("pagehide",flushDraft);
@@ -3116,7 +3146,7 @@ function render(){
     if(day==="strengthFree") h+=`<div class="row2" style="margin:-6px 0 14px"><button class="btn2" onclick="addFreeformEx()">+ Add exercise</button></div>`;
   });
   h+=rpeNoteSaveHtml();
-  m.innerHTML=h; curRPE=0; restoreSessionDraft(); updatePlanChip();
+  m.innerHTML=h; curRPE=0; restoreSessionDraft(); updatePlanChip(); refreshWeightHints();
 }
 /* Meso 03's live plan count, recounted from the form on every edit. livePlan keeps the last
    count for the RKD tab, which has no session form to read. */
@@ -3149,7 +3179,7 @@ function blockHtml(s,bi){
       const extra=extraFor(bi,ei), total=ex.sets+extra;
       h+=`<div class="sets">`;
       for(let i=0;i<total;i++){
-        const pw=last&&last[i]?last[i].w:"", pr=last&&last[i]?last[i].r:"";
+        const pw=weightHint(curDay(),last,i,""), pr=repsHint(curDay(),last,i);
         h+=`<div class="set${i>=ex.sets?" extra":""}" data-set="${i+1}"><span class="n">${i+1}</span>
           <input inputmode="decimal" placeholder="${pw||'wt'}" id="w_${bi}_${ei}_${i}" oninput="onSetInput()">
           <span class="x">×</span>
