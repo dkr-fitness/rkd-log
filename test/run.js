@@ -355,7 +355,7 @@ section("Meso 3 cues — 2026-10-26 revision");
 Object.keys(PHASE_DATES).forEach(function(ph){
   var d=PHASE_DATES[ph];
   onDate(d[0],d[1],d[2],function(){
-    eq(exList("meso03Sat").map(function(e){return e.key;}).join(),"Scapular Wall Slide,Leg Press,SL RDL,Backward Walking Lunges,Face Pull,Sled Push,","Sat "+ph+": keys unchanged");
+    eq(exList("meso03Sat").map(function(e){return e.key||"";}).sort().join(),",Backward Walking Lunges,Face Pull,Leg Press,SL RDL,Scapular Wall Slide,Sled Push","Sat "+ph+": keys unchanged");
     ok(!exList("meso03Wed").some(function(e){return e.key==="Plate Pinch Hold";}),"Wed "+ph+": no Plate Pinch Hold (it's in the HEP)");
     var sb=realSession(8,"meso03Sat").blocks.filter(function(b){return b.t==="Sled";})[0];
     eq(sb.ivl,110,"Sat "+ph+": sled bell every 1:50 (50 s work / 60 s rest)");
@@ -388,6 +388,72 @@ onDate(2026,10,22,function(){ ok(thuRuleText().indexOf(MESO03_THU_RECOVERY)===0,
 onDate(2026,10,8,function(){ ok(thuRuleText().indexOf("WHOOP")<0,"Meso 2 Thursday: no recovery check"); });
 onDate(2026,12,17,function(){ ok(thuRuleText().indexOf("WHOOP")<0,"after Meso 3: no recovery check"); });
 eq(MESO03_THU_RECOVERY,"Check WHOOP recovery first: green → Zone 2, 25–35 min · yellow/red → easy walk or mobility 20–30 min instead.","recovery check wording");
+
+section("Meso 3 shorter sessions — rounds, supersets, time estimate");
+/* The real interval() under another name: the global one is stubbed to 90 for blockHtml. */
+loadRegions(region("const interval=","/* ================= RKD ENGINE").replace(/\binterval\b/g,"realInterval"));
+function blockWith(day,key){ return realSession(8,day).blocks.filter(function(b){ return b.ex.some(function(e){return e.key===key;}); })[0]; }
+var SUPERSETS=[["meso03Mon","Hip Thrust","Pallof"],["meso03Wed","SA Chest Press","Cable Pullover"],
+               ["meso03Fri","Neutral-Grip Row","Bird Dog"],["meso03Sat","SL RDL","Face Pull"]];
+var STANDALONE=[["meso03Mon","Rack Pull"],["meso03Mon","Bulgarian SS"],["meso03Mon","Suitcase Carry"],
+  ["meso03Wed","Safety Bar Squat"],["meso03Wed","Rope Triceps Pressdown"],["meso03Fri","Romanian Deadlift (DB)"],
+  ["meso03Fri","Step-Up"],["meso03Fri","Suitcase Carry"],["meso03Sat","Leg Press"],["meso03Sat","Backward Walking Lunges"],["meso03Sat","Sled Push"]];
+var RL_STANDALONE=[["meso03Mon","Bulgarian SS"],["meso03Mon","Suitcase Carry"],["meso03Wed","Rope Triceps Pressdown"],
+  ["meso03Fri","Step-Up"],["meso03Fri","Suitcase Carry"]];
+var RL_IN_SUPERSET=[["meso03Mon","Pallof"],["meso03Wed","SA Chest Press"],["meso03Fri","Neutral-Grip Row"],["meso03Sat","SL RDL"]];
+/* Plan totals per phase — the restructure moves blocks, never sets. Wed lost the pinch in d232f93. */
+var TOTALS={Baseline:{meso03Mon:17,meso03Wed:15,meso03Fri:17,meso03Sat:19},Volume:{meso03Mon:18,meso03Wed:16,meso03Fri:18,meso03Sat:19},
+            Performance:{meso03Mon:17,meso03Wed:15,meso03Fri:17,meso03Sat:19},Deload:{meso03Mon:12,meso03Wed:11,meso03Fri:12,meso03Sat:12}};
+var EST={Baseline:{meso03Mon:58,meso03Wed:52,meso03Fri:59,meso03Sat:57},Volume:{meso03Mon:58,meso03Wed:52,meso03Fri:59,meso03Sat:57},
+         Performance:{meso03Mon:58,meso03Wed:52,meso03Fri:59,meso03Sat:57},Deload:{meso03Mon:49,meso03Wed:46,meso03Fri:50,meso03Sat:44}};
+Object.keys(PHASE_DATES).forEach(function(ph){
+  var d=PHASE_DATES[ph];
+  onDate(d[0],d[1],d[2],function(){
+    SUPERSETS.forEach(function(x){
+      var b=blockWith(x[0],x[1]);
+      eq(b.ex.map(function(e){return e.key;}).join(),x[1]+","+x[2],ph+" "+x[0]+": "+x[1]+" + "+x[2]+" superset, in that order");
+      eq(b.bells,b.ex[0].sets,"...one bell per round");
+      ok(/superset: .+ → .+ → rest/.test(b.ex[0].rx)&&/superset: .+ → .+ → rest/.test(b.ex[1].rx),"...both carry the A1 → A2 → rest cue");
+    });
+    STANDALONE.forEach(function(x){ eq(blockWith(x[0],x[1]).ex.length,1,ph+" "+x[1]+" stays standalone"); });
+    RL_STANDALONE.forEach(function(x){ ok(/right → left → rest/.test(exOf(x[0],x[1]).rx),ph+" "+x[1]+": right → left → rest"); });
+    RL_IN_SUPERSET.forEach(function(x){ ok(/right → left/.test(exOf(x[0],x[1]).rx),ph+" "+x[1]+": right → left inside the superset"); });
+    ok(!/right side first/.test(M3DAYS.map(function(day){return exList(day).map(function(e){return e.rx;}).join();}).join()),ph+": right → left replaces \"right side first\"");
+    M3DAYS.forEach(function(day){
+      var s=realSession(8,day);
+      s.blocks.forEach(function(b){
+        if(b.t==="Activation"||b.ramp||!b.ex.some(function(e){return e.sets>0;})) return;
+        /* Each accessory round: some work, then ~60–90 s rest — never under 60 s more than the work. */
+        ok(b.ivl>=110&&b.ivl<=240,ph+" "+day+" "+b.t+": bell interval "+b.ivl+" s set to the round");
+        eq(b.mins,Math.round(b.bells*b.ivl/60),"...and the block's minutes follow from it");
+      });
+      var rows=exList(day).filter(function(e){return e.sets>0;}).map(function(e){var r=[];for(var i=0;i<e.sets;i++)r.push({w:"",r:""});return {key:e.key,sets:r};});
+      eq(planScore(rows,function(){return null;}).total,TOTALS[ph][day],ph+" "+day+": plan total unchanged");
+      eq(estSessionMins(s),EST[ph][day],ph+" "+day+": estimated ~"+EST[ph][day]+" min");
+      ok(!estText(s).over,"...under the 65 min flag");
+    });
+    var sat=realSession(8,"meso03Sat"), cool=sat.blocks[sat.blocks.length-1];
+    eq(cool.t+" · "+cool.mins+" min","Cooldown (optional) · 5 min",ph+" Sat ends on an optional 5-min cooldown");
+    ok(!/Cardio Ramp/.test(sat.blocks.map(function(b){return b.t;}).join()),"...not the 8–10 min Cardio Ramp");
+  });
+});
+onDate(2026,10,19,function(){
+  var steps=focusStepsFor(realSession(8,"meso03Mon").blocks,function(){return 0;}), s=realSession(8,"meso03Mon");
+  var names=steps.map(function(st){return s.blocks[st.bi].ex[st.ei].key+" "+(st.i+1);}).slice(9,15).join(", ");
+  eq(names,"Hip Thrust 1, Pallof 1, Hip Thrust 2, Pallof 2, Hip Thrust 3, Pallof 3","set mode walks the superset A1, A2, A1, …");
+  eq(realInterval(blockWith("meso03Mon","Rack Pull")),180,"main lift keeps its own bells (Baseline 4 × 3:00)");
+  eq(blockWith("meso03Mon","Rack Pull").ramp,180,"...plus 3 min of ramp sets in the estimate");
+});
+/* The flag: strictly over 65 min, with 15 min of HEP + activation counted in. */
+eq(estSessionMins({blocks:[{t:"Activation",bells:2,ivl:600}]}),15,"activation sits inside the 15 min warm-up budget");
+eq(estText({blocks:[{t:"X",bells:1,ivl:2940}]}).over,false,"65 min exactly: no flag");
+ok(estText({blocks:[{t:"X",bells:1,ivl:3000}]}).over&&/over the 65 min target/.test(estText({blocks:[{t:"X",bells:1,ivl:3000}]}).text),"66 min: flagged amber");
+eq(estText(realSession(8,"meso03Wed")).text.indexOf("including 15 min of HEP + activation")>0,true,"estimate says what it includes");
+ok(SRC.indexOf('<b>Estimated time:</b> ${est.text}')>=0,"...and is shown on lift days");
+
+/* Form Reference isn't in a loaded region; guard the Face Pull wording at the source. */
+ok(SRC.indexOf("Cable with a rope attachment, pulley set at eye level.")>=0&&SRC.indexOf("thumbs pointing back")>=0,"Face Pull Form Reference: cable rope at eye level, neutral grip, thumbs back");
+ok(SRC.indexOf("Band anchored at roughly face height")<0,"...not the old band setup");
 
 section("Meso 3 loading guidance — on screen mid-session");
 var MAINS=[["meso03Mon","Rack Pull"],["meso03Wed","Safety Bar Squat"],["meso03Fri","Romanian Deadlift (DB)"]];

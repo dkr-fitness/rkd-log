@@ -440,7 +440,7 @@ const EQ={
  meso03Mon:"Light band (pull-aparts) · rack pull station · DBs (Bulgarian split squat) · bench + bar or DB (hip thrust) · cable or band (Pallof) · KB or DB (suitcase carry)",
  meso03Wed:"Safety squat bar + rack · DB + floor (single-arm floor press) · cable + rope (pressdown, pullover)",
  meso03Fri:"Light DBs or bodyweight (Y-raise) · DBs (RDL, step-up) · box or bench (step-up) · cable or DB (neutral-grip row) · KB or DB (suitcase carry)",
- meso03Sat:"Leg press machine · DB (single-leg RDL) · open floor (backward lunges) · cable + rope (face pull) · sled or treadmill · bike or treadmill (cardio ramp)"};
+ meso03Sat:"Leg press machine · DB (single-leg RDL) · open floor (backward lunges) · cable + rope (face pull) · sled or treadmill · bike or treadmill (optional cooldown)"};
 // Mesocycle 01 (rebuild block, Dr. Zak 8/14 functional clearance) — a fixed 3-week structure
 // running 8/17–9/6, ending at the 9/3 ortho appointment. Its own week phase is computed from
 // the real calendar date, deliberately independent of weekSel (which is the OLD 8-week
@@ -1152,12 +1152,12 @@ const FORM_GLOSSARY={
  "Face Pull":{
   status:"✅ CLEARED · Scapular/rear-delt focus, low load",
   setup:[
-   "Band anchored at roughly face height. Step back for tension, arms extended toward the anchor.",
-   "Overhand or neutral grip on the band, whichever keeps the wrist neutral."],
+   "Cable with a rope attachment, pulley set at eye level. Split stance, step back for tension, arms extended toward the pulley.",
+   "Neutral grip on the rope ends, thumbs pointing back, hands loose — don't crush the rope."],
   execution:[
-   "Pull the band toward the face, elbows flaring out and up as the hands separate — external rotation at the top is the point, not just the pull.",
-   "Lead with the elbows, squeeze the shoulder blades down and together at the finish.",
-   "Return under control, resisting the band the whole way back."],
+   "Pull the rope toward the face, elbows leading out and up to shoulder height as the hands separate and finish by the ears — external rotation at the top is the point, not just the pull.",
+   "Squeeze the shoulder blades down and together and pause 1 s at the finish — no long hold.",
+   "Return under control, resisting the cable the whole way back."],
   checkpoints:[
    "✅ Elbows finish higher than the hands; ✅ shoulder blades pull down and together; ✅ controlled on the return",
    "❌ Pulling straight to the chest instead of the face = turns it into a row, misses the external-rotation work",
@@ -1482,68 +1482,82 @@ function getSession(w,day){
   /* Right-arm top-up on the single-arm lifts. Logged with + Set, so the plan score (capped at the
      prescription) and the set count don't move. */
   const SA_EXTRA="optional extra set, right arm only";
+  /* Shorter sessions (2026-10-26). Accessories run in rounds: a per-side round is right, then left
+     straight away, then rest; a superset round is A1 → A2 → rest. Rest is ~60–90 s after the full
+     round, so each block's bell interval (ivl, seconds) is the round's work plus ~75 s, and mins
+     follows from it. Set counts are unchanged, so the plan score is too. */
+  const RL=" · right → left → rest";
+  const SS=(a1,a2)=>" · superset: "+a1+" → "+a2+" → rest";
+  const m3blk=(letter,t,ivl,bells,ex)=>({letter,t,ivl,bells,mins:Math.round(bells*ivl/60),ex});
+  /* Main lifts stay standalone on their own bells; ramp (seconds) is the 1–2 unlogged ramp sets,
+     counted only by the time estimate. */
+  const RAMP=180;
   if(day==="meso03Mon"){
     const rp=meso3MainRx("double overhand · chiro-approved; monitor grip-side","~185 lb"),
-          bss=meso3AccRx("/leg","DB in each hand, arms straight","~25 lb each hand"),
-          ht=meso3AccRx("","full hip extension, pause at top","light — find it"),
-          pf=meso3AccRx("/side","neutral grip, static hold"),
-          sc=meso3HoldRx("40 yd/side","right side first · log load per side","~45 lb/side");
+          bss=meso3AccRx("/leg","DB in each hand, arms straight"+RL,"~25 lb each hand"),
+          ht=meso3AccRx("","full hip extension, pause at top"+SS("Hip Thrust","Pallof"),"light — find it"),
+          pf=meso3AccRx("/side","neutral grip, static hold · right → left"+SS("Hip Thrust","Pallof")),
+          sc=meso3HoldRx("40 yd/side","right → left → rest · log load per side","~45 lb/side");
     return {name:"MONDAY — Hinge Lead", type:"lift", retest:meso3Retest, blocks:[
      // Rack Pull's Form Reference entry calls for pull-aparts or Y-raises immediately prior.
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Band Pull-Aparts",n:"Band Pull-Aparts",rx:"2 × 15 · light, first in session",sets:2}]},
-     {letter:"B",t:"Hinge",mins:12,bells:rp.sets,ex:[
+     {letter:"B",t:"Hinge",mins:12,ramp:RAMP,bells:rp.sets,ex:[
        {key:"Rack Pull",n:"Rack Pull",rx:rp.rx,sets:rp.sets}]},
-     {letter:"C",t:"Unilateral",mins:8,bells:bss.sets,ex:[
-       {key:"Bulgarian SS",n:"Bulgarian Split Squat",rx:bss.rx,sets:bss.sets}]},
-     {letter:"D",t:"Glutes",mins:7,bells:ht.sets,ex:[
-       {key:"Hip Thrust",n:"Hip Thrust",rx:ht.rx,sets:ht.sets}]},
-     {letter:"E",t:"Core",mins:6,bells:pf.sets,ex:[
-       {key:"Pallof",n:"Pallof Press",rx:pf.rx,sets:pf.sets}]},
-     {letter:"F",t:"Carry",mins:5,bells:sc.sets,ex:[
-       {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets,rUnit:"yd"}]}]};
+     // 2 × ~45 s + 15 s switch, then rest.
+     m3blk("C","Unilateral",180,bss.sets,[
+       {key:"Bulgarian SS",n:"Bulgarian Split Squat",rx:bss.rx,sets:bss.sets}]),
+     // ~40 s thrust + 15 s to the cable + 2 × ~30 s Pallof, then rest.
+     m3blk("D","Glutes + Core",195,ht.sets,[
+       {key:"Hip Thrust",n:"Hip Thrust",rx:ht.rx,sets:ht.sets},
+       {key:"Pallof",n:"Pallof Press",rx:pf.rx,sets:pf.sets}]),
+     // 2 × 40 yd + switch, then rest.
+     m3blk("E","Carry",150,sc.sets,[
+       {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets,rUnit:"yd"}])]};
   }
   if(day==="meso03Wed"){
     const sq=meso3MainRx("hands on the handles — never reach back for a straight bar","~135–145 lb"),
-          cp=meso3AccRx("/side","single-arm floor press, right side first · floor sets the 90° stop, pain-free only · "+SA_EXTRA,"~40–45 lb"),
-          tp=meso3AccRx("/side","single-arm, pushdown only (no overhead), right side first · "+SA_EXTRA,"~12.5–15 lb"),
-          po=meso3AccRx("","arms nearly straight — lats without elbow bend","~12.5–15 lb");
+          cp=meso3AccRx("/side","single-arm floor press, right → left · floor sets the 90° stop, pain-free only · "+SA_EXTRA+SS("Chest Press","Pullover"),"~40–45 lb"),
+          po=meso3AccRx("","arms nearly straight — lats without elbow bend"+SS("Chest Press","Pullover"),"~12.5–15 lb"),
+          tp=meso3AccRx("/side","single-arm, pushdown only (no overhead)"+RL+" · "+SA_EXTRA,"~12.5–15 lb");
     return {name:"WEDNESDAY — Squat + Push", type:"lift", retest:meso3Retest, blocks:[
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · slow, elbows on the wall · first in session",sets:2}]},
-     {letter:"B",t:"Squat",mins:12,bells:sq.sets,ex:[
+     {letter:"B",t:"Squat",mins:12,ramp:RAMP,bells:sq.sets,ex:[
        {key:"Safety Bar Squat",n:"Safety Bar Squat",rx:sq.rx,sets:sq.sets}]},
      // Single-arm, so it logs under SA Chest Press — per-arm loads would never read as PRs
-     // against Chest Press's two-arm history.
-     {letter:"C",t:"Push",mins:8,bells:cp.sets,ex:[
-       {key:"SA Chest Press",n:"Chest Press",rx:retestTag(cp.rx),sets:cp.sets}]},
-     {letter:"D",t:"Triceps",mins:7,bells:tp.sets,ex:[
-       {key:"Rope Triceps Pressdown",n:"Rope Triceps Pressdown",rx:retestTag(tp.rx),sets:tp.sets}]},
-     {letter:"E",t:"Pullover",mins:6,bells:po.sets,ex:[
-       {key:"Cable Pullover",n:"Cable Pullover",rx:po.rx,sets:po.sets}]}]};
+     // against Chest Press's two-arm history. 2 × ~40 s press + 15 s to the cable + ~40 s
+     // pullover, then rest.
+     m3blk("C","Push + Pullover",225,cp.sets,[
+       {key:"SA Chest Press",n:"Chest Press",rx:retestTag(cp.rx),sets:cp.sets},
+       {key:"Cable Pullover",n:"Cable Pullover",rx:po.rx,sets:po.sets}]),
+     // 2 × ~35 s + switch, then rest.
+     m3blk("D","Triceps",150,tp.sets,[
+       {key:"Rope Triceps Pressdown",n:"Rope Triceps Pressdown",rx:retestTag(tp.rx),sets:tp.sets}])]};
      // Plate Pinch Hold left Wednesday 2026-10-26 — it's logged daily in the HEP (b1_platepinch).
      // Its key, PR tile and history are unchanged.
   }
   if(day==="meso03Fri"){
     const rdl=meso3MainRx("barbell","~135 lb"),
-          ngr=meso3AccRx("/side","single-arm, right side first · stop at first sign of pain · sit tall ~90°, no rocking · quick squeeze, no long hold at the end · "+SA_EXTRA,"~40–45 lb"),
-          su=meso3AccRx("/leg","two DBs at sides, arms straight · working foot flat on box, trailing foot toe-taps only","~20 lb each hand"),
-          cd=meso3AccRx("/side","ribs down, slow"),
-          sc=meso3HoldRx("40 yd/side","right side first · log load per side","~45 lb/side");
+          ngr=meso3AccRx("/side","single-arm, right → left · stop at first sign of pain · sit tall ~90°, no rocking · quick squeeze, no long hold at the end · "+SA_EXTRA+SS("Row","Dead Bug"),"~40–45 lb"),
+          cd=meso3AccRx("/side","ribs down, slow"+SS("Row","Dead Bug")),
+          su=meso3AccRx("/leg","two DBs at sides, arms straight · working foot flat on box, trailing foot toe-taps only"+RL,"~20 lb each hand"),
+          sc=meso3HoldRx("40 yd/side","right → left → rest · log load per side","~45 lb/side");
     return {name:"FRIDAY — Pull + Hinge", type:"lift", retest:meso3Retest, blocks:[
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Prone Y-Raises",n:"Prone Y-Raises",rx:"2 × 15 · light, first in session",sets:2}]},
      // Barbell, on the existing key — Meso 02's history under it is already mostly barbell.
-     {letter:"B",t:"Hinge",mins:12,bells:rdl.sets,ex:[
+     {letter:"B",t:"Hinge",mins:12,ramp:RAMP,bells:rdl.sets,ex:[
        {key:"Romanian Deadlift (DB)",n:"Romanian Deadlift (barbell)",rx:rdl.rx,sets:rdl.sets}]},
-     {letter:"C",t:"Pull",mins:8,bells:ngr.sets,ex:[
-       {key:"Neutral-Grip Row",n:"Neutral-Grip Row (cable or DB)",rx:retestTag(ngr.rx),sets:ngr.sets}]},
-     {letter:"D",t:"Unilateral",mins:7,bells:su.sets,ex:[
-       {key:"Step-Up",n:"DB Step-Up",rx:su.rx,sets:su.sets}]},
-     {letter:"E",t:"Core",mins:6,bells:cd.sets,ex:[
-       {key:"Bird Dog",n:"Core (Dead Bug or similar)",rx:cd.rx,sets:cd.sets}]},
-     {letter:"F",t:"Carry",mins:5,bells:sc.sets,ex:[
-       {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets,rUnit:"yd"}]}]};
+     // 2 × ~40 s row + 15 s to the floor + ~45 s dead bug, then rest.
+     m3blk("C","Pull + Core",225,ngr.sets,[
+       {key:"Neutral-Grip Row",n:"Neutral-Grip Row (cable or DB)",rx:retestTag(ngr.rx),sets:ngr.sets},
+       {key:"Bird Dog",n:"Core (Dead Bug or similar)",rx:cd.rx,sets:cd.sets}]),
+     // 2 × ~40 s + 15 s switch, then rest.
+     m3blk("D","Unilateral",165,su.sets,[
+       {key:"Step-Up",n:"DB Step-Up",rx:su.rx,sets:su.sets}]),
+     m3blk("E","Carry",150,sc.sets,[
+       {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets,rUnit:"yd"}])]};
   }
   if(day==="meso03Sat"){
     // Fixed 3-set prescriptions all block; the Deload week takes two sets of everything.
@@ -1556,19 +1570,22 @@ function getSession(w,day){
     return {name:"SATURDAY · CAP 7/10 — Full Range", type:"lift", blocks:[
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · slow, elbows on the wall · effort cap 7/10 all session",sets:2}]},
-     {letter:"B",t:"Squat",mins:8,bells:n(3),ex:[
-       {key:"Leg Press",n:"Leg Press",rx:t(n(3)+" × 10"+startTag("~180–200 lb")+" · full depth · log plates only, same machine weekly · tailbone stays on pad",meso3Phase==="Performance"?", slightly heavier":""),sets:n(3)}]},
-     {letter:"C",t:"Hinge",mins:8,bells:n(3),ex:[
-       {key:"SL RDL",n:"Single-Leg RDL",rx:t(n(3)+" × 8/leg"+startTag("~35 lb")+" · balance-forward · DB in the hand opposite the working leg"),sets:n(3)}]},
-     {letter:"D",t:"Lunge",mins:8,bells:n(3),ex:[
-       {key:"Backward Walking Lunges",n:"Backward Walking Lunges",rx:t(n(3)+" × 8/leg"+startTag("~15 lb each hand, arms straight")+" · full range"),sets:n(3)}]},
-     {letter:"E",t:"Upper back",mins:6,bells:n(3),ex:[
-       {key:"Face Pull",n:"Face Pull (cable rope)",rx:n(3)+" × 12 · rope at eye level · neutral grip, thumbs back, loose hands · split stance · elbows lead to shoulder height, hands by ears · 1 s pause, no long hold",sets:n(3)}]},
+     // ~45 s set, then rest.
+     m3blk("B","Squat",120,n(3),[
+       {key:"Leg Press",n:"Leg Press",rx:t(n(3)+" × 10"+startTag("~180–200 lb")+" · full depth · log plates only, same machine weekly · tailbone stays on pad",meso3Phase==="Performance"?", slightly heavier":""),sets:n(3)}]),
+     // 2 × ~40 s + switch + 15 s to the cable + ~40 s face pull, then rest.
+     m3blk("C","Hinge + Upper back",225,n(3),[
+       {key:"SL RDL",n:"Single-Leg RDL",rx:t(n(3)+" × 8/leg"+startTag("~35 lb")+" · balance-forward · DB in the hand opposite the working leg · right → left")+SS("SL RDL","Face Pull"),sets:n(3)},
+       {key:"Face Pull",n:"Face Pull (cable rope)",rx:n(3)+" × 12 · rope at eye level · neutral grip, thumbs back, loose hands · split stance · elbows lead to shoulder height, hands by ears · 1 s pause, no long hold"+SS("SL RDL","Face Pull"),sets:n(3)}]),
+     // Walking lunges alternate legs by nature, so no right → left cue. ~50 s, then rest.
+     m3blk("D","Lunge",120,n(3),[
+       {key:"Backward Walking Lunges",n:"Backward Walking Lunges",rx:t(n(3)+" × 8/leg"+startTag("~15 lb each hand, arms straight")+" · full range"),sets:n(3)}]),
      // 50 s work / 60 s rest: the bell starts each 1:50 round. ivl bypasses q15's 15 s rounding.
-     {letter:"F",t:"Sled",mins:Math.round(n(5)*110/60),ivl:110,bells:n(5),ex:[
-       {key:"Sled Push",n:"Sled Push (or treadmill push)",rx:n(5)+" × 50 s work / 60 s rest · sled: arms straight · Treadmill option: motor on, 0.8 mph, hands low on the curved rails, slight elbow bend OK, short steps, safety clip on · ~50 s ≈ 20 yd · shoulders down, drive with legs · log load × yards",sets:n(5),rUnit:"yd"}]},
-     {letter:"G",t:"Cardio Ramp",mins:10,bells:1,ex:[
-       {n:"Cardio Ramp — Zone 2 bike or incline walk",rx:"8–10 min · cap 7/10 effort",sets:0}]}]};
+     m3blk("E","Sled",110,n(5),[
+       {key:"Sled Push",n:"Sled Push (or treadmill push)",rx:n(5)+" × 50 s work / 60 s rest · sled: arms straight · Treadmill option: motor on, 0.8 mph, hands low on the curved rails, slight elbow bend OK, short steps, safety clip on · ~50 s ≈ 20 yd · shoulders down, drive with legs · log load × yards",sets:n(5),rUnit:"yd"}]),
+     // Was an 8–10 min Cardio Ramp; the sled already covers conditioning (2026-10-26).
+     {letter:"F",t:"Cooldown (optional)",mins:5,bells:1,ex:[
+       {n:"Optional cooldown — easy bike or incline walk",rx:"5 min · skip it if short on time · cap 7/10 effort",sets:0}]}]};
   }
   if(day==="upper"){
     const o=OHP(w),r=ROW(w);const early=w<=2;
@@ -1627,6 +1644,20 @@ function getSession(w,day){
   return {name:"SUN — CS4 · Active Recovery", type:"recovery", blocks:[]};
 }
 const interval=b=>b.bells>0?(b.ivl||q15(b.mins*60/b.bells)):0;
+/* Meso 03's estimated session length, shown on its lift days. The session clock starts when WHOOP
+   links on arrival, so the logged duration includes the HEP Gym block; EST_WARMUP_MIN covers that
+   plus activation. Every other block is its bells × interval, plus the main lifts' ramp sets and
+   about a minute to change stations. */
+const EST_WARMUP_MIN=15, EST_CHANGE_SEC=60, EST_FLAG_MIN=65;
+function estSessionMins(s){
+  const secs=s.blocks.filter(b=>b.t!=="Activation")
+    .reduce((a,b)=>a+b.bells*interval(b)+(b.ramp||0)+EST_CHANGE_SEC,0);
+  return Math.round(EST_WARMUP_MIN+secs/60);
+}
+function estText(s){
+  const m=estSessionMins(s), over=m>EST_FLAG_MIN;
+  return {over, text:"~"+m+" min, including "+EST_WARMUP_MIN+" min of HEP + activation"+(over?" — over the "+EST_FLAG_MIN+" min target":"")+"."};
+}
 
 /* ================= RKD ENGINE ================= */
 /* Strength curve per program sheet: Z0≈1 · Z1≈2 · Z2≈4 (peak) · Z3≈3 · Z4≈1.5 · Z5≈0.8 pts/min */
@@ -3064,6 +3095,7 @@ function render(){
 
   /* ---- Lifting days ---- */
   if(s.retest) h+=`<div class="meta warn"><b>Week 8 retest:</b> ${s.retest.replace(/^Retest: /,"")}</div>`;
+  if(PLAN_DAYS.includes(day)){ const est=estText(s); h+=`<div class="meta${est.over?" warn":""}"><b>Estimated time:</b> ${est.text}</div>`; }
   h+=infoBox("ibHow","howto","How it runs",
     `press ▶ when you reach the block's equipment. <b>Bell = start your set.</b> Rest for the remainder of the interval. Link WHOOP up top and RKD scores itself while you follow the bells.`);
   h+=infoBox("ibHr","meta","HR target",hrText(day,w));
