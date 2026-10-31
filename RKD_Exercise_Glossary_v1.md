@@ -1,14 +1,14 @@
 # RKD Log — Exercise Glossary (Content Draft v1)
 
-**Basis:** Kaiser OT eval 7/14/26 + 8/11/26 follow-up (Bhupinder Kaur) + 8/12/26 integration session
+**Basis:** Training notes and the July home-exercise program
 **Purpose:** Content source for future in-app glossary feature. Cues written in hardstyle strength-training voice — tension, bracing, structural integrity first, reps second.
 
-**Operating framework (updated 8/11):** Bhupinder handed off autonomy — within movements not explicitly excluded, symptoms are the gate and the call is yours. This document is a reference, not a permission system.
+**Operating framework:** within movements not explicitly excluded, symptoms are the gate and the call is yours. This document is a reference, not a permission system.
 
-**What "symptoms" covers.** Pain is the primary gate, but it isn't the only signal that matters here, because two of your findings never presented as pain in the first place:
-- **Paresthesia** — tingling, numbness, or burning in the ring/pinky (ulnar) or thumb/dorsal hand (radial) distributions. The 8/11 ulnar finding is paresthesia, not pain.
-- **Weakness without pain** — the 7/14 eval found radial-distribution weakness on a maneuver that produced no pain at all.
-- **Motor changes** — grip weakness, visible muscle changes, or positional clawing of the ring/pinky. These warrant contacting a provider rather than waiting for Sept 3.
+**What "symptoms" covers.** Pain is the primary gate, but it isn't the only signal that matters:
+- **Paresthesia** — tingling, numbness, or burning in the hand or fingers.
+- **Weakness without pain** — a drop in strength on a movement that produces no pain at all.
+- **Motor changes** — grip weakness, visible muscle changes, or positional clawing of the ring/pinky. These warrant contacting a provider rather than waiting.
 
 Not a reason to hold back on anything. Just the reason the gate is "symptom-free" rather than strictly "pain-free."
 
@@ -17,9 +17,9 @@ Not a reason to hold back on anything. Just the reason the gate is "symptom-free
 |---|---|
 | ✅ CLEARED | Active in the training pool |
 | ⚠️ CAUTION | Permitted with a specific modification or monitor — read the note |
-| 🚫 EXCLUDED | Explicitly excluded by OT and not re-addressed on 8/11. Still off the table. |
+| 🚫 EXCLUDED | Explicitly excluded. Still off the table. |
 | 💤 DORMANT | Previously prescribed, deprioritized — history preserved, not active |
-| 🆕 REINTRODUCED | Back in the pool under autonomy — build back deliberately, symptoms are the gate |
+| 🆕 REINTRODUCED | Back in the pool — build back deliberately, symptoms are the gate |
 
 ---
 
@@ -27,12 +27,12 @@ Not a reason to hold back on anything. Just the reason the gate is "symptom-free
 
 ### Seated Levator Scapulae Stretch
 **Status:** ✅ · **Block:** 1–4, 3–4x/day · **Dose:** 2–5 reps, 10–15 sec hold
-**Update (8/11):** Supine is the preferred position now — seated/standing competes with neck stabilization and blunts the stretch. Wall slides stay wall-based; don't conflate the two.
+**Update:** Supine is the preferred position now — seated/standing competes with neck stabilization and blunts the stretch. Wall slides stay wall-based; don't conflate the two.
 - Pin the shoulder down and back before you tilt — you're stretching the neck, not shrugging into it
 - Ear travels toward shoulder in a straight line, no forward head drift
 - If fingertips warm up during the hold: back off angle and hold time immediately, log which fingers — that's nerve tension, not a stretch you push through
 
-### Tennis Elbow Self Massage (Desensitization)
+### Elbow Self Massage (Desensitization)
 **Status:** ✅ · **Block:** 2, 2–3x/day · **Dose:** 5–10 min per session
 - Silicone cupping or manual glide, light pressure — this is a nervous-system dose, not a soft-tissue release
 - Direction: circular, both clockwise and counter-clockwise, plus long strokes elbow → wrist along the extensors
@@ -44,8 +44,8 @@ Not a reason to hold back on anything. Just the reason the gate is "symptom-free
 - Same rule as massage: light, brief exposure, not intensity-chasing
 
 ### Seated Wrist Flexion Stretch
-**Status:** ✅ (official MedBridge entry) · **Block:** 1–4, 3–4x/day · **Dose:** 10–30 sec hold
-**Note:** Your finger-glide variant is a personal technique, not a MedBridge instruction — keep logging this one as the seated version; note the glide as how you personally execute it.
+**Status:** ✅ · **Block:** 1–4, 3–4x/day · **Dose:** 10–30 sec hold
+**Note:** Your finger-glide variant is a personal technique, not part of the original instruction — keep logging this one as the seated version; note the glide as how you personally execute it.
 - Use each finger as a guide — "OK sign" progression finger by finger
 - Rotate palm as tolerated; do not chase end-range
 
@@ -66,32 +66,32 @@ Not a reason to hold back on anything. Just the reason the gate is "symptom-free
 - Slow, controlled, zero trunk lean to cheat range
 
 ### Standing Bicep Stretch at Wall
-**Status:** 💤 DORMANT · Deprioritized 8/11 — "no longer clinically necessary," not an exclusion
+**Status:** 💤 DORMANT · Deprioritized — no longer needed, not an exclusion
 - Kept for history only. Palm-up orientation was the corrected form (overriding the printed handout's palm-down) — relevant if this ever gets reactivated.
 
 ### Standing Wall Ball Circles (mini Swiss ball, 2–3 lb)
-**Status:** ✅ NEW 8/11 · **Block:** 1 (confirmed placement) · **Dose:** 1–3x/day, 1 min, progress hold over time
+**Status:** ✅ NEW · **Block:** 1 (confirmed placement) · **Dose:** 1–3x/day, 1 min, progress hold over time
 - Ball stays pinned between hand and wall — the control is in resisting the ball, not chasing bigger circles
 - Small, precise circles beat big sloppy ones — this is a proprioceptive drill, not a shoulder-burner
 
 ### Full Plank with Scapular Protraction/Retraction AROM
-**Status:** ✅ NEW 8/11 · **Block:** 4 · **Dose:** 1x/day, 5 reps, 10–15 sec hold
+**Status:** ✅ NEW · **Block:** 4 · **Dose:** 1x/day, 5 reps, 10–15 sec hold
 - Brace the trunk like a plank should be braced — this isn't a scap drill riding on a collapsed core
 - Push the floor away (protraction) then let the blades pinch together (retraction) — small range, full control
 - If the plank itself is compromising form, drop to a wall or incline version rather than force it
 
 ### Standing Subscapularis Lift-Off
-**Status:** ✅ NEW 8/11 · **Block:** 4 · **Dose:** 1x/day, 3–5 reps, walk-to-tension hold
+**Status:** ✅ NEW · **Block:** 4 · **Dose:** 1x/day, 3–5 reps, walk-to-tension hold
 - Hand behind the low back, lift away from the spine — small motion, the subscapularis doesn't need range to work
 - "Walk to tension" means build into it gradually, not snap to end-range
 
 ### Elbow Distraction Self Mobilization
-**Status:** ✅ NEW 8/11 · **Block:** 1 and 3 (per your Claude Code placement decision) · **Dose:** 1–2x/day, 3 sets of 10 oscillations or 10-sec holds
+**Status:** ✅ NEW · **Block:** 1 and 3 (per your Claude Code placement decision) · **Dose:** 1–2x/day, 3 sets of 10 oscillations or 10-sec holds
 - **Stop immediately on any neural symptom** — tingling, shooting, numbness. This one has a hard ceiling, not a "push through."
 - Gentle traction only — this is mobilization, not stretching
 
 ### Wrist AROM — Radial/Ulnar Deviation
-**Status:** ✅ NEW 8/11 · **Block:** 1, 2, 3 rotation (one dose per block = 3x/day total) · **Dose:** 3 sets of 10 reps
+**Status:** ✅ NEW · **Block:** 1, 2, 3 rotation (one dose per block = 3x/day total) · **Dose:** 3 sets of 10 reps
 - **Stop on any neural symptom**, same rule as above
 - Full active range side to side, no weight, no bounce at end-range
 
@@ -99,25 +99,25 @@ Not a reason to hold back on anything. Just the reason the gate is "symptom-free
 **Status:** ✅ · **Dose:** 5 reps, 5x/day
 - **The 90° in each half is the position you hold, not the joint you move.** Corrected 9/6 — this entry previously read "Shoulder Flexion/Extension", taking the set-up for the movement.
 - Supine, **shoulder held at 90° flexion**; the movement is **elbow** flexion/extension through full available range
-- Seated, **elbow held at 90°**; the movement is forearm **pronation/supination** — the half that directly tracks your pronation recovery (63° → WNL bilateral as of 8/11)
+- Seated, **elbow held at 90°**; the movement is forearm **pronation/supination**
 
 ### Ulnar Nerve Glide ("Goggles" Slider)
-**Status:** ❓ PENDING — discussed as appropriate given your active ulnar symptoms, but not confirmed as a formal MedBridge addition
-- Slider, not tensioner: continuous motion through the range, no held end-range — that distinction matters given active nerve symptoms
-- Confirm with Bhupinder before logging this as prescribed rather than self-directed
+**Status:** ❓ PENDING — not part of the original program
+- Slider, not tensioner: continuous motion through the range, no held end-range
+- Self-directed, not prescribed
 
-### Float Block — Plantar Fasciitis
+### Float Block — Foot care
 **Status:** ✅ · Renders as "done," not reps
-- Night splint overnight (started ~7/30, has resolved nocturnal symptoms)
+- Night splint overnight
 - Calf stretching + KT taping, diagonal/fascial line stretching both sides
 
 ---
 
 ## Section 2 — Training Pool: Strength Days (Mon/Wed/Fri)
 
-Each entry: **Setup** (what you build before the rep exists) → **Execution** (the rep itself) → **Checkpoints** (what tells you it's right or wrong) → **Injury notes** where the movement touches your current constraints.
+Each entry: **Setup** (what you build before the rep exists) → **Execution** (the rep itself) → **Checkpoints** (what tells you it's right or wrong) → **Injury notes** where the movement needs extra care.
 
-Hardstyle principle running through all of it: tension is the lift. You create the position, you don't find it mid-rep. Irradiation — grip and bracing generate whole-body stiffness — matters more than usual for you right now, because the compensations you're working around (right lat under-engagement, scapular instability) are exactly what sloppy tension lets through.
+Hardstyle principle running through all of it: tension is the lift. You create the position, you don't find it mid-rep. Irradiation — grip and bracing generate whole-body stiffness — matters because sloppy tension is exactly what lets compensations through.
 
 ---
 
@@ -146,7 +146,7 @@ Hardstyle principle running through all of it: tension is the lift. You create t
 - ❌ Right side "goes quiet" on set one = pre-activation didn't take (see below)
 
 **Injury notes**
-- **Right lat under-engagement is a firing/coordination gap, not a red flag** — but it's the reason the slack-pull and armpit cue aren't optional here.
+- The slack-pull and armpit cue aren't optional here.
 - **Pre-activate before working sets:** Band Pull-Aparts or Prone Y-Raises immediately prior. This isn't a warm-up formality — it's the thing that makes set one behave like set three.
 - Grip-side symptoms are the monitor. Aching/fatigue in the forearm is expected under load; tingling, shooting, or numbness is a stop.
 - Consider unilateral rowing on other days to build the right side without left-side compensation masking it.
@@ -164,7 +164,7 @@ Hardstyle principle running through all of it: tension is the lift. You create t
 
 **Execution**
 - Break at hips and knees together, sitting down between the feet rather than back like a hinge.
-- Elbows drive down inside the knees at depth — this is the whole reason it's your squat sub. The anterior load lets the torso stay upright without the front-rack position that's excluded for you.
+- Elbows drive down inside the knees at depth — the anterior load lets the torso stay upright without a front-rack position.
 - Depth as far as you can hold a neutral spine and keep both heels planted. Don't chase range you can't own.
 - Drive up through the whole foot, hips and chest rising together.
 
@@ -174,7 +174,7 @@ Hardstyle principle running through all of it: tension is the lift. You create t
 - ❌ Chest caving forward = brace lost or load too heavy for current position
 
 **Injury notes**
-- Elbow flexion under load is present here. Watch for medial elbow contact/pressure against the ribs at depth — direct cubital tunnel contact is a new caution since 8/11.
+- Elbow flexion under load is present here. Watch for medial elbow contact/pressure against the ribs at depth.
 
 ---
 
@@ -196,7 +196,7 @@ Hardstyle principle running through all of it: tension is the lift. You create t
 - ❌ Torso folding forward = the camber is winning; reduce load
 
 **Injury notes**
-- This is cleared **specifically because** the handle position removes the shoulder external rotation + wrist extension demand that makes a traditional back squat a problem for you. If you ever find yourself reaching back for a bar, you're doing the excluded version.
+- This is cleared **specifically because** the handle position removes the shoulder external rotation + wrist extension demand of a traditional back squat. If you ever find yourself reaching back for a bar, you're doing the excluded version.
 
 ---
 
@@ -221,7 +221,7 @@ Hardstyle principle running through all of it: tension is the lift. You create t
 ---
 
 ### Floor Push-Ups
-**Status:** ✅ CLEARED · Renamed 8/12 from "Wall Push-Up Progression" — 5-pain-free-rep goal met
+**Status:** ✅ CLEARED · Renamed from "Wall Push-Up Progression" — 5-pain-free-rep goal met
 *(Internal tracking key stays "Wall Push-Up Progression" for PR history continuity.)*
 
 **Setup**
@@ -232,22 +232,22 @@ Hardstyle principle running through all of it: tension is the lift. You create t
 **Execution**
 - Elbows at roughly 45° from the torso — not flared to 90°, not pinned to the ribs.
 - Lower under control until chest is a fist's height from the floor (or your current pain-free depth).
-- Press away and **protract at the top** — push the floor away so the shoulder blades wrap forward. That protraction is the serratus work, which is the point for you.
+- Press away and **protract at the top** — push the floor away so the shoulder blades wrap forward. That protraction is the serratus work, which is the point.
 - Body moves as one piece. Hips sagging or piking means the plank broke.
 
 **Checkpoints**
 - ✅ Straight line head to heels the whole rep; ✅ full protraction at lockout
 - ❌ Hips leading up = trunk brace lost, elbow now absorbing compensatory load
-- ❌ Elbows flaring wide = the shoulder position that historically aggravates you
+- ❌ Elbows flaring wide = the shoulder position to avoid
 
 **Injury notes**
-- Push-ups appear in the 7/14 eval as a **symptom-aggravating movement**. Reaching the goal doesn't mean the ceiling is gone — depth and volume are still things to progress gradually, not jump.
+- Reaching the goal doesn't mean the ceiling is gone — depth and volume are still things to progress gradually, not jump.
 - Any return of lateral elbow or forearm pain mid-set: stop the set, log it, regress to incline or wall for that session. Don't finish the reps to save the log entry.
 
 ---
 
 ### DB Shoulder Press
-**Status:** 🆕 REINTRODUCED (8/12, under autonomy) · Was pulled from the pool pending 8/11
+**Status:** 🆕 REINTRODUCED
 
 **Setup**
 1. Seated with back support, or standing if you want the trunk demand. Seated first while you rebuild this pattern.
@@ -259,24 +259,24 @@ Hardstyle principle running through all of it: tension is the lift. You create t
 - Press up and slightly in, so the DBs finish over the shoulder joint rather than out in front of it.
 - Neutral or semi-pronated grip is easier on the right side than fully pronated — the neutral grip reduces the wrist-extension and shoulder-rotation demand.
 - Full lockout without shrugging the shoulders into the ears at the top.
-- Control the eccentric back to shoulder height. Don't let the DBs drop into the bottom position — that's where the aggravating shoulder angle lives.
+- Control the eccentric back to shoulder height. Don't let the DBs drop into the bottom position — that's the shoulder angle to avoid.
 
 **Checkpoints**
 - ✅ Ribs stay down, no low-back arch; ✅ wrists stacked over elbows the whole path; ✅ symmetrical bar path between arms
-- ❌ Right arm lagging or taking a different path = the coordination gap showing up overhead; stop the set
-- ❌ Elbows flaring into a wide T at the bottom = the position closest to your confirmed aggravators
+- ❌ Right arm lagging or taking a different path = stop the set
+- ❌ Elbows flaring into a wide T at the bottom = the shoulder position to avoid
 - ❌ Low back arching to complete the rep = load too heavy for the current position
 
 **Injury notes**
-- **This one earns a slower ramp than the rest of the pool.** Chest press is a named aggravator in the 7/14 eval, and overhead pressing shares the shoulder mechanism. That's not a reason to avoid it — it's the reason to start well under what you could do and add load across sessions rather than within one.
+- **This one earns a slower ramp than the rest of the pool.** Start well under what you could do and add load across sessions rather than within one.
 - Suggested re-entry: light DBs, seated, partial-to-full range as it feels clean, 2–3 sessions before pushing load.
-- Watch the **bottom third** specifically. The 7/14 eval describes chest press aggravating "at a certain point in the motion" — for pressing patterns, that's typically the deep position, not lockout.
+- Watch the **bottom third** specifically — for pressing patterns, the deep position is the one to respect, not lockout.
 - Neutral grip and a slightly narrower elbow path are the two modifications that make this friendlier to the right side. Use them by default; widen only if it stays clean.
 
 ---
 
 ### Rope Triceps Pressdown
-**Status:** ✅ CLEARED · **Explicitly prioritized** per OT guidance — triceps work is on the "do more of this" list
+**Status:** ✅ CLEARED · **Explicitly prioritized** — triceps work is on the "do more of this" list
 
 **Setup**
 1. Rope on a high pulley. Neutral grip, thumbs on top of the rope ends.
@@ -293,11 +293,11 @@ Hardstyle principle running through all of it: tension is the lift. You create t
 **Checkpoints**
 - ✅ Upper arms motionless; ✅ movement happens only below the elbow
 - ❌ Shoulder swinging into it or torso rocking = load too heavy, and you've turned a prioritized triceps movement into a compensation drill
-- ❌ Wrist extending hard at lockout = watch this; loaded full wrist extension is a caution for you. Keep the wrist neutral.
+- ❌ Wrist extending hard at lockout = watch this; avoid loaded full wrist extension. Keep the wrist neutral.
 
 **Injury notes**
 - Neutral wrist throughout. The rope's advantage over a straight bar is exactly that it lets the wrist stay neutral.
-- This is the highest-value strengthening movement in your current pool relative to the diagnosis — treat it accordingly, not as an accessory afterthought.
+- Treat this as a priority movement, not an accessory afterthought.
 
 ---
 
@@ -327,7 +327,7 @@ Hardstyle principle running through all of it: tension is the lift. You create t
 
 **Injury notes**
 - Grip-side symptoms are the monitor, same as deadlift.
-- **KB racked carry is a worse swap, not an equivalent one** — the rack position puts sustained elbow flexion + medial elbow contact against the forearm, which now runs into the ulnar caution on top of the flexion demand. Straight carries load the grip; racked carries load the elbow.
+- **KB racked carry is a worse swap, not an equivalent one** — the rack position puts sustained elbow flexion + medial elbow contact against the forearm on top of the flexion demand. Straight carries load the grip; racked carries load the elbow.
 
 ---
 
@@ -356,7 +356,7 @@ Hardstyle principle running through all of it: tension is the lift. You create t
 
 ### Cable Pullover (single-arm)
 **Status:** ✅ CLEARED — new, untested, no established load or pace
-*Held pending 8/11 due to overlap risk with restrictions; cleared and added to Block C on 8/12.*
+*Added to Block C.*
 
 **Setup**
 1. High pulley, single handle, neutral grip. Face the stack.
@@ -378,13 +378,13 @@ Hardstyle principle running through all of it: tension is the lift. You create t
 
 **Injury notes**
 - **Start deliberately light.** Week one at any load — the first two or three sessions exist to establish a baseline, not to find a working weight.
-- This was flagged for overlap risk with your restrictions before clearance. Overhead-ish arm position with load is the reason. Any lateral elbow, forearm, or nerve-distribution symptom is a stop and a log entry.
+- Overhead-ish arm position with load — any elbow, forearm, or tingling symptom is a stop and a log entry.
 - Block C timing (`mins:9, bells:3`) hasn't been adjusted for a third exercise — open training-feel decision after you've actually run it.
 
 ---
 
 ### Prone Y-Raises
-**Status:** ✅ CLEARED (confirmed by absence-check 8/12) · Also serves as deadlift pre-activation
+**Status:** ✅ CLEARED · Also serves as deadlift pre-activation
 
 **Setup**
 1. Prone on an incline bench, roughly 30–45°. Chest supported, feet braced.
@@ -403,7 +403,7 @@ Hardstyle principle running through all of it: tension is the lift. You create t
 - ❌ Shrugging at the top = upper traps have hijacked it; drop the load
 
 **Injury notes**
-- Watch bench-edge contact at the medial elbow when set up prone — direct cubital tunnel pressure is a caution since 8/11. Pad it or adjust position if you feel contact.
+- Watch bench-edge contact at the medial elbow when set up prone. Pad it or adjust position if you feel contact.
 - As deadlift pre-activation: 1–2 light sets immediately before working sets. Priming, not fatiguing.
 
 ---
@@ -558,14 +558,14 @@ Hardstyle principle running through all of it: tension is the lift. You create t
 - ❌ Hips swaying side to side = steps too long
 
 **Injury notes**
-- This is **loaded weight-bearing through the right hand and extended wrist** — the position that runs closest to your full-wrist-extension caution, and it also has a history of limited wrist flexion on that side from the 2012–13 injury.
+- This is **loaded weight-bearing through the right hand and extended wrist** — keep it brief.
 - Of the three sled substitutes, this is the one to use least. Backward lunges do the same job with no arm demand. If you use it, keep bouts short and stop on any wrist or forearm symptom.
 
 ## Section 4 — Excluded (Reference Only — Do Not Perform)
 
-These were named exclusions on 7/14 and were **not** re-addressed by the 8/11 clearance language. The autonomy handoff covers movements that were never explicitly excluded — it does not silently reopen this list.
+These are named exclusions. Clearance for other movements does not silently reopen this list.
 
-- **Overhand pull-ups / chin-ups / hanging movements** — the original injury mechanism (missed-bar traction, full bodyweight catch). The self-tested pull-up ~2.5 weeks pre-8/11 produced new biceps and forearm strain, and both 10-week goals (2 pull-ups, 5 push-ups) were written with this as the endpoint — not the pathway.
+- **Overhand pull-ups / chin-ups / hanging movements**
 - **Cleans / front-rack barbell movements**
 - **Barbell high pulls**
 - **Back squats (barbell, traditional)** — goblet/leg press/safety bar are the standing subs
@@ -578,12 +578,10 @@ These were named exclusions on 7/14 and were **not** re-addressed by the 8/11 cl
 
 Not blockers — these are things worth tracking rather than decisions waiting on someone else.
 
-- **DB Shoulder Press** — reintroduced 8/12 under autonomy after being pulled pending 8/11. Ramp deliberately (see entry). Worth logging how the bottom third of the range feels for the first few sessions, since that's the position the 7/14 eval implicates for pressing.
+- **DB Shoulder Press** — reintroduced. Ramp deliberately (see entry). Worth logging how the bottom third of the range feels for the first few sessions.
 - **Cable Pullover** — cleared and new. No established load or pace; first few sessions are baseline-setting.
 - **Cable Pullover superset timing** — Block C `mins:9, bells:3` hasn't been reassessed for a third exercise. Training-feel call after you've run it.
-- **Ulnar Nerve Glide** — discussed as clinically appropriate given the active ulnar finding, never confirmed as a formal MedBridge addition. Bhupinder is the only one who can add it to the assigned program; worth a message rather than waiting for Sept 3 if you want it in there formally.
-- **Ulnar symptoms generally** — the 8/11 note says avoid movements that aggravate ulnar-sided symptoms and maintain the ortho referral. Direct cubital tunnel contact (bench edges, elbow-on-surface, KB rack) is the mechanism to watch. Night splint has resolved the nocturnal piece.
-- **Sept 3 ortho** — give them the mechanism of injury explicitly (traction event, full bodyweight catch with swing-back) and the dual-nerve-territory framing. Radial + ulnar from one mechanism points proximal; a single-entrapment framing will send them looking in the wrong place.
+- **Elbow contact** — avoid direct pressure on the inside of the elbow (bench edges, elbow-on-surface, KB rack).
 
 ---
 

@@ -1,18 +1,17 @@
 # RKD Mesocycle 01 — Rebuild Block
 
 **Dates:** Mon 8/17 – Sun 9/6 (3 weeks)
-**Ends at:** Ortho appointment Wed 9/3 (week 3)
-**Basis:** Dr. Zak 8/14 — upper back gave out from lost training support; strength/functional training indicated. OT functional clearance, symptoms are the gate.
+**Basis:** Strength/functional rebuild block; symptoms are the gate.
 
 ## Design Logic
 
-**Why pull-emphasis.** Zak's read is that detrained thoracic support let the upper back go out. That makes pulling volume the point of this block, not one slot among five. Rows appear in every session — usually twice.
+**Why pull-emphasis.** Thoracic support is the priority, which makes pulling volume the point of this block, not one slot among five. Rows appear in every session — usually twice.
 
-**Why 3 weeks.** Lands on the ortho appointment. Run a complete block, walk in having actually trained, build the next one around whatever they say. Nothing gets rewritten mid-cycle.
+**Why 3 weeks.** Run a complete short block, then build the next one from how it went. Nothing gets rewritten mid-cycle.
 
-**What's unchanged.** HEP stays exactly as is. Named exclusions stay closed: pull-ups/chin-ups/hanging, cleans, front-rack barbell, back squats, heavy biceps. Those are Bhupinder's, and functional clearance doesn't reopen them — Sept 3 does, or doesn't.
+**What's unchanged.** HEP stays exactly as is. Named exclusions stay closed: pull-ups/chin-ups/hanging, cleans, front-rack barbell, back squats, heavy biceps. Functional clearance doesn't reopen them.
 
-**The gate.** Symptom-free, which means pain *plus* the two findings that never presented as pain: paresthesia (ring/pinky ulnar, thumb/dorsal radial) and painless weakness. Anything in those territories is a stop and a log entry, not a push-through.
+**The gate.** Symptom-free, which means pain *plus* tingling/numbness and painless weakness. Any of those is a stop and a log entry, not a push-through.
 
 ---
 
@@ -39,7 +38,7 @@ Every lifting session hits squat, hinge, push, pull, carry. Only the lead patter
 2. Band Pull-Aparts — 2 × 15, light
 3. Prone Y-Raises — 2 × 10, 30–45° diagonal, bodyweight or very light
 
-This is thoracic prep, not warm-up filler. It's the tissue Zak is pointing at.
+This is thoracic prep, not warm-up filler.
 
 ---
 
@@ -72,7 +71,7 @@ This is thoracic prep, not warm-up filler. It's the tissue Zak is pointing at.
 | A1 | Floor Push-Ups | 4 × max clean reps | Lead position while fresh |
 | B1 | Chest-Supported DB Row | 3 × 12 | |
 | B2 | Leg Press | 3 × 12 | Light grip on the handles |
-| C1 | Rope Triceps Pressdown | 3 × 12 | OT-prioritized. Neutral wrist. |
+| C1 | Rope Triceps Pressdown | 3 × 12 | Prioritized. Neutral wrist. |
 | C2 | Glute Bridges | 3 × 15 | |
 | D | Broad Jump | 4 × 3 | Full reset between reps |
 | E | Backward Walking Lunges | 2 × 20 steps | |
@@ -87,7 +86,7 @@ This is thoracic prep, not warm-up filler. It's the tissue Zak is pointing at.
 | 2 (8/24) | Build | RPE 7–8. Add load where week 1 felt easy. |
 | 3 (8/31) | Consolidate | RPE 7–8, hold load, add a rep or two. Not a testing week. |
 
-Week 3 isn't a peak — you have an ortho appointment mid-week and no reason to walk in beaten up. Consolidate, then let the next block build from whatever they clear.
+Week 3 isn't a peak. Consolidate, then let the next block build from it.
 
 **Progression rule:** add load only when the top set moves clean at target reps with no symptom response. Two clean sessions before adding, not one.
 
@@ -103,7 +102,7 @@ Why it waits: three lifting days, two Z2 days, a capped class, and yoga is alrea
 
 **Saturday class** — 7/10 cap holds. That's already your hardest session; don't let intervals and class land in the same week until this block is done.
 
-**Sunday yoga** — thoracic mobility, direct follow-on to what Zak released. Avoid loaded wrist-extension positions: no full-weight plank-to-chaturanga flows, no crow, no wheel. Forearm variations for anything weight-bearing.
+**Sunday yoga** — thoracic mobility. Avoid loaded wrist-extension positions: no full-weight plank-to-chaturanga flows, no crow, no wheel. Forearm variations for anything weight-bearing.
 
 ---
 
@@ -123,5 +122,4 @@ All neutral-grip pulling or hinge patterns. All within functional clearance, non
 
 - **App changes** — new day templates and four new exercises. Separate Claude Code session; keep it clear of anything touching scoring or the glossary.
 - **Glossary entries** — the four new movements need setup/execution/checkpoints written, plus `ex.key` values so they surface in the Form Reference panel.
-- **Keyless exercises** — Rope Triceps Pressdown, Prone Y-Raises, Band Pull-Aparts, Safety Bar Squat, Leg Press, Glute Bridges, and Scapular Wall Isometric have no `ex.key`, so the glossary can't reach them. Rope pressdown matters most — it's the OT-prioritized movement. Worth adding keys when the templates get rebuilt anyway.
-- **Sept 3 ortho** — mechanism (traction, full bodyweight catch with swing-back), dual nerve territory (radial + ulnar from one event), and the upper back episode. One mechanism producing both distributions points proximal.
+- **Keyless exercises** — Rope Triceps Pressdown, Prone Y-Raises, Band Pull-Aparts, Safety Bar Squat, Leg Press, Glute Bridges, and Scapular Wall Isometric have no `ex.key`, so the glossary can't reach them. Rope pressdown matters most — it's the prioritized movement. Worth adding keys when the templates get rebuilt anyway.

@@ -93,7 +93,7 @@ This is a model, not measured. Compare it against logged durations after a week.
 | Block | Exercise | Sets × Reps | Start | Note | Bell |
 |---|---|---|---|---|---|
 | A · Activation | Band Pull-Aparts | 2×15 | — | Light, first in session | 2:00 |
-| B · Main | Rack Pull | 4×6 @ RPE 6–7 | ~185 lb | Double overhand · chiro-approved; monitor grip-side · 1–2 ramp sets, not logged · then all working sets at one weight | 12 min ÷ sets |
+| B · Main | Rack Pull | 4×6 @ RPE 6–7 | ~185 lb | Double overhand · monitor grip-side · 1–2 ramp sets, not logged · then all working sets at one weight | 12 min ÷ sets |
 | C | Bulgarian Split Squat | 3×8–10/leg | ~25 lb each hand | DB in each hand, arms straight · right → left → rest | 3:00 |
 | D · Superset | Hip Thrust (A1) | 3×8–10 | Light — find it | Full hip extension, pause at top | 3:15 |
 | | Pallof Press (A2) | 3×8–10/side | — | Neutral grip, static hold · right → left, then rest | |

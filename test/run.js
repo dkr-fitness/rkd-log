@@ -1389,7 +1389,7 @@ ok(SRC.indexOf('placeholder="${escAttr(hw)}"')>=0&&SRC.indexOf("hw=weightHint(cu
 ok(SRC.indexOf('const pw=weightHint(curDay(),last,i,"",ex.w3)')>=0,"session rows pass the week-3 target to set 1's hint");
 ok(SRC.indexOf("lastLineText(lw,lr,")>=0,"...while its Last time line still shows last time's real numbers");
 
-section("HEP — rebuilt for cubital tunnel, keys unchanged");
+section("HEP — rebuilt, keys unchanged");
 resetState();
 /* Every key the July plan logged under, so old hepDetail_* history still has a home. */
 var JULY_KEYS=["b1_levator","b1_scapwallslides","b1_pillowcase","b1_pronechest","b1_wallball","b1_elbowdist",
@@ -1407,7 +1407,7 @@ eq(B1.ex.map(function(e){return e.key;}).join(","),
 eq(HEP_BLOCKS[1].ex.map(function(e){return e.key;}).join(","),"float_nightsplint","Float is night elbow position only");
 ok(LIB.library&&LIB.hepIdx==null,"Library is read-only and has no daily target");
 eq(LIB.ex.filter(function(e){return e.retire;}).map(function(e){return e.key;}).sort().join(","),
-   "b1_elbowdist,b1_wristdev,float_arom","exactly the three July radial/lateral-elbow items are marked retire-pending");
+   "b1_elbowdist,b1_wristdev,float_arom","exactly the three July items are marked retire-pending");
 eq(hepTargetIdx().join(","),"0","only B1 counts toward the daily score");
 /* Auto-complete: Library logs never tick B1, and B1 needs all seven of its own items. */
 var det={}; LIB.ex.forEach(function(e){ det[e.key]=[1]; });

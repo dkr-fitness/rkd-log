@@ -1,8 +1,8 @@
 # RKD Mesocycle 02
 
 **Dates:** Mon 9/7 – Sun 10/18 (6 weeks)
-**Follows:** Mesocycle 01 (Rebuild Block, 8/17–9/6), which ran to the 9/3 ortho appointment.
-**Basis:** Continuation of the post-Zak rebuild. Named exclusions stay in place: cleans, back squat, overhand hanging/pull-ups, heavy biceps. DB Shoulder Press and Cable Pullover — both reintroduced during Meso01 — are paused again pending NCS.
+**Follows:** Mesocycle 01 (Rebuild Block, 8/17–9/6).
+**Basis:** Continuation of the rebuild. Named exclusions stay in place: cleans, back squat, overhand hanging/pull-ups, heavy biceps. DB Shoulder Press and Cable Pullover — both reintroduced during Meso01 — are paused again pending a follow-up.
 
 ## Design Logic
 
@@ -10,7 +10,7 @@
 
 **Why 6 weeks.** Longer runway than Meso01's 3-week appointment-bound block. Split into three 2-week phases (baseline → progressive overload → hold/taper) rather than week-by-week RPE bumps, so load changes are deliberate and infrequent.
 
-**What's unchanged.** HEP stays as is. Named exclusions stay closed. DB Shoulder Press and Cable Pullover are paused pending NCS — they are not in this block's pool at all, unlike Meso01 where Cable Pullover was active and DB Shoulder Press had been reintroduced.
+**What's unchanged.** HEP stays as is. Named exclusions stay closed. DB Shoulder Press and Cable Pullover are paused pending a follow-up — they are not in this block's pool at all, unlike Meso01 where Cable Pullover was active and DB Shoulder Press had been reintroduced.
 
 ---
 
@@ -46,7 +46,7 @@
 | Chest Press | 3×10 | Machine or DB, hard stop at 90° elbow flexion, pain-free only |
 | Floor Push-Up | 3×max reps | Push-pattern default — wall progression retired, log rep count |
 | Scapular Wall Slide | 3×10 | |
-| Triceps Extension (pushdown or overhead) | 3×12 | Prioritized per OT guidance |
+| Triceps Extension (pushdown or overhead) | 3×12 | Prioritized |
 
 ### Friday — Pull + Lower Accessory
 
@@ -97,5 +97,5 @@ Reused from the existing pool: Goblet Squat, Leg Press, Bulgarian Split Squat, P
 ## Open Items
 
 - **Glossary entries** — Rack Pull, Chest Press, Scapular Wall Slide, Triceps Extension, and Neutral-Grip Row have no `FORM_GLOSSARY` entry yet, so they won't surface in the Form Reference panel. This gap already existed for Meso01's new exercises too (Chest-Supported Row, Single-Arm DB Row, Neutral-Grip Cable Row, Romanian Deadlift (DB)) and was never closed — worth doing once, covering both blocks' additions together.
-- **NCS follow-up** — DB Shoulder Press and Cable Pullover stay paused pending results. Whenever that lands, it's a separate decision about whether either re-enters the pool mid-block or waits for Mesocycle 03.
+- **Follow-up** — DB Shoulder Press and Cable Pullover stay paused pending results. Whenever that lands, it's a separate decision about whether either re-enters the pool mid-block or waits for Mesocycle 03.
 - **Block boundary** — Mesocycle 01's day templates (Full Body A/B/C) and the pre-Meso01 legacy templates (Mon Row/Press, Wed Deadlift, Fri Split Squat) are both marked inactive in the day selector once this block's window opens (9/7), consistent with how Meso01 inactivated the legacy templates on 8/17.
