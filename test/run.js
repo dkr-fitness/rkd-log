@@ -1461,6 +1461,49 @@ resetState(); saveHepDetail({});
 HEP_BLOCKS[0].ex.forEach(function(e){ hepType(e.key,0,"5"); hepBoxInput(e.key,e.sets*(e.sides?2:1)); });
 eq(loadHep()[0],true,"filling one box on every B1 item completes B1");
 
+section("Export this cycle so far");
+/* The real export code; only shareJson (the share sheet / download) is swapped for a recorder. */
+loadRegions(region("function collectHep(){","function importLogs(){"));
+var SHARED=[]; shareJson=function(payload,filename){ SHARED.push({data:JSON.parse(payload),filename:filename}); };
+function exportFixture(){
+  resetState(); SHARED=[];
+  LOGS=[{date:"2026-10-18T16:00:00.000Z",n:"meso2 last day"},          /* Sun Oct 18 local */
+        {date:new Date(2026,9,19,6,30).toISOString(),n:"meso3 day 1, early"},
+        {date:new Date(2026,9,26,21,0).toISOString(),n:"evening session — next day in UTC"},
+        {date:"2026-10-31",n:"paste-imported, bare date"}];
+  LS["hep_2026-10-18"]="[true,false,false,false,false]"; LS["hep_2026-10-19"]="[true,false,false,false,false]";
+  LS["hepDetail_2026-10-18"]='{"b1_levator":[30]}';    LS["hepDetail_2026-10-31"]='{"b1_levator":[30,30]}';
+  LS["dtp-pxi"]="{}";
+}
+onDate(2026,10,31,function(){
+  exportFixture(); TODAY="2026-10-31";
+  var c=currentCycle(); eq(c.id+" "+c.start.getDate()+"/"+(c.start.getMonth()+1),"meso03 19/10","current cycle is Meso 3 from Oct 19");
+  exportCycle();
+  var d=SHARED[0].data;
+  eq(Object.keys(d).sort().join(),"hep,hepDetail,logs","same top-level shape as the full export");
+  eq(d.logs.map(function(l){return l.n;}).join("|"),"meso3 day 1, early|evening session — next day in UTC|paste-imported, bare date","logs: Oct 19 through today, by local day");
+  eq(Object.keys(d.hep).join(),"2026-10-19","hep: from Oct 19 only");
+  eq(Object.keys(d.hepDetail).join(),"2026-10-31","hepDetail: from Oct 19 only");
+  eq(JSON.stringify(d.hepDetail["2026-10-31"]),'{"b1_levator":[30,30]}',"...entries copied as stored");
+  eq(SHARED[0].filename,"block-log-meso03-2026-10-19-to-2026-10-31.json","filename names the cycle and range");
+  SHARED=[]; exportLogs();
+  eq(SHARED[0].data.logs.length,4,"full export: still every log");
+  eq(Object.keys(SHARED[0].data.hep).length+Object.keys(SHARED[0].data.hepDetail).length,4,"...and every HEP day");
+  eq(SHARED[0].filename,"block-log-"+new Date().toISOString().slice(0,10)+".json","...under the same filename as before");
+});
+onDate(2026,10,18,function(){
+  exportFixture(); TODAY="2026-10-18";
+  eq(currentCycle().id,"meso02","on Meso 2's last day the cycle is Meso 2");
+  exportCycle(); eq(SHARED[0].data.logs.map(function(l){return l.n;}).join("|"),"meso2 last day","...and a later block's entries are left out");
+});
+onDate(2026,12,20,function(){
+  var c=currentCycle(); eq(c.id+" "+(c.start.getMonth()+1)+"/"+c.start.getDate(),"open 12/14","after Meso 3: Off-block, from Dec 14");
+});
+onDate(2026,7,1,function(){
+  resetState(); SHARED=[]; TOASTS=[]; eq(currentCycle(),null,"before Block 1: no cycle");
+  exportCycle(); eq(SHARED.length,0,"...so nothing is exported");
+});
+
 section("Interval timer — built-in presets");
 resetState(); ivtPresetMem=[];
 eq(IVT_BUILTINS.length,3,"three built-ins ship");

@@ -63,6 +63,7 @@
 - Data persists by **URL origin**, not file contents — redeploying to the same Pages URL never risks saved data
 - Real data-loss risks: opening via `file://`, clearing browser/site data, switching devices
 - JSON export is the portability net for moving data across devices
+- **Export this cycle so far** (`exportCycle()`, History tab): the same `{logs, hep, hepDetail}` shape cut to the current cycle — `currentCycle()` reads `BLOCKS` via `blockFor()`; past the last block it's Off-block from the day after — through today, by local day. **It's a partial file: Import replaces `logs` wholesale**, so importing it would drop every session before the cycle. Use the full export to move devices.
 - Keys in use: `dtp-logs` (sessions), `dtp-pxi` (scoring settings), `dtp-ivt` (interval-timer config), `dtp-ivt-presets` (saved timer presets), `dtp-alerts` (voice-cue on/off), `hep_<date>` / `hepDetail_<date>` (daily HEP), `dtp-draft_<date>_<day>` (unfinished sessions)
 - Every writer degrades to an in-memory fallback when `storageOK` is false (private browsing) — match that pattern for anything new
 

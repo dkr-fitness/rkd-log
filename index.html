@@ -3569,7 +3569,7 @@ function renderHistory(m){
   let h="";
   /* Export/Import first: it used to sit past the whole PR grid, the weekly totals and every
      history card, which is a long scroll to reach the one control you want when moving devices. */
-  h+=`<div class="row2" style="margin-bottom:14px"><button onclick="exportLogs()">Export JSON</button><button onclick="importLogs()">Import JSON</button></div>`;
+  h+=`<div class="row2" style="margin-bottom:14px"><button onclick="exportLogs()">Export JSON</button><button onclick="exportCycle()">Export this cycle so far</button><button onclick="importLogs()">Import JSON</button></div>`;
   h+=`<div class="notecard" style="margin-bottom:14px">
     <label>Paste Workout</label>
     <textarea id="pasteWorkoutInput" rows="6" placeholder="RKD-WORKOUT
@@ -3729,8 +3729,40 @@ function collectHep(){
   return {hep,hepDetail};
 }
 async function exportLogs(){
-  const payload=JSON.stringify({logs:loadLogs(),...collectHep()},null,1);
-  const filename="block-log-"+new Date().toISOString().slice(0,10)+".json";
+  return shareJson(JSON.stringify({logs:loadLogs(),...collectHep()},null,1),
+                   "block-log-"+new Date().toISOString().slice(0,10)+".json");
+}
+/* The current cycle's first day: its BLOCKS start, or — past the last block — the day after it
+   ends, where blockFor() starts counting Off-block weeks. Null before Block 1 began. */
+function currentCycle(){
+  const b=blockFor(), blk=BLOCKS.filter(x=>x.id===b.id)[0];
+  if(blk) return {id:blk.id,label:blk.label,start:new Date(blk.start)};
+  if(b.id!=="open") return null;
+  const last=BLOCKS[BLOCKS.length-1], s=new Date(last.start);
+  s.setDate(s.getDate()+last.lastDay+1);
+  return {id:"open",label:"Off-block",start:s};
+}
+/* Same shape as the full export, cut to the current cycle's first day through today. Logs are
+   cut on their date (local time); hep_/hepDetail_ on their YYYY-MM-DD key. */
+function cyclePayload(){
+  const c=currentCycle(); if(!c) return null;
+  const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  /* A bare YYYY-MM-DD is already a local day; new Date() would read it as UTC midnight. */
+  const dayOf=v=>/^\d{4}-\d{2}-\d{2}$/.test(String(v))?String(v):ymd(new Date(v));
+  const from=ymd(c.start), to=todayStr(), inRange=d=>d>=from&&d<=to;
+  const all=collectHep(), hep={}, hepDetail={};
+  Object.keys(all.hep).filter(inRange).forEach(d=>hep[d]=all.hep[d]);
+  Object.keys(all.hepDetail).filter(inRange).forEach(d=>hepDetail[d]=all.hepDetail[d]);
+  const logs=loadLogs().filter(l=>inRange(dayOf(l.date)));
+  return {cycle:c, from, to, data:{logs,hep,hepDetail}};
+}
+async function exportCycle(){
+  const p=cyclePayload();
+  if(!p){ toast("No cycle has started yet"); return; }
+  return shareJson(JSON.stringify(p.data,null,1),"block-log-"+p.cycle.id+"-"+p.from+"-to-"+p.to+".json");
+}
+/* Share sheet first (Bluefy), then a download link, then a new tab with the raw JSON. */
+async function shareJson(payload,filename){
   const blob=new Blob([payload],{type:"application/json"});
 
   if(navigator.share){
