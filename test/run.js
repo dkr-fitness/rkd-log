@@ -1417,6 +1417,50 @@ autoCheckHepBlocks(det); eq(loadHep()[0],false,"six of seven B1 items does not c
 det.b1_radialglide=[8];
 autoCheckHepBlocks(det); eq(loadHep()[0],true,"the seventh completes B1");
 
+section("HEP — prescribed set boxes, logged as typed");
+/* The real renderHepTab(), with its title line and date label stubbed. */
+loadRegions("var todayLabel=function(){return \"Sun, Sep 20\";};\n"+region("function renderHepTab(m){","function toggleHepBlockCollapse(bi){"));
+var HEP_SETS={b1_scapwallslides:2,b1_pillowcase:1,b1_levator:2,b1_fingerspreads:2,b1_platepinch:2,
+              b1_ulnarslider:2,b1_radialglide:2,float_nightsplint:1};
+var HEP_SIDES=["b1_levator","b1_fingerspreads","b1_platepinch","b1_ulnarslider","b1_radialglide"];
+HEP_BLOCKS.slice(0,2).forEach(function(b){ b.ex.forEach(function(e){
+  eq(e.sets,HEP_SETS[e.key],e.key+": "+HEP_SETS[e.key]+" prescribed sets");
+  eq(!!e.sides,HEP_SIDES.indexOf(e.key)>=0,"...per side: "+(HEP_SIDES.indexOf(e.key)>=0));
+}); });
+function hepRender(){ DOM.title={id:"title",textContent:""}; var m={innerHTML:""}; renderHepTab(m); return m.innerHTML; }
+function hepBoxes(h,key){ return (h.match(new RegExp('id="hepIn_'+key+'_\\d+"','g'))||[]).length; }
+resetState();
+var H=hepRender();
+Object.keys(HEP_SETS).forEach(function(k){ var n=HEP_SETS[k]*(HEP_SIDES.indexOf(k)>=0?2:1); eq(hepBoxes(H,k),n,k+": renders exactly its prescribed boxes ("+n+")"); });
+/* Per-side: each set row holds its R box then its L box, side by side. */
+ok(/<span class="n">1<\/span><input inputmode="decimal" placeholder="R sec" id="hepIn_b1_levator_0"[^>]*><input inputmode="decimal" placeholder="L sec" id="hepIn_b1_levator_1"[^>]*><\/div>/.test(H),"per-side set 1: R and L boxes on one row, right first");
+ok(/<span class="n">2<\/span><input inputmode="decimal" placeholder="R reps" id="hepIn_b1_ulnarslider_2"/.test(H),"...set 2 starts with R again (box 3)");
+eq((H.match(/<span class="n">\d+<\/span>/g)||[]).length,2+1+2+2+2+2+2+1,"one numbered row per set, not per box");
+ok(!/logHepEntry|>Log</.test(H),"no Log button");
+ok((H.match(/id="hepIn_[^"]*"/g)||[]).every(function(x){ return /_\d+"$/.test(x); }),"no free-entry input left — every input is a numbered set box");
+ok(/id="hepIn_b1_levator_0" value="" oninput="hepBoxInput\('b1_levator',4\)"/.test(H),"each box saves on input, no second tap");
+ok(/placeholder="R sec" id="hepIn_b1_levator_0"/.test(H)&&/placeholder="reps" id="hepIn_b1_scapwallslides_0"/.test(H)&&/placeholder="done" id="hepIn_float_nightsplint_0"/.test(H),"placeholders: R/L sec, reps, done");
+ok(!/hepIn_b1_pronechest/.test(H),"Library stays read-only");
+/* Typing in a box logs it straight away. */
+function hepType(key,i,v){ var id="hepIn_"+key+"_"+i; DOM[id]={id:id,value:v}; }
+hepType("b1_levator",0,"30"); hepType("b1_levator",1,""); hepBoxInput("b1_levator",4);
+eq(JSON.stringify(loadHepDetail().b1_levator),"[30]","typing box 1 logs it at once");
+hepType("b1_levator",1,"25"); hepBoxInput("b1_levator",4);
+eq(JSON.stringify(loadHepDetail().b1_levator),"[30,25]","...box 2 too");
+hepType("b1_levator",0,"35"); hepBoxInput("b1_levator",4);
+eq(JSON.stringify(loadHepDetail().b1_levator),"[35,25]","editing a box replaces its value instead of adding one");
+hepType("b1_levator",0,"0"); hepType("b1_levator",1,"abc"); hepBoxInput("b1_levator",4);
+ok(!("b1_levator" in loadHepDetail()),"clearing to nothing valid removes the item");
+H=hepRender(); hepType("b1_scapwallslides",0,"10"); hepBoxInput("b1_scapwallslides",2);
+ok(/id="hepIn_b1_scapwallslides_0" value="10"/.test(hepRender()),"a logged value is shown in its box on re-render");
+/* A day logged under the old 3-entry cap keeps all three. */
+saveHepDetail({b1_scapwallslides:[10,10,8]});
+eq(hepBoxes(hepRender(),"b1_scapwallslides"),3,"an old 3-entry day keeps a box per logged value");
+/* Logging the seventh B1 item through its boxes completes B1, as before. */
+resetState(); saveHepDetail({});
+HEP_BLOCKS[0].ex.forEach(function(e){ hepType(e.key,0,"5"); hepBoxInput(e.key,e.sets*(e.sides?2:1)); });
+eq(loadHep()[0],true,"filling one box on every B1 item completes B1");
+
 section("Interval timer — built-in presets");
 resetState(); ivtPresetMem=[];
 eq(IVT_BUILTINS.length,3,"three built-ins ship");

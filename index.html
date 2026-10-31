@@ -1928,17 +1928,19 @@ const HEP_RETIRE_NOTE="Retire pending — confirm with surgeon. Built for the Ju
 const HEP_PUSHUP_DORMANT_REASON="Goal met 8/12 — floor push-ups now run in training (Meso 02 Wednesday), not as an HEP item";
 const HEP_BLOCKS=[
  {label:"B1 Gym · pre-lift", hepIdx:0, note:"Stop the glides for the day if tingling increases or lingers.", ex:[
-   {key:"b1_scapwallslides",n:"Scapular wall slides",rx:"2 × 10 · slow, elbows stay on the wall",type:"reps"},
-   {key:"b1_pillowcase",n:"Pillowcase isometric",rx:"5 × 5 s holds",type:"reps"},
-   {key:"b1_levator",n:"Levator scap stretch",rx:"2 × 30 s per side · keep the stretching arm straight · ⚠️ if warming or tingling into fingertips, back off",type:"timed",note:HEP_LEVATOR_NOTE},
-   {key:"b1_fingerspreads",n:"Finger spreads",rx:"2 × 15 each hand · rubber band around the fingers",type:"reps"},
-   {key:"b1_platepinch",n:"Plate pinch hold",rx:"2 × 20–30 s per side · 5 lb plate, thumb flat on one face, fingers flat on the other, arm straight · right first",type:"timed"},
-   {key:"b1_ulnarslider",n:"Ulnar nerve slider",rx:"2 × 8 per arm, both arms · arm out, palm up: bend the elbow while tilting the head toward that arm, straighten it while tilting away · smooth, never a stretch",type:"reps"},
-   {key:"b1_radialglide",n:"Radial nerve glide (chiro)",rx:"2 × 8 per arm · thumb tucked into a fist, elbow straight, push the hand back and away from the body, tilt the head to the opposite side",type:"reps"}]},
+   {key:"b1_scapwallslides",n:"Scapular wall slides",rx:"2 × 10 · slow, elbows stay on the wall",sets:2,type:"reps"},
+   {key:"b1_pillowcase",n:"Pillowcase isometric",rx:"5 × 5 s holds",sets:1,type:"reps"},
+   {key:"b1_levator",n:"Levator scap stretch",rx:"2 × 30 s per side · keep the stretching arm straight · ⚠️ if warming or tingling into fingertips, back off",sets:2,sides:true,type:"timed",note:HEP_LEVATOR_NOTE},
+   {key:"b1_fingerspreads",n:"Finger spreads",rx:"2 × 15 each hand · rubber band around the fingers",sets:2,sides:true,type:"reps"},
+   {key:"b1_platepinch",n:"Plate pinch hold",rx:"2 × 20–30 s per side · 5 lb plate, thumb flat on one face, fingers flat on the other, arm straight · right first",sets:2,sides:true,type:"timed"},
+   {key:"b1_ulnarslider",n:"Ulnar nerve slider",rx:"2 × 8 per arm, both arms · arm out, palm up: bend the elbow while tilting the head toward that arm, straighten it while tilting away · smooth, never a stretch",sets:2,sides:true,type:"reps"},
+   {key:"b1_radialglide",n:"Radial nerve glide (chiro)",rx:"2 × 8 per arm · thumb tucked into a fist, elbow straight, push the hand back and away from the body, tilt the head to the opposite side",sets:2,sides:true,type:"reps"}]},
+ // sets = the prescribed sets (renderHepTab draws exactly that many). sides = per-side/per-arm:
+ // each set row gets an R box and an L box side by side, right first.
  // Float has no hepIdx — logged by hand, never auto-completed or counted.
  {label:"Float · anytime", note:"Don't lean on elbows · switch hands on long phone holds · light hands on bike bars.", ex:[
    // Key kept from the July night splint (~7/30) so its history lines up.
-   {key:"float_nightsplint",n:"Night elbow position",rx:"nightly, both arms · towel wrap or soft splint so the elbows don't stay deeply bent · log 1 when done",type:"reps",unit:" done"}]},
+   {key:"float_nightsplint",n:"Night elbow position",rx:"nightly, both arms · towel wrap or soft splint so the elbows don't stay deeply bent · log 1 when done",sets:1,type:"reps",unit:" done"}]},
  /* Library: the rest of the July plan, kept as stretch reminders. No hepIdx, so it never counts
     toward the daily score or autoCheckHepBlocks; `library` makes renderHepTab show it read-only
     and collapsed, dormant items included with their reasons. Items keep their July rx verbatim.
@@ -1954,7 +1956,7 @@ const HEP_BLOCKS=[
    {key:"b1_wristflex",n:"Seated wrist flexion stretch",rx:"10–30s hold, fingers as guide",type:"timed"},
    {key:"b1_toothbrush",n:"Vibration desensitization (electric toothbrush)",rx:"along radial distribution · shared 2–3×/day dose w/ the Float self-massage",type:"timed"},
    // The 90° in each is the position held, not the joint moved (7/14 OT source).
-   {key:"float_arom",n:"AROM/PROM: elbow flex–ext (supine, shoulder at 90°) + pronation–supination (seated, elbow at 90°)",rx:"5 reps per bout · log each bout toward the 5×/day prescription",type:"reps",unit:" done",max:5,retire:true},
+   {key:"float_arom",n:"AROM/PROM: elbow flex–ext (supine, shoulder at 90°) + pronation–supination (seated, elbow at 90°)",rx:"5 reps per bout · log each bout toward the 5×/day prescription",type:"reps",unit:" done",retire:true},
    // Not pre-lift — don't pre-load radial tissue before lifting.
    {key:"float_finkelstein",n:"Finkelstein stretch",rx:HEP_FINKELSTEIN_RX,type:"timed"},
    {key:"float_cupping",n:"Tennis elbow self massage (silicone cupping)",rx:"5–10 min gentle · shared 2–3×/day radial-nerve dose w/ the B1 vibration desensitization · light pressure only, no hard friction/trigger point work",type:"timed"},
@@ -1985,6 +1987,21 @@ function autoCheckHepBlocks(detail){
   });
   if(changed){ saveHep(arr); const el=document.getElementById("hepStatus"); if(el) el.innerHTML=hepRowHtml(hepCount(arr)); }
 }
+/* One box per prescribed set, saved as it's typed — like a session set row, so there's no Log
+   button and no second tap. Stored as before: the item's filled values in box order (an empty box
+   is skipped), so autoCheckHepBlocks, export and import read it unchanged. n is how many boxes
+   the item drew. */
+function hepBoxInput(key,n){
+  const vals=[];
+  for(let i=0;i<n;i++){
+    const el=document.getElementById("hepIn_"+key+"_"+i); if(!el||el.value==="") continue;
+    const v=Number(el.value); if(Number.isFinite(v)&&v>0) vals.push(v);
+  }
+  const detail=loadHepDetail();
+  if(vals.length) detail[key]=vals; else delete detail[key];
+  saveHepDetail(detail);
+  autoCheckHepBlocks(detail);
+}
 /* ---- shared stopwatch: Date.now()-diff based, start-only reset (no separate reset control) ---- */
 let hepClockRunning=false, hepClockStart=null, hepClockAcc=0, hepClockInt=null;
 function hepElapsedSec(){ return Math.floor((hepClockAcc+(hepClockRunning?Date.now()-hepClockStart:0))/1000); }
@@ -2008,30 +2025,6 @@ function syncHepClockUI(){
   el.classList.toggle("paused",!hepClockRunning);
   btn.textContent=hepClockRunning?"Stop":"Start";
 }
-/* Entries per item per day. Default 3; an item may raise it via `max` — the consolidated
-   AROM/PROM bout is 5, matching its 5×/day prescription. */
-const HEP_ENTRY_CAP=3;
-function hepCapFor(key){
-  for(let i=0;i<HEP_BLOCKS.length;i++){
-    const ex=HEP_BLOCKS[i].ex.filter(e=>e.key===key)[0];
-    if(ex) return ex.max||HEP_ENTRY_CAP;
-  }
-  return HEP_ENTRY_CAP;
-}
-function logHepEntry(key){
-  const inp=document.getElementById("hepIn_"+key); if(!inp) return;
-  if(inp.value==="") return;
-  const v=Number(inp.value);
-  if(!Number.isFinite(v)||v<=0) return;
-  const cap=hepCapFor(key);
-  const detail=loadHepDetail();
-  const arr=(detail[key]||[]).slice(0,cap);
-  if(arr.length>=cap) return;
-  arr.push(v); detail[key]=arr;
-  saveHepDetail(detail);
-  autoCheckHepBlocks(detail);
-  renderHepTab(document.getElementById("main"));
-}
 function renderHepTab(m){
   document.getElementById("title").textContent="HEP · "+todayLabel();
   const detail=loadHepDetail();
@@ -2047,16 +2040,20 @@ function renderHepTab(m){
       }
       if(ex.dormant) return;
       const entries=detail[ex.key]||[];
-      const unit=ex.unit!=null?ex.unit:(ex.type==="timed"?"s":" reps");
+      /* Exactly the prescribed boxes: one per set, or an R and an L per set on a per-side item.
+         A day logged under the old 3-entry cap can hold more than that; its extra values still
+         get a box so nothing logged is hidden or dropped on edit. Boxes are numbered in reading
+         order (R1, L1, R2, L2…), which is the order hepBoxInput stores them in. */
+      const cols=ex.sides?2:1, n=Math.max((ex.sets||1)*cols,entries.length);
+      const ph=ex.type==="timed"?"sec":ex.unit===" done"?"done":"reps";
       h+=`<div class="ex"><div class="ex-name">${ex.n}</div><div class="ex-rx">${ex.rx}</div>${ex.note?`<div class="ex-note">${ex.note}</div>`:""}<div class="sets">`;
-      entries.forEach((v,i)=>{ h+=`<div class="set"><span class="n">${i+1}</span><span style="font-family:var(--mono)">${v}${unit}</span></div>`; });
-      const cap=ex.max||HEP_ENTRY_CAP;
-      if(entries.length<cap){
-        h+=`<div class="set"><span class="n">${entries.length+1}</span>
-          <input inputmode="decimal" placeholder="${ex.type==="timed"?"sec":"reps"}" id="hepIn_${ex.key}">
-          <button class="btn2" onclick="logHepEntry('${ex.key}')">Log</button></div>`;
-      } else {
-        h+=`<div class="ex-rx">${cap}/${cap} logged</div>`;
+      for(let row=0;row*cols<n;row++){
+        h+=`<div class="set"><span class="n">${row+1}</span>`;
+        for(let c=0;c<cols&&row*cols+c<n;c++){
+          const i=row*cols+c;
+          h+=`<input inputmode="decimal" placeholder="${cols>1?(c?"L ":"R ")+ph:ph}" id="hepIn_${ex.key}_${i}" value="${entries[i]!=null?entries[i]:""}" oninput="hepBoxInput('${ex.key}',${n})">`;
+        }
+        h+=`</div>`;
       }
       h+=`</div></div>`;
     });
@@ -3794,8 +3791,8 @@ function importLogs(){
           Object.keys(v).forEach(exKey=>{
             const a=v[exKey];
             if(!Array.isArray(a)) return;
-            /* 5, not HEP_ENTRY_CAP — the largest per-item cap, so a full AROM/PROM day
-               survives an export/import round-trip rather than being truncated to 3. */
+            /* 5 — the most any item has ever held in a day (AROM/PROM's 5 bouts, Pillowcase's
+               5 holds), so a full day survives an export/import round-trip. */
             const nums=a.slice(0,5).map(Number).filter(n=>Number.isFinite(n)&&n>0);
             if(nums.length) clean[exKey]=nums;
           });
