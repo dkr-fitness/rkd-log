@@ -1382,7 +1382,7 @@ DAY="meso02Wed"; DOM.w_0_0_0.value="150"; refreshWeightHints(PB.blocks);
 eq(DOM.w_0_0_1.placeholder,"wt","other days: no live re-pointing");
 resetState();
 /* The wiring lives outside loaded regions; guard it at the source. */
-ok(SRC.indexOf("function onSetInput(){ draftHold=false; captureSessionDraft(); scheduleDraftSave(); updatePlanChip(); refreshWeightHints(); }")>=0,"every set edit re-points the hints");
+ok(SRC.indexOf("function onSetInput(){ draftHold=false; captureSessionDraft(); scheduleDraftSave(); updatePlanChip(); refreshWeightHints(); syncWeekStepper(); }")>=0,"every set edit re-points the hints (and re-syncs the week stepper)");
 ok(SRC.indexOf("restoreSessionDraft(); updatePlanChip(); refreshWeightHints();")>=0,"...and so does a render, after the draft is restored");
 ok(SRC.indexOf('placeholder="${escAttr(hr)}"')>=0&&SRC.indexOf("hr=repsHint(curDay(),last,st.i)")>=0,"set mode's reps hint uses the same top set on set 1");
 ok(SRC.indexOf('placeholder="${escAttr(hw)}"')>=0&&SRC.indexOf("hw=weightHint(curDay(),last,st.i,s1?s1.value:\"\",ex.w3)")>=0,"set mode's weight hint follows set 1 too (so Same as last and ±5 use it), and takes the week-3 target");
@@ -1554,6 +1554,95 @@ onDate(2026,10,31,function(){
   cancelImport(); eq(LOGS.length,2,"...and cancelling it keeps every session");
   SHARED=[]; exportLogs(); importData(SHARED[0].data); eq(DOM.impConfirm.hidden,true,"a real full export does not");
 });
+
+section("Week preview — stepper, lock and read-only guards");
+/* stepWeek() closes set mode and stops a block timer on the way; neither exists in this harness. */
+var closeFocus=function(){}, stopBlock=function(){};
+/* The real logRest() and saveSession(), for their preview guards. */
+loadRegions(region("function logRest(){","function toast(t){"),
+            region("function saveSession(){","function logRest(){").replace("function saveSession(){","function realSaveSession(){"));
+function pvReset(){ resetState(); viewWeeks=0; TODAY="2026-10-31"; DAY="meso03Sat"; view="session";
+  DOM.wkStep={id:"wkStep",hidden:false}; DOM.wkLbl={id:"wkLbl",textContent:"",className:""};
+  DOM.wkPrev={id:"wkPrev",disabled:false}; DOM.wkNext={id:"wkNext",disabled:false}; }
+var PV_DRAFT=DRAFT_PREFIX+"2026-10-31_meso03Sat";
+onDate(2026,10,31,function(){
+  /* Programming follows planDate(); the real calendar doesn't. */
+  pvReset();
+  eq(meso03Week(),2,"Oct 31 is Meso 3 week 2");
+  viewWeeks=1;
+  eq(meso03Week()+" "+blockFor().week,"3 2","preview +1: programming reads week 3, blockFor() still week 2");
+  ok(exOf("meso03Wed","Safety Bar Squat").rx.indexOf("Week 3: 150 lb")>=0,"...so week 3's targets show");
+  viewWeeks=2;
+  ok(!/Week 3/.test(exOf("meso03Wed","Safety Bar Squat").rx)&&meso03LoadingText()===MESO03_LOADING_RULE,"preview +2 (week 4): no week-3 targets, the RPE Loading rule");
+  viewWeeks=6;
+  eq(phaseForWeek(meso03Week(),"meso03"),"Deload","preview +6: week 8, Deload");
+  ok(/Retest/.test(realSession(8,"meso03Mon").retest||"")&&exOf("meso03Sat","Leg Press").sets===2,"...with the retest banner and 2-set Saturday");
+  ok(planCapped("meso03Mon"),"...and the Deload medal rule");
+  viewWeeks=0;
+  eq(meso03Week(),2,"back at 0: week 2 again");
+  /* Range comes from BLOCKS: Meso 3 runs weeks 1–8, so from week 2 it's -1 … +6. */
+  eq(JSON.stringify(previewRange()),'{"min":-1,"max":6}',"range from BLOCKS: back 1, forward 6");
+  pvReset(); stepWeek(-1); stepWeek(-1);
+  eq(viewWeeks,-1,"stepping past the block's first week does nothing");
+  syncWeekStepper();
+  eq(DOM.wkPrev.disabled+" "+DOM.wkNext.disabled,"true false","...the ‹ arrow greys out at the start");
+  eq(DOM.wkLbl.textContent+" "+DOM.wkLbl.className,"M3·W1·B pv","...label shows the previewed week, marked as preview");
+  for(var i=0;i<10;i++) stepWeek(1);
+  eq(viewWeeks,6,"stepping past the block's last week does nothing");
+  syncWeekStepper(); eq(DOM.wkPrev.disabled+" "+DOM.wkNext.disabled,"false true","...the › arrow greys out at the end");
+  backToThisWeek(); eq(viewWeeks,0,"Back to this week returns to 0");
+  syncWeekStepper(); eq(DOM.wkLbl.textContent+" "+DOM.wkLbl.className,"M3·W2·B ","...label is this week, unmarked");
+  view="history"; syncWeekStepper(); eq(DOM.wkStep.hidden,true,"stepper hidden off the Session tab");
+  /* Locked while this week's session has anything in it. */
+  var LOCKS=[["a draft in progress",function(){ writeDraft(PV_DRAFT,{draftId:"d1",day:"meso03Sat",fields:{"w_1_0_0":"190"}}); }],
+             ["a typed set",function(){ sessionDraft={key:"x",day:"meso03Sat",fields:{"w_1_0_0":"190"},rpe:0,note:"",strain:""}; }],
+             ["session RPE",function(){ sessionDraft={key:"x",day:"meso03Sat",fields:{},rpe:7,note:"",strain:""}; }],
+             ["an added set",function(){ extraSets["meso03Sat|1_0"]=1; }],
+             ["a symptom",function(){ painEvents["meso03Sat|1_0"]=[{set:1,kind:"ache"}]; }],
+             ["an exercise note",function(){ exNotes["meso03Sat|1_0"]="left knee"; }],
+             ["WHOOP time accruing",function(){ live.secs=5; }]];
+  LOCKS.forEach(function(L){
+    pvReset(); L[1](); stepWeek(1); stepWeek(-1);
+    eq(viewWeeks,0,"locked with "+L[0]+": stepping does nothing");
+    syncWeekStepper(); eq(DOM.wkPrev.disabled+" "+DOM.wkNext.disabled,"true true","...both arrows greyed");
+  });
+  /* The arrows grey the moment something is typed, not on the next render. */
+  /* A non-plan day, so onSetInput()'s weight-hint refresh (set-mode territory) stays out of it. */
+  pvReset(); DAY="meso02Wed"; syncWeekStepper(); eq(DOM.wkNext.disabled,false,"fresh session: › is live");
+  fillForm({"w_1_0_0":"190"}); onSetInput();
+  eq(DOM.wkPrev.disabled+" "+DOM.wkNext.disabled,"true true","typing a set greys both arrows straight away");
+  ok(SRC.indexOf("if(live.secs===1) syncWeekStepper();")>=0,"...and so does WHOOP time starting");
+  pvReset(); sessionDraft={key:"x",day:"meso03Fri",fields:{"w_1_0_0":"40"},rpe:0,note:"",strain:""};
+  stepWeek(1); eq(viewWeeks,1,"another day's typed buffer doesn't lock this day");
+  pvReset(); stepWeek(1); eq(viewWeeks,1,"nothing in progress: stepping works");
+  /* Second layer: in preview nothing saves, scrapes or restores, even if called directly. */
+  pvReset(); writeDraft(PV_DRAFT,{draftId:"d1",day:"meso03Sat",fields:{"w_1_0_0":"190"},rpe:0});
+  var keep=LS[PV_DRAFT]; viewWeeks=1;
+  sessionDraft={key:"x",day:"meso03Sat",fields:{},rpe:0,note:"",strain:""};
+  persistDraft(); eq(LS[PV_DRAFT],keep,"preview: persistDraft() leaves today's draft untouched");
+  fillForm({"w_1_0_0":"999"}); var before=sessionDraft;
+  captureSessionDraft(); ok(sessionDraft===before,"preview: captureSessionDraft() doesn't scrape the preview form");
+  sessionDraft=null; emptyForm(["w_1_0_0"]); restoreSessionDraft();
+  eq(DOM["w_1_0_0"].value,"","preview: restoreSessionDraft() doesn't pour today's draft in");
+  var nLogs=LOGS.length; logRest(); eq(LOGS.length,nLogs,"preview: logRest() logs nothing");
+  try{ realSaveSession(); }catch(e){}
+  eq(LOGS.length,nLogs,"preview: saveSession() (Finish) logs nothing");
+  eq(LS[PV_DRAFT],keep,"...and today's draft is still intact");
+  backToThisWeek(); sessionDraft=null; resetCurDraft(); emptyForm(["w_1_0_0"]); restoreSessionDraft();
+  eq(DOM["w_1_0_0"].value,"190","back to this week: the draft restores as usual");
+  viewWeeks=0; logRest(); eq(LOGS.length,nLogs+1,"...and logRest() works again at week 0");
+});
+onDate(2026,10,19,function(){ pvReset(); stepWeek(-1); eq(viewWeeks,0,"Meso 3 week 1: can't step back before Oct 19"); });
+onDate(2026,12,13,function(){ pvReset(); stepWeek(1); eq(viewWeeks,0,"Meso 3's last day: can't step past Dec 13"); });
+onDate(2026,12,20,function(){ pvReset(); eq(JSON.stringify(previewRange()),'{"min":0,"max":0}',"Off-block: nowhere to step");
+  stepWeek(1); stepWeek(-1); eq(viewWeeks,0,"...stepping does nothing"); });
+/* Wiring outside the loaded regions, guarded at the source. */
+ok(SRC.indexOf('if(viewWeeks){ backToThisWeek(); toast("Back to this week — WHOOP is tracking"); }')>=0,"WHOOP accruing during a preview drops back to this week");
+ok(SRC.indexOf("flushDraft(); viewWeeks=0; }")>=0,"leaving the Session tab ends a preview");
+ok(SRC.indexOf("if(viewWeeks) return \"\"; /* RPE, strain, notes and Finish")>=0,"preview: no RPE/strain/notes/Finish card");
+ok(SRC.indexOf("if(!viewWeeks){\n    h+=staleDraftBannerHtml();")>=0,"preview: no draft banner or HEP panel");
+eq((SRC.match(/restoreSessionDraft\(\);[^\n]*lockPreviewForm\(m\);/g)||[]).length,5,"every Session render path locks the preview form");
+ok(SRC.indexOf("blockTag(blockFor(planDate()))")>=0,"the title shows the previewed week");
 
 section("Interval timer — built-in presets");
 resetState(); ivtPresetMem=[];

@@ -61,6 +61,15 @@ body.ivt-run #hrBar{height:12px; margin-top:9px}
 #hrBarFill{position:absolute; top:0; left:0; height:100%; width:0%; background:rgba(255,255,255,.85); border-radius:4px; transition:width .3s ease; z-index:2}
 
 .selects{display:flex; gap:8px; padding:10px 14px; background:var(--surface)}
+/* Week preview stepper (Session tab). Disabled arrows grey out: block ends, or a session in progress. */
+.wkstep{display:flex; align-items:center; gap:4px; flex:0 0 auto}
+.wkstep[hidden]{display:none}
+.wkstep button{width:34px; height:38px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--text); font-size:20px; font-weight:700; line-height:1}
+.wkstep button:disabled{opacity:.3}
+.wkstep span{min-width:74px; text-align:center; font-family:var(--disp); font-weight:700; letter-spacing:.04em; color:var(--text); font-size:15px}
+.wkstep span.pv{color:var(--amber)}
+.pvbar{display:flex; align-items:center; gap:10px; justify-content:space-between}
+#main.pv .savebtn,#main.pv .restbtn,#main.pv .focusbtn,#main.pv .playb,#main.pv .setbtn,#main.pv .plan-chip{display:none}
 select{flex:1; background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:9px 10px; font-size:15px}
 .tabs{display:flex; gap:6px; padding:0 14px 10px; background:var(--surface); border-bottom:1px solid var(--line)}
 .tab{flex:1; padding:8px; text-align:center; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--muted); font-size:14px; font-weight:600}
@@ -405,6 +414,7 @@ body.ivt-amb.z5 #focus{background-image:var(--zg5)}
       <option value="mixed">Fri · Split Squat</option>
     </optgroup>
   </select>
+  <div class="wkstep" id="wkStep" hidden><button id="wkPrev" onclick="stepWeek(-1)" aria-label="Previous week">‹</button><span id="wkLbl"></span><button id="wkNext" onclick="stepWeek(1)" aria-label="Next week">›</button></div>
 </div>
 <div class="tabs">
   <button class="tab active" id="tabS" onclick="setView('session')">Session</button>
@@ -492,13 +502,19 @@ function inMeso02Window(){
 // (Baseline ×2, Volume ×3, Performance ×2, Deload) — see RKD_Mesocycle_03.md.
 const MESO03_START=new Date(2026,9,19); // Mon Oct 19, 2026
 const MESO03_END_DAY=55; // Sun 12/13 — last day of the 8-week window (day 0 = Mon 10/19)
+/* Week preview (2026-10-31): the Session tab's ‹ › stepper reads other weeks of the current
+   block. viewWeeks is that offset — session-only, 0 on load — and planDate() is the date the
+   programming reads (Meso 03's week and window). Everything that saves, stamps or keys data stays
+   on the real clock: todayStr(), drafts, saveSession, logRest, the HEP, History, exports. */
+let viewWeeks=0;
+function planDate(){ const d=new Date(); d.setDate(d.getDate()+7*viewWeeks); return d; }
 function inMeso03Window(){
-  const days=Math.floor((new Date()-MESO03_START)/864e5);
+  const days=Math.floor((planDate()-MESO03_START)/864e5);
   return days>=0&&days<=MESO03_END_DAY;
 }
 /* Meso 03's week by its own calendar rather than blockFor(), so its templates preview as week 1
    before 10/19 instead of borrowing Meso 02's week number. phaseForWeek() clamps either end. */
-function meso03Week(){ return Math.floor((new Date()-MESO03_START)/864e5/7)+1; }
+function meso03Week(){ return Math.floor((planDate()-MESO03_START)/864e5/7)+1; }
 /* Thursday's Zone 2 is gated on WHOOP recovery in Meso 03 only; Tue and other blocks unchanged. */
 const MESO03_THU_RECOVERY="Check WHOOP recovery first: green → Zone 2, 25–35 min · yellow/red → easy walk or mobility 20–30 min instead.";
 const thuRuleText=()=>(inMeso03Window()?MESO03_THU_RECOVERY+" ":"")+"If you did Tuesday, strongly consider full rest today — one optional session per week is plenty during heavy weeks (6–8).";
@@ -559,6 +575,49 @@ function blockFor(when){
    sessions logged before this fix stop being lumped together under the frozen week 8. */
 function blockOf(l){
   return (l.block&&l.blockWeek)?{id:l.block,label:l.blockLabel||l.block,week:l.blockWeek}:blockFor(l.date);
+}
+/* The stepper's reach: the weeks of the block the real today is in, from BLOCKS, so a new block
+   extends it with no change here. Off-block or pre-block, there's nowhere to step. */
+function previewRange(){
+  const b=blockFor(), blk=BLOCKS.filter(x=>x.id===b.id)[0];
+  if(!blk) return {min:0,max:0};
+  return {min:1-b.week, max:Math.floor(blk.lastDay/7)+1-b.week};
+}
+/* Locked while this week's session has anything in it — typed sets, RPE, strain, a note, an added
+   set, a symptom, an exercise note, a durable draft for the day, or WHOOP time accruing — so the
+   preview never shares the screen with live work. Only leaving this week is locked; stepping
+   within a preview, or back, always works. */
+function sessionInProgress(){
+  if(live.secs>0) return true;
+  const day=curDay(), sd=sessionDraft&&sessionDraft.day===day?sessionDraft:null;
+  if(sd&&(Object.keys(sd.fields||{}).length||sd.rpe>0||(sd.note||"").trim()!==""||(sd.strain||"")!=="")) return true;
+  const mine=o=>Object.keys(o).some(k=>k.indexOf(day+"|")===0&&(!Array.isArray(o[k])||o[k].length));
+  if(mine(extraSets)||mine(painEvents)||mine(exNotes)) return true;
+  return !!readDraft(DRAFT_PREFIX+todayStr()+"_"+day);
+}
+function stepWeek(d){
+  const r=previewRange(), n=viewWeeks+d;
+  if(n<r.min||n>r.max) return;
+  if(viewWeeks===0&&sessionInProgress()) return;
+  closeFocus(); stopBlock(); viewWeeks=n; render();
+}
+function backToThisWeek(){ if(!viewWeeks) return; stopBlock(); viewWeeks=0; render(); }
+function syncWeekStepper(){
+  const el=document.getElementById("wkStep"); if(!el) return;
+  el.hidden=view!=="session";
+  if(el.hidden) return;
+  const r=previewRange(), locked=viewWeeks===0&&sessionInProgress();
+  const lbl=document.getElementById("wkLbl");
+  lbl.textContent=blockTag(blockFor(planDate())); lbl.className=viewWeeks?"pv":"";
+  document.getElementById("wkPrev").disabled=locked||viewWeeks<=r.min;
+  document.getElementById("wkNext").disabled=locked||viewWeeks>=r.max;
+}
+/* Monday–Sunday of the previewed week, for the banner. */
+function previewWeekText(){
+  const d=planDate(), mon=new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7)), sun=new Date(mon);
+  sun.setDate(mon.getDate()+6);
+  const f=x=>x.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+  return f(mon)+"–"+f(sun);
 }
 /* Phase for a week of a meso block. Default is the generic 2/2/2 split — weeks 1–2 Baseline,
    3–4 Volume, 5–6 Performance — so a future block needs nothing here unless it deviates. A
@@ -2124,9 +2183,12 @@ function onHrDisconnect(){
 }
 function liveSecond(){
   if(live.lastBpm==null) return;
+  /* Zone time is accruing, so this is a live session: drop any preview and show this week. */
+  if(viewWeeks){ backToThisWeek(); toast("Back to this week — WHOOP is tracking"); }
   const pct=hrPct(live.lastBpm);
   const z=zoneOfBpm(live.lastBpm);
   live.zoneSecs[z]+=1; live.secs+=1;
+  if(live.secs===1) syncWeekStepper(); /* zone time started: grey the week stepper now, not on the next render */
   /* Tue/Thu now scores on the same curve as lift days — curModel() already returns "strength"
      for any non-Sat day, so no special case needed here. Medal (below) is still zone2-specific:
      % of session time in Z2 vs. a strength-day points target. */
@@ -2789,6 +2851,7 @@ let focusTyped=null; /* {idx,w,r} — typed-but-unconfirmed numbers for the set 
 let sessionDraft=null;
 const draftKey=()=>document.getElementById("weekSel").value+"|"+curDay();
 function captureSessionDraft(){
+  if(viewWeeks) return; /* week preview is read-only: its empty form is not today's session */
   const fields={};
   document.querySelectorAll('#main input[id^="w_"], #main input[id^="r_"]').forEach(el=>{ if(el.value!=="") fields[el.id]=el.value; });
   const strainEl=document.getElementById("strain"), noteEl=document.getElementById("note"), actEl=document.getElementById("z2act");
@@ -2798,6 +2861,7 @@ function captureSessionDraft(){
     strain:strainEl?strainEl.value:"", note:noteEl?noteEl.value:"", activity:actEl?actEl.value:null};
 }
 function restoreSessionDraft(){
+  if(viewWeeks) return; /* never pour today's draft into a preview of another week */
   if(!sessionDraft||sessionDraft.key!==draftKey()){
     /* BUGFIX (pre-existing): the in-memory buffer holds one day at a time, so switching day and
        back used to drop everything typed on the first day. Fall back to today's durable draft
@@ -2898,7 +2962,7 @@ function adoptTodayDraft(){
    The conflict is surfaced in the banner instead. Cleared as soon as real editing resumes. */
 let draftHold=false;
 function persistDraft(){
-  if(draftHold) return;
+  if(draftHold||viewWeeks) return; /* viewWeeks: a preview must never overwrite today's draft */
   const day=(sessionDraft&&sessionDraft.day)||curDay();
   const f=(sessionDraft&&sessionDraft.fields)||{};
   const rpe=sessionDraft?sessionDraft.rpe:0, note=sessionDraft?sessionDraft.note:"", strain=sessionDraft?sessionDraft.strain:"";
@@ -2944,7 +3008,7 @@ function flushDraft(){ if(draftTimer){clearTimeout(draftTimer);draftTimer=null;}
 /* Every set/rpe/note/strain/activity edit. captureSessionDraft() runs synchronously so the
    in-memory buffer is always current — that alone fixes typed sets being dropped on a day
    switch — while the localStorage write is throttled. */
-function onSetInput(){ draftHold=false; captureSessionDraft(); scheduleDraftSave(); updatePlanChip(); refreshWeightHints(); }
+function onSetInput(){ draftHold=false; captureSessionDraft(); scheduleDraftSave(); updatePlanChip(); refreshWeightHints(); syncWeekStepper(); }
 /* pagehide + visibilitychange are the reliable backgrounding hooks on iOS/Bluefy; beforeunload
    is not. This is the actual defense against the phone killing the tab mid-session. */
 window.addEventListener("pagehide",flushDraft);
@@ -3021,7 +3085,7 @@ function staleDraftBannerHtml(){
    files this work under the day it was actually typed on. */
 function onDayChange(){ closeFocus(); flushDraft(); stopBlock(); render(); }
 function setView(v){
-  if(view==="session"&&v!=="session"){ closeFocus(); captureSessionDraft(); flushDraft(); }
+  if(view==="session"&&v!=="session"){ closeFocus(); captureSessionDraft(); flushDraft(); viewWeeks=0; }
   if(view==="hep"&&v!=="hep") stopHepClock();
   view=v;
   document.getElementById("tabS").className="tab"+(v==="session"?" active":"");
@@ -3036,6 +3100,7 @@ function lastFor(key,logs){
   return null;
 }
 function rpeNoteSaveHtml(){
+  if(viewWeeks) return ""; /* RPE, strain, notes and Finish belong to today's session */
   let h=`<div class="notecard"><label>Session RPE</label><div class="rpe-row">`;
   for(let i=6;i<=10;i++)h+=`<button class="rpe" id="rpe${i}" onclick="setRPE(${i})">${i}</button>`;
   h+=`</div><label style="margin-top:10px">WHOOP strain (optional)</label><input type="number" id="strain" min="0" max="21" step="0.1" inputmode="decimal" placeholder="0.0–21.0" oninput="onSetInput()">`;
@@ -3078,10 +3143,17 @@ function infoBox(id,cls,label,body){
     <div class="ib-b">${body}</div>
   </div>`;
 }
+/* A preview is read to plan, never logged into: every control on the page is disabled except
+   Back. Info boxes and the Form Reference open with taps on divs, so they still work. */
+function lockPreviewForm(m){
+  if(!viewWeeks) return;
+  m.querySelectorAll("input,textarea,select,button").forEach(el=>{ if(!el.classList.contains("pv-back")) el.disabled=true; });
+}
 function render(){
   renderDock();
   ivtSyncChrome(); /* leaving the RKD tab has to drop the ambient wash and the enlarged readout */
   syncWeekSel(); /* before the view early-returns below — .selects is visible on every tab */
+  syncWeekStepper();
   const w=+document.getElementById("weekSel").value, day=curDay();
   const m=document.getElementById("main");
   if(view==="history"){renderHistory(m);return;}
@@ -3090,11 +3162,16 @@ function render(){
   finishedBlocks=new Set();
   const s=getSession(w,day);
   /* Label comes from the calendar block, not weekSel — see BLOCK / WEEK IDENTITY */
-  document.getElementById("title").textContent=blockTag(blockFor())+" · "+s.name.split(" — ")[0];
+  document.getElementById("title").textContent=blockTag(blockFor(planDate()))+" · "+s.name.split(" — ")[0];
+  m.classList.toggle("pv",!!viewWeeks);
   let h="";
+  if(viewWeeks) h+=`<div class="meta warn pvbar"><span><b>Preview · ${blockText(blockFor(planDate()))}</b> (${previewWeekText()}) · read-only</span><button class="btn2 pv-back" onclick="backToThisWeek()">Back to this week</button></div>`;
   if(!storageOK) h+=`<div class="warnbar">Preview mode: saving is in-memory only here. Hosted on GitHub Pages (or opened locally / in Bluefy), your log persists on this device.</div>`;
-  h+=staleDraftBannerHtml(); /* above everything else — an unfinished session outranks today's plan */
-  h+=hepPanelHtml();
+  /* Both are today's, not the previewed week's — and both can write — so a preview leaves them out. */
+  if(!viewWeeks){
+    h+=staleDraftBannerHtml(); /* above everything else — an unfinished session outranks today's plan */
+    h+=hepPanelHtml();
+  }
   h+=formReferenceHtml(s);
 
   /* ---- Tue / Thu: optional Zone 2 ---- */
@@ -3107,7 +3184,7 @@ function render(){
     h+=`<div class="notecard"><label>Zone caps (live from WHOOP)</label><div id="zc" data-type="zone2"></div></div>`;
     h+=rpeNoteSaveHtml();
     h+=`<button class="restbtn" onclick="logRest()">Log full rest day instead</button>`;
-    m.innerHTML=h; curRPE=0; restoreSessionDraft(); updateCompliance(); return;
+    m.innerHTML=h; curRPE=0; restoreSessionDraft(); lockPreviewForm(m); updateCompliance(); return;
   }
   /* ---- Sat: BFT/Equinox class ---- */
   if(s.type==="class"){
@@ -3118,7 +3195,7 @@ function render(){
       s.blocks.forEach((b,bi)=>{ h+=blockHtml(s,bi); });
       h+=rpeNoteSaveHtml();
       h+=`<button class="restbtn" onclick="logRest()">Skipped — log rest</button>`;
-      m.innerHTML=h; curRPE=0; restoreSessionDraft(); updateCompliance(); return;
+      m.innerHTML=h; curRPE=0; restoreSessionDraft(); lockPreviewForm(m); updateCompliance(); return;
     }
     h+=`<div class="meta warn"><b>Effort cap ~7/10.</b> Don't chase RKD or race the class — this fills the conditioning slot, it is NOT a fourth lifting day. If the class runs hot (true HIIT), dial back or skip.</div>`;
     if(w===7) h+=`<div class="meta warn"><b>Week 7:</b> keep this genuinely easy — test week starts Monday.</div>`;
@@ -3128,7 +3205,7 @@ function render(){
     h+=`<div class="notecard"><label>Zone check (live from WHOOP)</label><div id="zc" data-type="class"></div></div>`;
     h+=rpeNoteSaveHtml();
     h+=`<button class="restbtn" onclick="logRest()">Skipped class — log rest</button>`;
-    m.innerHTML=h; curRPE=0; restoreSessionDraft(); updateCompliance(); return;
+    m.innerHTML=h; curRPE=0; restoreSessionDraft(); lockPreviewForm(m); updateCompliance(); return;
   }
   /* ---- Sun: CS4 recovery (Meso01 swaps this for yoga — see getSession) ---- */
   if(s.type==="recovery"){
@@ -3142,7 +3219,7 @@ function render(){
     /* Block 1 only — same permanent-week-8 problem as the Sat warning above */
     if(w===8&&blockFor().id==="legacy") h+=`<div class="meta warn"><b>Week 8:</b> walk-through pace only. Block complete — log final numbers. New 1RMs from Mon/Wed become the Block 2 baselines.</div>`;
     h+=rpeNoteSaveHtml();
-    m.innerHTML=h; curRPE=0; restoreSessionDraft(); return;
+    m.innerHTML=h; curRPE=0; restoreSessionDraft(); lockPreviewForm(m); return;
   }
 
   /* ---- Lifting days ---- */
@@ -3168,7 +3245,7 @@ function render(){
     if(day==="strengthFree") h+=`<div class="row2" style="margin:-6px 0 14px"><button class="btn2" onclick="addFreeformEx()">+ Add exercise</button></div>`;
   });
   h+=rpeNoteSaveHtml();
-  m.innerHTML=h; curRPE=0; restoreSessionDraft(); updatePlanChip(); refreshWeightHints();
+  m.innerHTML=h; curRPE=0; restoreSessionDraft(); updatePlanChip(); refreshWeightHints(); lockPreviewForm(m);
 }
 /* Meso 03's live plan count, recounted from the form on every edit. livePlan keeps the last
    count for the RKD tab, which has no session form to read. */
@@ -3312,6 +3389,7 @@ function sessionEntries(s){
   return entries;
 }
 function saveSession(){
+  if(viewWeeks) return; /* Finish is hidden in preview; this is the second layer */
   const w=+document.getElementById("weekSel").value, day=curDay();
   const s=getSession(w,day), entries=sessionEntries(s);
   /* RKD: live wins; else attached manual entry */
@@ -3379,6 +3457,7 @@ function saveSession(){
   toast("Saved"+(pxi!=null?" · RKD "+pxi+(medal?" · "+medal:""):"")+(storageOK?"":" (in-memory)"));
 }
 function logRest(){
+  if(viewWeeks) return;
   const w=+document.getElementById("weekSel").value, day=curDay();
   const logs=loadLogs();
   const bk=blockFor(); /* same stamp as saveSession — rest days show in history and weeklyTotals too */
