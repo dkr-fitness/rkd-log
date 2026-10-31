@@ -508,6 +508,36 @@ onDate(2026,10,19,function(){
 eq(MESO03_LOADING_RULE,"Main lifts: all sets at RPE 7 or easier → add 5 lb next week (Rack Pull 10 lb). Accessories: stay at one weight until every set hits the top of the rep range, then go up. Single-arm: right side sets the load; left matches.","progression rule text");
 ok(SRC.indexOf("<b>Loading:</b> ${MESO03_LOADING_RULE}")>=0,"...shown in the Scoring box on plan days");
 
+section("Meso 3 week 3 — load targets and the progression line");
+var WK3={meso03Mon:{"Rack Pull":"185 lb (hold)","Bulgarian SS":"25 lb (drop to 20 if set 1 <8)","Hip Thrust":"80 lb all sets",
+                    "Pallof":"7.5–10 lb","Suitcase Carry":"45 lb/side"},
+         meso03Wed:{"Safety Bar Squat":"150 lb","SA Chest Press":"45 lb","Cable Pullover":"15 lb","Rope Triceps Pressdown":"17.5 lb"},
+         meso03Fri:{"Romanian Deadlift (DB)":"135 lb","Neutral-Grip Row":"40 lb","Step-Up":"20 lb","Suitcase Carry":"45 lb/side","Prone Y-Raises":"2.5 lb"},
+         meso03Sat:{"Leg Press":"190 lb","Face Pull":"20 lb","SL RDL":"35 lb","Backward Walking Lunges":"15 lb","Sled Push":"0.8 mph (hold)"}};
+var WK3_LINE="Hit all sets at top of range → add load next week; if not, hold.",
+    WK3_REC="Hold last week's load if recovery is red or sleep <5.5 h.";
+[[2026,11,2],[2026,11,8]].forEach(function(d){ onDate(d[0],d[1],d[2],function(){
+  Object.keys(WK3).forEach(function(day){
+    Object.keys(WK3[day]).forEach(function(k){
+      var e=exOf(day,k);
+      ok((e.rx||"").indexOf(" · Week 3: "+WK3[day][k])>=0,"wk 3 "+day+" "+k+": target "+WK3[day][k]);
+      ok((e.note||"").indexOf(WK3_LINE)===0,"...and the progression line");
+    });
+  });
+  ["Band Pull-Aparts","Scapular Wall Slide","Bird Dog"].forEach(function(k){
+    var day=k==="Bird Dog"?"meso03Fri":k==="Band Pull-Aparts"?"meso03Mon":"meso03Wed", e=exOf(day,k);
+    ok(!/Week 3/.test(e.rx)&&!e.note,"wk 3: no target or line on "+k+", which has no load");
+  });
+  ok(exOf("meso03Wed","Safety Bar Squat").note.indexOf(WK3_REC)>0,"Wed squat: recovery/sleep hold line");
+  ok(exOf("meso03Sat","Leg Press").note.indexOf(WK3_REC)>0,"Sat leg press: recovery/sleep hold line");
+  ok(exOf("meso03Mon","Rack Pull").note.indexOf(WK3_REC)<0,"...and only those two");
+  eq(exList("meso03Mon").map(function(e){return e.sets;}).join(),"2,5,3,3,3,2","wk 3 Monday set counts unchanged");
+});});
+[[2026,10,26,"wk 2"],[2026,11,9,"wk 4"]].forEach(function(d){ onDate(d[0],d[1],d[2],function(){
+  var all=["meso03Mon","meso03Wed","meso03Fri","meso03Sat"].map(exList).reduce(function(a,b){return a.concat(b);},[]);
+  ok(all.every(function(e){return !/Week 3/.test(e.rx||"")&&!e.note;}),d[3]+": no week-3 targets or lines");
+});});
+
 section("Meso 3 Saturday — scored like a lift day");
 /* Rule text on the RKD tab isn't in a loaded region, so guard its wording at the source. */
 ok(SRC.indexOf("Sat is reference only")<0&&SRC.indexOf("cardio Sat<")<0,"RKD tab no longer says every Saturday is unscored cardio");
