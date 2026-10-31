@@ -1480,13 +1480,15 @@ onDate(2026,10,31,function(){
   var c=currentCycle(); eq(c.id+" "+c.start.getDate()+"/"+(c.start.getMonth()+1),"meso03 19/10","current cycle is Meso 3 from Oct 19");
   exportCycle();
   var d=SHARED[0].data;
-  eq(Object.keys(d).sort().join(),"hep,hepDetail,logs","same top-level shape as the full export");
+  eq(Object.keys(d).sort().join(),"cycleEnd,cycleStart,hep,hepDetail,logs,partial","the full export's shape plus partial/cycleStart/cycleEnd");
+  eq(d.partial+" "+d.cycleStart+" "+d.cycleEnd,"true 2026-10-19 2026-10-31","...marked partial, Oct 19 to today");
   eq(d.logs.map(function(l){return l.n;}).join("|"),"meso3 day 1, early|evening session — next day in UTC|paste-imported, bare date","logs: Oct 19 through today, by local day");
   eq(Object.keys(d.hep).join(),"2026-10-19","hep: from Oct 19 only");
   eq(Object.keys(d.hepDetail).join(),"2026-10-31","hepDetail: from Oct 19 only");
   eq(JSON.stringify(d.hepDetail["2026-10-31"]),'{"b1_levator":[30,30]}',"...entries copied as stored");
   eq(SHARED[0].filename,"block-log-meso03-2026-10-19-to-2026-10-31.json","filename names the cycle and range");
   SHARED=[]; exportLogs();
+  eq(Object.keys(SHARED[0].data).sort().join(),"hep,hepDetail,logs","full export: no new fields");
   eq(SHARED[0].data.logs.length,4,"full export: still every log");
   eq(Object.keys(SHARED[0].data.hep).length+Object.keys(SHARED[0].data.hepDetail).length,4,"...and every HEP day");
   eq(SHARED[0].filename,"block-log-"+new Date().toISOString().slice(0,10)+".json","...under the same filename as before");
@@ -1502,6 +1504,55 @@ onDate(2026,12,20,function(){
 onDate(2026,7,1,function(){
   resetState(); SHARED=[]; TOASTS=[]; eq(currentCycle(),null,"before Block 1: no cycle");
   exportCycle(); eq(SHARED.length,0,"...so nothing is exported");
+});
+
+section("Import guard — a cycle file asks before replacing sessions");
+/* The real import path from the parsed file on; only the file picker / FileReader is skipped. */
+loadRegions(region("let pendingImport=null;","/* ================= PASTE WORKOUT IMPORT"));
+var OLD_LOGS=[{date:"2026-09-01T15:00:00.000Z",n:"meso2"},{date:"2026-10-20T15:00:00.000Z",n:"meso3"}];
+function importFixture(){
+  resetState(); LOGS=OLD_LOGS.slice(); LS["hepDetail_2026-09-01"]='{"b1_levator":[30]}';
+  DOM.impConfirm={id:"impConfirm",hidden:true,innerHTML:""};
+  DOM.impCancel={id:"impCancel",focus:function(){ FOCUSED="impCancel"; }}; FOCUSED=null;
+}
+var FOCUSED=null;
+var CYCLE_FILE={partial:true,cycleStart:"2026-10-19",cycleEnd:"2026-10-31",
+                logs:[{date:"2026-10-20T15:00:00.000Z",n:"meso3"}],hep:{},hepDetail:{"2026-10-20":{b1_levator:[25]}}};
+function snapshot(){ return JSON.stringify(LOGS)+"|"+JSON.stringify(LS); }
+/* A cycle file opens the confirm and changes nothing yet. */
+importFixture(); var before=snapshot();
+importData(JSON.parse(JSON.stringify(CYCLE_FILE)));
+eq(DOM.impConfirm.hidden,false,"cycle file: the confirm opens");
+ok(DOM.impConfirm.innerHTML.replace(/<[^>]+>/g,"").indexOf("This file only covers 2026-10-19 to 2026-10-31. Importing will replace all your other sessions. Continue?")>=0,"...with the exact message and dates");
+ok(/<button class="imp-cancel" id="impCancel"[^>]*>Cancel<\/button><button class="imp-go"[^>]*>Continue<\/button>/.test(DOM.impConfirm.innerHTML),"...Cancel first, then Continue");
+eq(FOCUSED,"impCancel","...and Cancel has focus, so it's the default");
+eq(snapshot(),before,"...nothing is touched while it's open");
+/* Cancel leaves everything as it was. */
+cancelImport();
+eq(snapshot(),before,"cancel: sessions and HEP data unchanged");
+eq(LOGS.length,2,"...both sessions still there");
+eq(DOM.impConfirm.hidden,true,"...and the dialog closes");
+confirmImport(); eq(snapshot(),before,"...a stray Continue after Cancel does nothing");
+/* Continue proceeds exactly as the import always has. */
+importFixture(); importData(JSON.parse(JSON.stringify(CYCLE_FILE))); confirmImport();
+eq(LOGS.map(function(l){return l.n;}).join(),"meso3","continue: logs replaced, as before");
+eq(LS["hepDetail_2026-10-20"],'{"b1_levator":[25]}',"...HEP day merged in");
+eq(LS["hepDetail_2026-09-01"],'{"b1_levator":[30]}',"...earlier HEP days kept");
+eq(DOM.impConfirm.hidden,true,"...and the dialog closes");
+/* Full and legacy files: no prompt, straight through. */
+importFixture(); importData({logs:[{n:"full"}],hep:{},hepDetail:{}});
+eq(DOM.impConfirm.hidden,true,"full export: no prompt");
+eq(LOGS.map(function(l){return l.n;}).join(),"full","...imported straight away");
+importFixture(); importData([{n:"legacy array"}]);
+eq(DOM.impConfirm.hidden+" "+LOGS[0].n,"true legacy array","legacy bare-array file: no prompt, imported");
+importFixture(); importData({partial:"true",logs:[{n:"string flag"}]});
+eq(DOM.impConfirm.hidden+" "+LOGS[0].n,"true string flag","only partial === true prompts");
+/* Round trip: what exportCycle writes is what trips the guard. */
+onDate(2026,10,31,function(){
+  importFixture(); TODAY="2026-10-31"; SHARED=[]; exportCycle(); importData(SHARED[0].data);
+  eq(DOM.impConfirm.hidden,false,"a real cycle export trips the guard");
+  cancelImport(); eq(LOGS.length,2,"...and cancelling it keeps every session");
+  SHARED=[]; exportLogs(); importData(SHARED[0].data); eq(DOM.impConfirm.hidden,true,"a real full export does not");
 });
 
 section("Interval timer — built-in presets");

@@ -278,6 +278,14 @@ body.ivt-amb .selects, body.ivt-amb .tabs{background:transparent}
 .focusbtn{width:100%; padding:14px; margin-bottom:14px; border-radius:10px; border:none; background:var(--amber); color:#0E1526; font-size:17px; font-weight:800; font-family:var(--disp); letter-spacing:.06em; text-transform:uppercase}
 #focus{position:fixed; inset:0; z-index:50; overflow-y:auto; background:var(--bg); padding:14px 16px 20px; display:flex; flex-direction:column; gap:12px}
 #focus[hidden]{display:none}
+/* Import guard for a partial (cycle) file. Above set mode and the dock, below the alert flash. */
+#impConfirm{position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.65); display:flex; align-items:center; justify-content:center; padding:16px}
+#impConfirm[hidden]{display:none}
+.imp-box{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; max-width:360px; width:100%}
+.imp-msg{color:var(--text); font-size:15px; line-height:1.4; margin-bottom:8px}
+.imp-d{white-space:nowrap}
+#impConfirm .imp-cancel{background:var(--amber); border-color:var(--amber); color:#0E1526}
+#impConfirm .imp-go{color:var(--red); border-color:var(--red)}
 /* Same zone wash as the page behind it, so colour still reads at a glance with the overlay up. */
 body.ivt-amb.z1 #focus{background-image:var(--zg1)}
 body.ivt-amb.z2 #focus{background-image:var(--zg2)}
@@ -406,6 +414,7 @@ body.ivt-amb.z5 #focus{background-image:var(--zg5)}
 </div>
 <main id="main"></main>
 <div id="focus" hidden></div>
+<div id="impConfirm" hidden role="dialog" aria-modal="true" onclick="if(event.target===this)cancelImport()"></div>
 <div id="flash"></div>
 <div class="dock" id="dock"><div class="dock-idle">Reach your equipment → press ▶ on that block. Bell = start your set. Rest until the next bell.</div></div>
 <div class="toast" id="toast"></div>
@@ -3754,7 +3763,9 @@ function cyclePayload(){
   Object.keys(all.hep).filter(inRange).forEach(d=>hep[d]=all.hep[d]);
   Object.keys(all.hepDetail).filter(inRange).forEach(d=>hepDetail[d]=all.hepDetail[d]);
   const logs=loadLogs().filter(l=>inRange(dayOf(l.date)));
-  return {cycle:c, from, to, data:{logs,hep,hepDetail}};
+  /* partial/cycleStart/cycleEnd mark it as a slice, so Import asks before it replaces every
+     session outside the range. The full export never carries them. */
+  return {cycle:c, from, to, data:{partial:true,cycleStart:from,cycleEnd:to,logs,hep,hepDetail}};
 }
 async function exportCycle(){
   const p=cyclePayload();
@@ -3802,39 +3813,66 @@ async function shareJson(payload,filename){
 function importLogs(){
   const inp=document.createElement("input");inp.type="file";inp.accept=".json";
   inp.onchange=e=>{const f=e.target.files[0];const r=new FileReader();
-    r.onload=()=>{try{const d=JSON.parse(r.result);
-      // Intentional asymmetry: logs are REPLACED wholesale (pre-existing behavior),
-      // hep_*/hepDetail_* keys are MERGED per-date — imported dates overwrite,
-      // existing dates not present in the file survive. Do not "fix" to replace.
-      if(Array.isArray(d)){saveLogs(d);toast("Imported "+d.length+" sessions");render();}
-      else if(d&&Array.isArray(d.logs)){
-        saveLogs(d.logs);
-        if(d.hep) Object.keys(d.hep).forEach(date=>{
-          const v=d.hep[date];
-          if(!Array.isArray(v)) return;
-          const arr=v.slice(0,5).map(Boolean);
-          while(arr.length<5)arr.push(false);
-          const k="hep_"+date; if(storageOK) localStorage.setItem(k,JSON.stringify(arr)); else hepMem[k]=arr;
-        });
-        if(d.hepDetail) Object.keys(d.hepDetail).forEach(date=>{
-          const v=d.hepDetail[date];
-          if(!v||typeof v!=="object"||Array.isArray(v)) return;
-          const clean={};
-          Object.keys(v).forEach(exKey=>{
-            const a=v[exKey];
-            if(!Array.isArray(a)) return;
-            /* 5 — the most any item has ever held in a day (AROM/PROM's 5 bouts, Pillowcase's
-               5 holds), so a full day survives an export/import round-trip. */
-            const nums=a.slice(0,5).map(Number).filter(n=>Number.isFinite(n)&&n>0);
-            if(nums.length) clean[exKey]=nums;
-          });
-          const k="hepDetail_"+date; if(storageOK) localStorage.setItem(k,JSON.stringify(clean)); else hepDetailMem[k]=clean;
-        });
-        toast("Imported "+d.logs.length+" sessions"); render();
-      }
-    }catch(err){toast("Import failed");}};
+    r.onload=()=>{try{importData(JSON.parse(r.result));}catch(err){toast("Import failed");}};
     r.readAsText(f);};
   inp.click();
+}
+/* A cycle export (partial: true) only holds part of the history, and applyImport replaces logs
+   wholesale, so it waits behind a confirm with Cancel as the default. Anything else — the full
+   export, older files, a bare array — applies straight away, exactly as before. */
+let pendingImport=null;
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&pendingImport) cancelImport(); });
+function importData(d){
+  if(d&&!Array.isArray(d)&&d.partial===true){ openImportConfirm(d); return; }
+  applyImport(d);
+}
+function openImportConfirm(d){
+  pendingImport=d;
+  const el=document.getElementById("impConfirm"); if(!el) return;
+  el.innerHTML=`<div class="imp-box"><div class="imp-msg">This file only covers <span class="imp-d">${escAttr(d.cycleStart)}</span> to <span class="imp-d">${escAttr(d.cycleEnd)}</span>. Importing will replace all your other sessions. Continue?</div>
+    <div class="row2"><button class="imp-cancel" id="impCancel" onclick="cancelImport()">Cancel</button><button class="imp-go" onclick="confirmImport()">Continue</button></div></div>`;
+  el.hidden=false;
+  const c=document.getElementById("impCancel"); if(c&&c.focus) c.focus();
+}
+function closeImportConfirm(){
+  pendingImport=null;
+  const el=document.getElementById("impConfirm"); if(el){ el.hidden=true; el.innerHTML=""; }
+}
+function cancelImport(){ closeImportConfirm(); toast("Import cancelled — nothing changed"); }
+function confirmImport(){
+  const d=pendingImport; closeImportConfirm(); if(!d) return;
+  try{ applyImport(d); }catch(err){ toast("Import failed"); }
+}
+function applyImport(d){
+  // Intentional asymmetry: logs are REPLACED wholesale (pre-existing behavior),
+  // hep_*/hepDetail_* keys are MERGED per-date — imported dates overwrite,
+  // existing dates not present in the file survive. Do not "fix" to replace.
+  if(Array.isArray(d)){saveLogs(d);toast("Imported "+d.length+" sessions");render();}
+  else if(d&&Array.isArray(d.logs)){
+    saveLogs(d.logs);
+    if(d.hep) Object.keys(d.hep).forEach(date=>{
+      const v=d.hep[date];
+      if(!Array.isArray(v)) return;
+      const arr=v.slice(0,5).map(Boolean);
+      while(arr.length<5)arr.push(false);
+      const k="hep_"+date; if(storageOK) localStorage.setItem(k,JSON.stringify(arr)); else hepMem[k]=arr;
+    });
+    if(d.hepDetail) Object.keys(d.hepDetail).forEach(date=>{
+      const v=d.hepDetail[date];
+      if(!v||typeof v!=="object"||Array.isArray(v)) return;
+      const clean={};
+      Object.keys(v).forEach(exKey=>{
+        const a=v[exKey];
+        if(!Array.isArray(a)) return;
+        /* 5 — the most any item has ever held in a day (AROM/PROM's 5 bouts, Pillowcase's
+           5 holds), so a full day survives an export/import round-trip. */
+        const nums=a.slice(0,5).map(Number).filter(n=>Number.isFinite(n)&&n>0);
+        if(nums.length) clean[exKey]=nums;
+      });
+      const k="hepDetail_"+date; if(storageOK) localStorage.setItem(k,JSON.stringify(clean)); else hepDetailMem[k]=clean;
+    });
+    toast("Imported "+d.logs.length+" sessions"); render();
+  }
 }
 
 /* ================= PASTE WORKOUT IMPORT =================
