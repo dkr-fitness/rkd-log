@@ -506,7 +506,15 @@ onDate(2026,10,19,function(){
   ok(!/First working set/.test(hrText("meso03Sat",8)+hrText("meso03Wed",8)),d[3]+": no calibration line on Saturday or weekdays");
 });});
 eq(MESO03_LOADING_RULE,"Main lifts: all sets at RPE 7 or easier → add 5 lb next week (Rack Pull 10 lb). Accessories: stay at one weight until every set hits the top of the rep range, then go up. Single-arm: right side sets the load; left matches.","progression rule text");
-ok(SRC.indexOf("<b>Loading:</b> ${MESO03_LOADING_RULE}")>=0,"...shown in the Scoring box on plan days");
+ok(SRC.indexOf("<b>Loading:</b> ${meso03LoadingText()}")>=0,"...shown in the Scoring box on plan days");
+onDate(2026,10,26,function(){ eq(meso03LoadingText(),MESO03_LOADING_RULE,"wk 2: the Scoring box shows the RPE rule"); });
+onDate(2026,11,9,function(){ eq(meso03LoadingText(),MESO03_LOADING_RULE,"wk 4: ...and again after week 3"); });
+onDate(2026,11,2,function(){
+  var t=meso03LoadingText();
+  ok(t.indexOf("Hit all sets at top of range → add load next week; if not, hold.")>=0,"wk 3: the Scoring box shows the week-3 rule");
+  ok(!/RPE 7 or easier/.test(t),"...instead of the RPE rule, so the main lifts don't show two");
+  ok(/Single-arm: right side sets the load; left matches\./.test(t),"...keeping the single-arm sentence");
+});
 
 section("Meso 3 week 3 — load targets and the progression line");
 var WK3={meso03Mon:{"Rack Pull":"185 lb (hold)","Bulgarian SS":"25 lb (drop to 20 if set 1 <8)","Hip Thrust":"80 lb all sets",
@@ -531,11 +539,19 @@ var WK3_LINE="Hit all sets at top of range → add load next week; if not, hold.
   ok(exOf("meso03Wed","Safety Bar Squat").note.indexOf(WK3_REC)>0,"Wed squat: recovery/sleep hold line");
   ok(exOf("meso03Sat","Leg Press").note.indexOf(WK3_REC)>0,"Sat leg press: recovery/sleep hold line");
   ok(exOf("meso03Mon","Rack Pull").note.indexOf(WK3_REC)<0,"...and only those two");
+  var W3={meso03Mon:{"Rack Pull":185,"Bulgarian SS":25,"Hip Thrust":80,"Pallof":7.5,"Suitcase Carry":45},
+          meso03Wed:{"Safety Bar Squat":150,"SA Chest Press":45,"Cable Pullover":15,"Rope Triceps Pressdown":17.5},
+          meso03Fri:{"Romanian Deadlift (DB)":135,"Neutral-Grip Row":40,"Step-Up":20,"Suitcase Carry":45,"Prone Y-Raises":2.5},
+          meso03Sat:{"Leg Press":190,"Face Pull":20,"SL RDL":35,"Backward Walking Lunges":15}};
+  Object.keys(W3).forEach(function(day){ Object.keys(W3[day]).forEach(function(k){
+    eq(exOf(day,k).w3,W3[day][k],"wk 3 "+day+" "+k+": set 1 hint target "+W3[day][k]);
+  });});
+  eq(exOf("meso03Sat","Sled Push").w3,undefined,"Sled Push: 0.8 mph is a speed, not a load — no weight hint");
   eq(exList("meso03Mon").map(function(e){return e.sets;}).join(),"2,5,3,3,3,2","wk 3 Monday set counts unchanged");
 });});
 [[2026,10,26,"wk 2"],[2026,11,9,"wk 4"]].forEach(function(d){ onDate(d[0],d[1],d[2],function(){
   var all=["meso03Mon","meso03Wed","meso03Fri","meso03Sat"].map(exList).reduce(function(a,b){return a.concat(b);},[]);
-  ok(all.every(function(e){return !/Week 3/.test(e.rx||"")&&!e.note;}),d[3]+": no week-3 targets or lines");
+  ok(all.every(function(e){return !/Week 3/.test(e.rx||"")&&!e.note&&e.w3===undefined;}),d[3]+": no week-3 targets, lines or hint loads");
 });});
 
 section("Meso 3 Saturday — scored like a lift day");
@@ -1330,6 +1346,13 @@ eq(repsHint("meso03Mon",PYR2,1),"6","sets 2+ keep last time's reps for that set"
 eq(repsHint("meso03Sat",[{w:"",r:"10"},{w:"",r:"12"}],0),"12","bodyweight: set 1 hints the best set's reps");
 eq(repsHint("meso03Mon",[{w:"20",r:""}],0),"","no done set last time: no reps hint");
 eq(repsHint("meso02Wed",PYR2,0),"6","other days: set 1's reps are last time's set 1");
+/* Week 3: a set load (w3) is set 1's hint, over last time's top set; later sets still follow set 1. */
+eq(weightHint("meso03Wed",PYR,0,"",150),"150","wk 3 target: set 1 hints the target, not last time's 145");
+eq(weightHint("meso03Wed",null,0,"",150),"150","...even with no Last time");
+eq(weightHint("meso03Wed",PYR,1,"",150),"","...sets 2+ still wait for set 1");
+eq(weightHint("meso03Wed",PYR,1,"155",150),"155","...then hint set 1's typed weight");
+eq(weightHint("meso03Wed",PYR,0,"",undefined),"145","no target: last time's top set, as before");
+eq(weightHint("meso02Wed",PYR,0,"",150),"135","non-plan days ignore a target");
 
 resetState(); DAY="meso03Mon";
 var realLastFor=lastFor; lastFor=function(){ return PYR; };
@@ -1362,7 +1385,8 @@ resetState();
 ok(SRC.indexOf("function onSetInput(){ draftHold=false; captureSessionDraft(); scheduleDraftSave(); updatePlanChip(); refreshWeightHints(); }")>=0,"every set edit re-points the hints");
 ok(SRC.indexOf("restoreSessionDraft(); updatePlanChip(); refreshWeightHints();")>=0,"...and so does a render, after the draft is restored");
 ok(SRC.indexOf('placeholder="${escAttr(hr)}"')>=0&&SRC.indexOf("hr=repsHint(curDay(),last,st.i)")>=0,"set mode's reps hint uses the same top set on set 1");
-ok(SRC.indexOf('placeholder="${escAttr(hw)}"')>=0&&SRC.indexOf("hw=weightHint(curDay(),last,st.i,s1?s1.value:\"\")")>=0,"set mode's weight hint follows set 1 too (so Same as last and ±5 use it)");
+ok(SRC.indexOf('placeholder="${escAttr(hw)}"')>=0&&SRC.indexOf("hw=weightHint(curDay(),last,st.i,s1?s1.value:\"\",ex.w3)")>=0,"set mode's weight hint follows set 1 too (so Same as last and ±5 use it), and takes the week-3 target");
+ok(SRC.indexOf('const pw=weightHint(curDay(),last,i,"",ex.w3)')>=0,"session rows pass the week-3 target to set 1's hint");
 ok(SRC.indexOf("lastLineText(lw,lr,")>=0,"...while its Last time line still shows last time's real numbers");
 
 section("HEP — rebuilt for cubital tunnel, keys unchanged");

@@ -500,6 +500,13 @@ const MESO03_PHASE_CUE={
  Deload:"RPE 6. Less volume, same patterns, crisp reps. Leave fresh."};
 /* Meso 03's load progression, shown once in the Scoring box on its lift days. */
 const MESO03_LOADING_RULE="Main lifts: all sets at RPE 7 or easier → add 5 lb next week (Rack Pull 10 lb). Accessories: stay at one weight until every set hits the top of the rep range, then go up. Single-arm: right side sets the load; left matches.";
+/* Week 3's loads (set 2026-10-31) come with their own progression line, so for that week it
+   replaces the RPE rule above; the single-arm sentence still applies. */
+const MESO03_WK3_RULE="Hit all sets at top of range → add load next week; if not, hold.";
+const MESO03_WK3_RECOVERY="Hold last week's load if recovery is red or sleep <5.5 h.";
+function meso03LoadingText(){
+  return meso03Week()===3?"Week 3 targets are on each card. "+MESO03_WK3_RULE+" Single-arm: right side sets the load; left matches.":MESO03_LOADING_RULE;
+}
 /* Saturday's Baseline calibration. The weekday line ("RPE 8+ → drop 10%") is already over
    Saturday's 7/10 cap, so this one is fitted to the cap instead. */
 const MESO03_SAT_CALIBRATION="First working set above 7/10 → drop 10%.";
@@ -1455,12 +1462,12 @@ function getSession(w,day){
   /* Starting-weight hint, Baseline weeks 1–2 only — from week 3 the Last time line takes over. */
   const startTag=st=>meso3Phase==="Baseline"&&st?" · Start "+st:"";
   /* Week 3 loads (set 2026-10-31): a target in the rx, so set mode and history carry it, plus the
-     progression rule as the card's note line. Week 3 only — from week 4 Last time leads again. */
+     progression rule as the card's note line. Week 3 only — from week 4 Last time leads again.
+     w3 is the target as a number, for set 1's grey weight hint (weightHint). */
   const meso3Wk3=meso03Week()===3;
   const wk3Tag=t=>meso3Wk3&&t?" · Week 3: "+t:"";
-  const WK3_RULE="Hit all sets at top of range → add load next week; if not, hold.";
-  const WK3_RECOVERY="Hold last week's load if recovery is red or sleep <5.5 h.";
-  const wk3Note=rec=>meso3Wk3?WK3_RULE+(rec?"<br>"+WK3_RECOVERY:""):undefined;
+  const wk3Note=rec=>meso3Wk3?MESO03_WK3_RULE+(rec?"<br>"+MESO03_WK3_RECOVERY:""):undefined;
+  const w3=v=>meso3Wk3?v:undefined;
   const meso3MainRx=(suffix,start,wk3)=>{
     const o={Baseline:{sets:4,base:"4 × 6 @ RPE 6–7"},
              Volume:{sets:5,base:"5 × 6–8 @ RPE 7–8"},
@@ -1510,17 +1517,17 @@ function getSession(w,day){
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Band Pull-Aparts",n:"Band Pull-Aparts",rx:"2 × 15 · light, first in session",sets:2}]},
      {letter:"B",t:"Hinge",mins:12,ramp:RAMP,bells:rp.sets,ex:[
-       {key:"Rack Pull",n:"Rack Pull",rx:rp.rx,sets:rp.sets,note:wk3Note()}]},
+       {key:"Rack Pull",n:"Rack Pull",rx:rp.rx,sets:rp.sets,note:wk3Note(),w3:w3(185)}]},
      // 2 × ~45 s + 15 s switch, then rest.
      m3blk("C","Unilateral",180,bss.sets,[
-       {key:"Bulgarian SS",n:"Bulgarian Split Squat",rx:bss.rx,sets:bss.sets,note:wk3Note()}]),
+       {key:"Bulgarian SS",n:"Bulgarian Split Squat",rx:bss.rx,sets:bss.sets,note:wk3Note(),w3:w3(25)}]),
      // ~40 s thrust + 15 s to the cable + 2 × ~30 s Pallof, then rest.
      m3blk("D","Glutes + Core",195,ht.sets,[
-       {key:"Hip Thrust",n:"Hip Thrust",rx:ht.rx,sets:ht.sets,note:wk3Note()},
-       {key:"Pallof",n:"Pallof Press",rx:pf.rx,sets:pf.sets,note:wk3Note()}]),
+       {key:"Hip Thrust",n:"Hip Thrust",rx:ht.rx,sets:ht.sets,note:wk3Note(),w3:w3(80)},
+       {key:"Pallof",n:"Pallof Press",rx:pf.rx,sets:pf.sets,note:wk3Note(),w3:w3(7.5)}]),
      // 2 × 40 yd + switch, then rest.
      m3blk("E","Carry",150,sc.sets,[
-       {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets,rUnit:"yd",note:wk3Note()}])]};
+       {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets,rUnit:"yd",note:wk3Note(),w3:w3(45)}])]};
   }
   if(day==="meso03Wed"){
     const sq=meso3MainRx("hands on the handles — never reach back for a straight bar","~135–145 lb","150 lb"),
@@ -1531,16 +1538,16 @@ function getSession(w,day){
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · slow, elbows on the wall · first in session",sets:2}]},
      {letter:"B",t:"Squat",mins:12,ramp:RAMP,bells:sq.sets,ex:[
-       {key:"Safety Bar Squat",n:"Safety Bar Squat",rx:sq.rx,sets:sq.sets,note:wk3Note(true)}]},
+       {key:"Safety Bar Squat",n:"Safety Bar Squat",rx:sq.rx,sets:sq.sets,note:wk3Note(true),w3:w3(150)}]},
      // Single-arm, so it logs under SA Chest Press — per-arm loads would never read as PRs
      // against Chest Press's two-arm history. 2 × ~40 s press + 15 s to the cable + ~40 s
      // pullover, then rest.
      m3blk("C","Push + Pullover",225,cp.sets,[
-       {key:"SA Chest Press",n:"Chest Press",rx:retestTag(cp.rx),sets:cp.sets,note:wk3Note()},
-       {key:"Cable Pullover",n:"Cable Pullover",rx:po.rx,sets:po.sets,note:wk3Note()}]),
+       {key:"SA Chest Press",n:"Chest Press",rx:retestTag(cp.rx),sets:cp.sets,note:wk3Note(),w3:w3(45)},
+       {key:"Cable Pullover",n:"Cable Pullover",rx:po.rx,sets:po.sets,note:wk3Note(),w3:w3(15)}]),
      // 2 × ~35 s + switch, then rest.
      m3blk("D","Triceps",150,tp.sets,[
-       {key:"Rope Triceps Pressdown",n:"Rope Triceps Pressdown",rx:retestTag(tp.rx),sets:tp.sets,note:wk3Note()}])]};
+       {key:"Rope Triceps Pressdown",n:"Rope Triceps Pressdown",rx:retestTag(tp.rx),sets:tp.sets,note:wk3Note(),w3:w3(17.5)}])]};
      // Plate Pinch Hold left Wednesday 2026-10-26 — it's logged daily in the HEP (b1_platepinch).
      // Its key, PR tile and history are unchanged.
   }
@@ -1552,19 +1559,19 @@ function getSession(w,day){
           sc=meso3HoldRx("40 yd/side","right → left → rest · log load per side","~45 lb/side","45 lb/side");
     return {name:"FRIDAY — Pull + Hinge", type:"lift", retest:meso3Retest, blocks:[
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
-       {key:"Prone Y-Raises",n:"Prone Y-Raises",rx:"2 × 15 · light, first in session"+wk3Tag("2.5 lb"),sets:2,note:wk3Note()}]},
+       {key:"Prone Y-Raises",n:"Prone Y-Raises",rx:"2 × 15 · light, first in session"+wk3Tag("2.5 lb"),sets:2,note:wk3Note(),w3:w3(2.5)}]},
      // Barbell, on the existing key — Meso 02's history under it is already mostly barbell.
      {letter:"B",t:"Hinge",mins:12,ramp:RAMP,bells:rdl.sets,ex:[
-       {key:"Romanian Deadlift (DB)",n:"Romanian Deadlift (barbell)",rx:rdl.rx,sets:rdl.sets,note:wk3Note()}]},
+       {key:"Romanian Deadlift (DB)",n:"Romanian Deadlift (barbell)",rx:rdl.rx,sets:rdl.sets,note:wk3Note(),w3:w3(135)}]},
      // 2 × ~40 s row + 15 s to the floor + ~45 s dead bug, then rest.
      m3blk("C","Pull + Core",225,ngr.sets,[
-       {key:"Neutral-Grip Row",n:"Neutral-Grip Row (cable or DB)",rx:retestTag(ngr.rx),sets:ngr.sets,note:wk3Note()},
+       {key:"Neutral-Grip Row",n:"Neutral-Grip Row (cable or DB)",rx:retestTag(ngr.rx),sets:ngr.sets,note:wk3Note(),w3:w3(40)},
        {key:"Bird Dog",n:"Core (Dead Bug or similar)",rx:cd.rx,sets:cd.sets}]),
      // 2 × ~40 s + 15 s switch, then rest.
      m3blk("D","Unilateral",165,su.sets,[
-       {key:"Step-Up",n:"DB Step-Up",rx:su.rx,sets:su.sets,note:wk3Note()}]),
+       {key:"Step-Up",n:"DB Step-Up",rx:su.rx,sets:su.sets,note:wk3Note(),w3:w3(20)}]),
      m3blk("E","Carry",150,sc.sets,[
-       {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets,rUnit:"yd",note:wk3Note()}])]};
+       {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets,rUnit:"yd",note:wk3Note(),w3:w3(45)}])]};
   }
   if(day==="meso03Sat"){
     // Fixed 3-set prescriptions all block; the Deload week takes two sets of everything.
@@ -1579,14 +1586,14 @@ function getSession(w,day){
        {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · slow, elbows on the wall · effort cap 7/10 all session",sets:2}]},
      // ~45 s set, then rest.
      m3blk("B","Squat",120,n(3),[
-       {key:"Leg Press",n:"Leg Press",rx:t(n(3)+" × 10"+startTag("~180–200 lb")+wk3Tag("190 lb")+" · full depth · log plates only, same machine weekly · tailbone stays on pad",meso3Phase==="Performance"?", slightly heavier":""),sets:n(3),note:wk3Note(true)}]),
+       {key:"Leg Press",n:"Leg Press",rx:t(n(3)+" × 10"+startTag("~180–200 lb")+wk3Tag("190 lb")+" · full depth · log plates only, same machine weekly · tailbone stays on pad",meso3Phase==="Performance"?", slightly heavier":""),sets:n(3),note:wk3Note(true),w3:w3(190)}]),
      // 2 × ~40 s + switch + 15 s to the cable + ~40 s face pull, then rest.
      m3blk("C","Hinge + Upper back",225,n(3),[
-       {key:"SL RDL",n:"Single-Leg RDL",rx:t(n(3)+" × 8/leg"+startTag("~35 lb")+wk3Tag("35 lb")+" · balance-forward · DB in the hand opposite the working leg · right → left")+SS("SL RDL","Face Pull"),sets:n(3),note:wk3Note()},
-       {key:"Face Pull",n:"Face Pull (cable rope)",rx:n(3)+" × 12"+wk3Tag("20 lb")+" · rope at eye level · neutral grip, thumbs back, loose hands · split stance · elbows lead to shoulder height, hands by ears · 1 s pause, no long hold"+SS("SL RDL","Face Pull"),sets:n(3),note:wk3Note()}]),
+       {key:"SL RDL",n:"Single-Leg RDL",rx:t(n(3)+" × 8/leg"+startTag("~35 lb")+wk3Tag("35 lb")+" · balance-forward · DB in the hand opposite the working leg · right → left")+SS("SL RDL","Face Pull"),sets:n(3),note:wk3Note(),w3:w3(35)},
+       {key:"Face Pull",n:"Face Pull (cable rope)",rx:n(3)+" × 12"+wk3Tag("20 lb")+" · rope at eye level · neutral grip, thumbs back, loose hands · split stance · elbows lead to shoulder height, hands by ears · 1 s pause, no long hold"+SS("SL RDL","Face Pull"),sets:n(3),note:wk3Note(),w3:w3(20)}]),
      // Walking lunges alternate legs by nature, so no right → left cue. ~50 s, then rest.
      m3blk("D","Lunge",120,n(3),[
-       {key:"Backward Walking Lunges",n:"Backward Walking Lunges",rx:t(n(3)+" × 8/leg"+startTag("~15 lb each hand, arms straight")+wk3Tag("15 lb")+" · full range"),sets:n(3),note:wk3Note()}]),
+       {key:"Backward Walking Lunges",n:"Backward Walking Lunges",rx:t(n(3)+" × 8/leg"+startTag("~15 lb each hand, arms straight")+wk3Tag("15 lb")+" · full range"),sets:n(3),note:wk3Note(),w3:w3(15)}]),
      // 50 s work / 60 s rest: the bell starts each 1:50 round. ivl bypasses q15's 15 s rounding.
      m3blk("E","Sled",110,n(5),[
        {key:"Sled Push",n:"Sled Push (or treadmill push)",rx:n(5)+" × 50 s work / 60 s rest"+wk3Tag("0.8 mph (hold)")+" · sled: arms straight · Treadmill option: motor on, 0.8 mph, hands low on the curved rails, slight elbow bend OK, short steps, safety clip on · ~50 s ≈ 20 yd · shoulders down, drive with legs · log load × yards",sets:n(5),rUnit:"yd",note:wk3Note()}]),
@@ -1712,14 +1719,16 @@ function topSet(sets){
    for set i. Meso 03 lifts all working sets at one weight, so last time's pyramid is the wrong
    hint there: set 1 hints last time's top working weight (topSet, the progression rule), and once
    set 1 has a weight every later set hints that. Before then, later sets hint no weight. Other days
-   keep last time's set-for-set numbers. */
-function weightHint(day,last,i,set1W){
+   keep last time's set-for-set numbers. In Meso 03 week 3 an exercise with a set load (w3) hints
+   that on set 1 instead — Same as last and ±5 then build on the target, not last week's top set. */
+function weightHint(day,last,i,set1W,w3){
   if(!PLAN_DAYS.includes(day)) return last&&last[i]?last[i].w:"";
-  if(i===0){ const t=topSet(last); return t&&t.w?String(t.w):""; }
+  if(i===0){ if(w3!=null) return String(w3); const t=topSet(last); return t&&t.w?String(t.w):""; }
   return String(set1W||"").trim();
 }
 /* Set 1's reps hint comes from that same top set, so Same as last fills a pair that was actually
-   lifted together. Sets 2+ (and other days) keep last time's reps set for set. */
+   lifted together — except in week 3, where the weight is the target and the reps stay last time's
+   top-set reps. Sets 2+ (and other days) keep last time's reps set for set. */
 function repsHint(day,last,i){
   const t=i===0&&PLAN_DAYS.includes(day)?topSet(last):null;
   return t?String(t.r):last&&last[i]?last[i].r:"";
@@ -2734,7 +2743,7 @@ function renderFocus(){
   }
   const last=lastFor(ex.key), lw=last&&last[st.i]?last[st.i].w:"", lr=last&&last[st.i]?last[st.i].r:"";
   /* lw/lr stay last time's real numbers for the Last time line; the inputs' hints follow set 1. */
-  const s1=focusInput("w",{bi:st.bi,ei:st.ei,i:0}), hw=weightHint(curDay(),last,st.i,s1?s1.value:""), hr=repsHint(curDay(),last,st.i);
+  const s1=focusInput("w",{bi:st.bi,ei:st.ei,i:0}), hw=weightHint(curDay(),last,st.i,s1?s1.value:"",ex.w3), hr=repsHint(curDay(),last,st.i);
   const nx=steps[focusIdx+1], nxEx=nx?s.blocks[nx.bi].ex[nx.ei]:null;
   const isRun=run&&run.bi===st.bi;
   const nowSym=painFor(st.bi,st.ei), lastSym=nowSym.length?[]:lastSymptomsFor(ex.key);
@@ -3144,7 +3153,7 @@ function render(){
       +(planCapped(day)
         ? `${day==="meso03Sat"?"Saturday (cap 7/10)":"Deload week"}: Gold = 100%, no progression needed · Bronze 80%+ · below that, Partial.`
         : `Gold = 100% + a progression · Silver 100% · Bronze 80%+ · below that, Partial.`)
-      +`<br><br><b>Loading:</b> ${MESO03_LOADING_RULE}`
+      +`<br><br><b>Loading:</b> ${meso03LoadingText()}`
     : `${MODEL_DESC[curModel()]} Target ${pxiSet.target} · Gold ±5%.`);
   if(planDay) h+=`<div class="plan-chip" id="planChip"></div>`;
   h+=infoBox("ibEq","meta eq","Equipment",EQ[day]);
@@ -3186,7 +3195,7 @@ function blockHtml(s,bi){
       const extra=extraFor(bi,ei), total=ex.sets+extra;
       h+=`<div class="sets">`;
       for(let i=0;i<total;i++){
-        const pw=weightHint(curDay(),last,i,""), pr=repsHint(curDay(),last,i);
+        const pw=weightHint(curDay(),last,i,"",ex.w3), pr=repsHint(curDay(),last,i);
         h+=`<div class="set${i>=ex.sets?" extra":""}" data-set="${i+1}"><span class="n">${i+1}</span>
           <input inputmode="decimal" placeholder="${pw||'wt'}" id="w_${bi}_${ei}_${i}" oninput="onSetInput()">
           <span class="x">×</span>
