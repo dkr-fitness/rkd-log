@@ -111,7 +111,7 @@ main{padding:12px 14px}
 .set input{width:80px; background:var(--surface); border:1px solid var(--line); border-radius:7px; color:var(--text); font-family:var(--mono); font-size:15px; padding:8px; text-align:center}
 .set input:focus{outline:none; border-color:var(--amber)}
 .set .x{color:var(--muted)}
-.plates{margin:-2px 0 2px 28px; font-family:var(--mono); font-size:12px; color:var(--muted)}
+.plates,.why{margin:-2px 0 2px 28px; font-family:var(--mono); font-size:12px; color:var(--muted)}
 .notecard{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:14px}
 .notecard label{font-size:13px; color:var(--muted); display:block; margin-bottom:6px}
 .notecard textarea{width:100%; background:var(--surface); border:1px solid var(--line); border-radius:8px; color:var(--text); padding:9px; font-size:15px; font-family:var(--body)}
@@ -313,7 +313,7 @@ body.ivt-amb.z5 #focus{background-image:var(--zg5)}
 .f-set{font-family:var(--disp); font-weight:700; font-size:64px; line-height:1}
 .f-set small{font-size:26px; color:rgba(255,255,255,.7)}
 .f-last{font-size:17px; color:rgba(255,255,255,.8)}
-.f-plates{margin-top:-4px; font-family:var(--mono); font-size:17px; text-align:center; white-space:pre-line; color:rgba(255,255,255,.8)}
+.f-plates,.f-why{margin-top:-4px; font-family:var(--mono); font-size:17px; text-align:center; white-space:pre-line; color:rgba(255,255,255,.8)}
 .f-row{display:flex; align-items:center; gap:10px}
 .f-row label{flex:0 0 58px; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,.7)}
 .f-row input{flex:1; min-width:0; height:64px; font-size:40px; font-family:var(--mono); text-align:center; background:rgba(0,0,0,.28); color:var(--text); border:1px solid rgba(255,255,255,.3); border-radius:10px}
@@ -570,15 +570,11 @@ const MESO03_PHASE_CUE={
  Volume:"RPE 7–8. Fill the rep range before adding load.",
  Performance:"RPE 8. Heavier, fewer reps — still no grinding.",
  Deload:"RPE 6. Less volume, same patterns, crisp reps. Leave fresh."};
-/* Meso 03's load progression, shown once in the Scoring box on its lift days. */
-const MESO03_LOADING_RULE="Main lifts: all sets at RPE 7 or easier → add 5 lb next week (Rack Pull 10 lb). Accessories: stay at one weight until every set hits the top of the rep range, then go up. Single-arm: right side sets the load; left matches.";
-/* Week 3's loads (set 2026-10-31) come with their own progression line, so for that week it
-   replaces the RPE rule above; the single-arm sentence still applies. */
-const MESO03_WK3_RULE="Hit all sets at top of range → add load next week; if not, hold.";
-const MESO03_WK3_RECOVERY="Hold last week's load if recovery is red or sleep <5.5 h.";
-function meso03LoadingText(){
-  return meso03Week()===3?"Week 3 targets are on each card. "+MESO03_WK3_RULE+" Single-arm: right side sets the load; left matches.":MESO03_LOADING_RULE;
-}
+/* Meso 03's load progression (rewritten 2026-11-09), shown once in the Scoring box on its lift
+   days. Set 1's weight hint applies it (loadStep), so the box and the hint say the same thing. */
+const MESO03_LOADING_RULE="Main lifts: every working set at the top of the rep range → add 5 lb next time (Rack Pull 10 lb); otherwise hold. Accessories: same test → add 5 lb (2.5 lb under 20 lb). Saturday: every set done and session RPE 7 or under → add 5 lb (Leg Press 10 lb). Any symptom on a lift, or the Deload week → hold. Set 1's hint does the math. Single-arm: right side sets the load; left matches.";
+/* A standing note on Safety Bar Squat and Leg Press (since week 3) — the hint can't see recovery. */
+const MESO03_RECOVERY="Hold last week's load if recovery is red or sleep <5.5 h.";
 /* Saturday's Baseline calibration. The weekday line ("RPE 8+ → drop 10%") is already over
    Saturday's 7/10 cap, so this one is fitted to the cap instead. */
 const MESO03_SAT_CALIBRATION="First working set above 7/10 → drop 10%.";
@@ -1577,30 +1573,26 @@ function getSession(w,day){
   const meso3Phase=phaseForWeek(meso03Week(),"meso03");
   /* Starting-weight hint, Baseline weeks 1–2 only — from week 3 the Last time line takes over. */
   const startTag=st=>meso3Phase==="Baseline"&&st?" · Start "+st:"";
-  /* Week 3 loads (set 2026-10-31): a target in the rx, so set mode and history carry it, plus the
-     progression rule as the card's note line. Week 3 only — from week 4 Last time leads again.
-     w3 is the target as a number, for set 1's grey weight hint (weightHint). */
-  const meso3Wk3=meso03Week()===3;
-  const wk3Tag=t=>meso3Wk3&&t?" · Week 3: "+t:"";
-  const wk3Note=rec=>meso3Wk3?MESO03_WK3_RULE+(rec?"<br>"+MESO03_WK3_RECOVERY:""):undefined;
-  const w3=v=>meso3Wk3?v:undefined;
-  const meso3MainRx=(suffix,start,wk3)=>{
+  /* prog marks what set 1's weight hint progresses by (loadStep): "main", "acc" or "sat", with inc
+     for a bigger step (Rack Pull, Leg Press). Unmarked — activation, core, the sled — keep the plain
+     Last time hint. */
+  const meso3MainRx=(suffix,start)=>{
     const o={Baseline:{sets:4,base:"4 × 6 @ RPE 6–7"},
              Volume:{sets:5,base:"5 × 6–8 @ RPE 7–8"},
              Performance:{sets:4,base:"4 × 4–5 @ RPE 8"},
              Deload:{sets:3,base:"3 × 5 @ RPE 6"}}[meso3Phase];
     /* Ramp sets are never set rows, so they can't count toward the plan score's set total. */
-    return {sets:o.sets, rx:o.base+startTag(start)+wk3Tag(wk3)+" · 1–2 ramp sets, not logged · then all working sets at one weight"+(suffix?" · "+suffix:"")};
+    return {sets:o.sets, rx:o.base+startTag(start)+" · 1–2 ramp sets, not logged · then all working sets at one weight"+(suffix?" · "+suffix:"")};
   };
   // per is the unit suffix on the reps ("/leg", "/side") — the movement name stays clean.
-  const meso3AccRx=(per,note,start,wk3)=>{
+  const meso3AccRx=(per,note,start)=>{
     const o={Baseline:{sets:3,reps:"8–10"},Volume:{sets:3,reps:"10–12"},
              Performance:{sets:3,reps:"8",cue:"heavier"},Deload:{sets:2,reps:"8"}}[meso3Phase];
-    return {sets:o.sets, rx:o.sets+" × "+o.reps+(per||"")+(o.cue?" · "+o.cue:"")+startTag(start)+wk3Tag(wk3)+(note?" · "+note:"")};
+    return {sets:o.sets, rx:o.sets+" × "+o.reps+(per||"")+(o.cue?" · "+o.cue:"")+startTag(start)+(note?" · "+note:"")};
   };
-  const meso3HoldRx=(text,note,start,wk3)=>{
+  const meso3HoldRx=(text,note,start)=>{
     const sets=meso3Phase==="Deload"?1:2;
-    return {sets, rx:sets+" × "+text+startTag(start)+wk3Tag(wk3)+(note?" · "+note:"")+(meso3Phase==="Deload"?" · retest":"")};
+    return {sets, rx:sets+" × "+text+startTag(start)+(note?" · "+note:"")+(meso3Phase==="Deload"?" · retest":"")};
   };
   /* Week 8 retest (Meso03_Plan.xlsx, Overview): Baseline loads again for the carries and
      single-arm lifts, both sides logged, to compare against week 1. The pinch hold left the
@@ -1623,71 +1615,71 @@ function getSession(w,day){
      counted only by the time estimate. */
   const RAMP=180;
   if(day==="meso03Mon"){
-    const rp=meso3MainRx("double overhand · monitor grip-side","~185 lb","185 lb (hold)"),
-          bss=meso3AccRx("/leg","DB in each hand, arms straight"+RL,"~25 lb each hand","25 lb (drop to 20 if set 1 <8)"),
-          ht=meso3AccRx("","full hip extension, pause at top"+SS("Hip Thrust","Pallof"),"light — find it","80 lb all sets"),
-          pf=meso3AccRx("/side","neutral grip, static hold · right → left"+SS("Hip Thrust","Pallof"),null,"7.5–10 lb"),
-          sc=meso3HoldRx("40 yd/side","right → left → rest · log load per side","~45 lb/side","45 lb/side");
+    const rp=meso3MainRx("double overhand · monitor grip-side","~185 lb"),
+          bss=meso3AccRx("/leg","DB in each hand, arms straight"+RL,"~25 lb each hand"),
+          ht=meso3AccRx("","full hip extension, pause at top"+SS("Hip Thrust","Pallof"),"light — find it"),
+          pf=meso3AccRx("/side","neutral grip, static hold · right → left"+SS("Hip Thrust","Pallof")),
+          sc=meso3HoldRx("40 yd/side","right → left → rest · log load per side","~45 lb/side");
     return {name:"MONDAY — Hinge Lead", type:"lift", retest:meso3Retest, blocks:[
      // Rack Pull's Form Reference entry calls for pull-aparts or Y-raises immediately prior.
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Band Pull-Aparts",n:"Band Pull-Aparts",rx:"2 × 15 · light, first in session",sets:2}]},
      {letter:"B",t:"Hinge",mins:12,ramp:RAMP,bells:rp.sets,ex:[
-       {key:"Rack Pull",n:"Rack Pull",rx:rp.rx,sets:rp.sets,note:wk3Note(),w3:w3(185),bar:"std"}]},
+       {key:"Rack Pull",prog:"main",inc:10,n:"Rack Pull",rx:rp.rx,sets:rp.sets,bar:"std"}]},
      // 2 × ~45 s + 15 s switch, then rest.
      m3blk("C","Unilateral",180,bss.sets,[
-       {key:"Bulgarian SS",n:"Bulgarian Split Squat",rx:bss.rx,sets:bss.sets,note:wk3Note(),w3:w3(25)}]),
+       {key:"Bulgarian SS",prog:"acc",n:"Bulgarian Split Squat",rx:bss.rx,sets:bss.sets}]),
      // ~40 s thrust + 15 s to the cable + 2 × ~30 s Pallof, then rest.
      m3blk("D","Glutes + Core",195,ht.sets,[
-       {key:"Hip Thrust",n:"Hip Thrust",rx:ht.rx,sets:ht.sets,note:wk3Note(),w3:w3(80)},
-       {key:"Pallof",n:"Pallof Press",rx:pf.rx,sets:pf.sets,note:wk3Note(),w3:w3(7.5)}]),
+       {key:"Hip Thrust",prog:"acc",n:"Hip Thrust",rx:ht.rx,sets:ht.sets},
+       {key:"Pallof",prog:"acc",n:"Pallof Press",rx:pf.rx,sets:pf.sets}]),
      // 2 × 40 yd + switch, then rest.
      m3blk("E","Carry",150,sc.sets,[
-       {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets,rUnit:"yd",note:wk3Note(),w3:w3(45)}])]};
+       {key:"Suitcase Carry",prog:"acc",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets,rUnit:"yd"}])]};
   }
   if(day==="meso03Wed"){
-    const sq=meso3MainRx("hands on the handles — never reach back for a straight bar","~135–145 lb","150 lb"),
-          cp=meso3AccRx("/side","single-arm floor press, right → left · floor sets the 90° stop, pain-free only · "+SA_EXTRA+SS("Chest Press","Pullover"),"~40–45 lb","45 lb"),
-          po=meso3AccRx("","arms nearly straight — lats without elbow bend"+SS("Chest Press","Pullover"),"~12.5–15 lb","15 lb"),
-          tp=meso3AccRx("/side","single-arm, pushdown only (no overhead)"+RL+" · "+SA_EXTRA,"~12.5–15 lb","17.5 lb");
+    const sq=meso3MainRx("hands on the handles — never reach back for a straight bar","~135–145 lb"),
+          cp=meso3AccRx("/side","single-arm floor press, right → left · floor sets the 90° stop, pain-free only · "+SA_EXTRA+SS("Chest Press","Pullover"),"~40–45 lb"),
+          po=meso3AccRx("","arms nearly straight — lats without elbow bend"+SS("Chest Press","Pullover"),"~12.5–15 lb"),
+          tp=meso3AccRx("/side","single-arm, pushdown only (no overhead)"+RL+" · "+SA_EXTRA,"~12.5–15 lb");
     return {name:"WEDNESDAY — Squat + Push", type:"lift", retest:meso3Retest, blocks:[
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · slow, elbows on the wall · first in session",sets:2}]},
      {letter:"B",t:"Squat",mins:12,ramp:RAMP,bells:sq.sets,ex:[
-       {key:"Safety Bar Squat",n:"Safety Bar Squat",rx:sq.rx,sets:sq.sets,note:wk3Note(true),w3:w3(150),bar:"ssb"}]},
+       {key:"Safety Bar Squat",prog:"main",n:"Safety Bar Squat",rx:sq.rx,sets:sq.sets,note:MESO03_RECOVERY,bar:"ssb"}]},
      // Single-arm, so it logs under SA Chest Press — per-arm loads would never read as PRs
      // against Chest Press's two-arm history. 2 × ~40 s press + 15 s to the cable + ~40 s
      // pullover, then rest.
      m3blk("C","Push + Pullover",225,cp.sets,[
-       {key:"SA Chest Press",n:"Chest Press",rx:retestTag(cp.rx),sets:cp.sets,note:wk3Note(),w3:w3(45)},
-       {key:"Cable Pullover",n:"Cable Pullover",rx:po.rx,sets:po.sets,note:wk3Note(),w3:w3(15)}]),
+       {key:"SA Chest Press",prog:"acc",n:"Chest Press",rx:retestTag(cp.rx),sets:cp.sets},
+       {key:"Cable Pullover",prog:"acc",n:"Cable Pullover",rx:po.rx,sets:po.sets}]),
      // 2 × ~35 s + switch, then rest.
      m3blk("D","Triceps",150,tp.sets,[
-       {key:"Rope Triceps Pressdown",n:"Rope Triceps Pressdown",rx:retestTag(tp.rx),sets:tp.sets,note:wk3Note(),w3:w3(17.5)}])]};
+       {key:"Rope Triceps Pressdown",prog:"acc",n:"Rope Triceps Pressdown",rx:retestTag(tp.rx),sets:tp.sets}])]};
      // Plate Pinch Hold left Wednesday 2026-10-26 — it's logged daily in the HEP (b1_platepinch).
      // Its key, PR tile and history are unchanged.
   }
   if(day==="meso03Fri"){
-    const rdl=meso3MainRx("barbell","~135 lb","135 lb"),
-          ngr=meso3AccRx("/side","single-arm, right → left · stop at first sign of pain · sit tall ~90°, no rocking · quick squeeze, no long hold at the end · "+SA_EXTRA+SS("Row","Dead Bug"),"~40–45 lb","40 lb"),
+    const rdl=meso3MainRx("barbell","~135 lb"),
+          ngr=meso3AccRx("/side","single-arm, right → left · stop at first sign of pain · sit tall ~90°, no rocking · quick squeeze, no long hold at the end · "+SA_EXTRA+SS("Row","Dead Bug"),"~40–45 lb"),
           cd=meso3AccRx("/side","ribs down, slow"+SS("Row","Dead Bug")),
-          su=meso3AccRx("/leg","two DBs at sides, arms straight · working foot flat on box, trailing foot toe-taps only"+RL,"~20 lb each hand","20 lb"),
-          sc=meso3HoldRx("40 yd/side","right → left → rest · log load per side","~45 lb/side","45 lb/side");
+          su=meso3AccRx("/leg","two DBs at sides, arms straight · working foot flat on box, trailing foot toe-taps only"+RL,"~20 lb each hand"),
+          sc=meso3HoldRx("40 yd/side","right → left → rest · log load per side","~45 lb/side");
     return {name:"FRIDAY — Pull + Hinge", type:"lift", retest:meso3Retest, blocks:[
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
-       {key:"Prone Y-Raises",n:"Prone Y-Raises",rx:"2 × 15 · light, first in session"+wk3Tag("2.5 lb"),sets:2,note:wk3Note(),w3:w3(2.5)}]},
+       {key:"Prone Y-Raises",n:"Prone Y-Raises",rx:"2 × 15 · light, first in session",sets:2}]},
      // Barbell, on the existing key — Meso 02's history under it is already mostly barbell.
      {letter:"B",t:"Hinge",mins:12,ramp:RAMP,bells:rdl.sets,ex:[
-       {key:"Romanian Deadlift (DB)",n:"Romanian Deadlift (barbell)",rx:rdl.rx,sets:rdl.sets,note:wk3Note(),w3:w3(135),bar:"std"}]},
+       {key:"Romanian Deadlift (DB)",prog:"main",n:"Romanian Deadlift (barbell)",rx:rdl.rx,sets:rdl.sets,bar:"std"}]},
      // 2 × ~40 s row + 15 s to the floor + ~45 s dead bug, then rest.
      m3blk("C","Pull + Core",225,ngr.sets,[
-       {key:"Neutral-Grip Row",n:"Neutral-Grip Row (cable or DB)",rx:retestTag(ngr.rx),sets:ngr.sets,note:wk3Note(),w3:w3(40)},
+       {key:"Neutral-Grip Row",prog:"acc",n:"Neutral-Grip Row (cable or DB)",rx:retestTag(ngr.rx),sets:ngr.sets},
        {key:"Bird Dog",n:"Core (Dead Bug or similar)",rx:cd.rx,sets:cd.sets}]),
      // 2 × ~40 s + 15 s switch, then rest.
      m3blk("D","Unilateral",165,su.sets,[
-       {key:"Step-Up",n:"DB Step-Up",rx:su.rx,sets:su.sets,note:wk3Note(),w3:w3(20)}]),
+       {key:"Step-Up",prog:"acc",n:"DB Step-Up",rx:su.rx,sets:su.sets}]),
      m3blk("E","Carry",150,sc.sets,[
-       {key:"Suitcase Carry",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets,rUnit:"yd",note:wk3Note(),w3:w3(45)}])]};
+       {key:"Suitcase Carry",prog:"acc",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets,rUnit:"yd"}])]};
   }
   if(day==="meso03Sat"){
     // Fixed 3-set prescriptions all block; the Deload week takes two sets of everything.
@@ -1702,17 +1694,17 @@ function getSession(w,day){
        {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · slow, elbows on the wall · effort cap 7/10 all session",sets:2}]},
      // ~45 s set, then rest.
      m3blk("B","Squat",120,n(3),[
-       {key:"Leg Press",n:"Leg Press",rx:t(n(3)+" × 10"+startTag("~180–200 lb")+wk3Tag("190 lb")+" · full depth · log plates only, same machine weekly · tailbone stays on pad",meso3Phase==="Performance"?", slightly heavier":""),sets:n(3),note:wk3Note(true),w3:w3(190)}]),
+       {key:"Leg Press",prog:"sat",inc:10,n:"Leg Press",rx:t(n(3)+" × 10"+startTag("~180–200 lb")+" · full depth · log plates only, same machine weekly · tailbone stays on pad",meso3Phase==="Performance"?", slightly heavier":""),sets:n(3),note:MESO03_RECOVERY}]),
      // 2 × ~40 s + switch + 15 s to the cable + ~40 s face pull, then rest.
      m3blk("C","Hinge + Upper back",225,n(3),[
-       {key:"SL RDL",n:"Single-Leg RDL",rx:t(n(3)+" × 8/leg"+startTag("~35 lb")+wk3Tag("35 lb")+" · balance-forward · DB in the hand opposite the working leg · right → left")+SS("SL RDL","Face Pull"),sets:n(3),note:wk3Note(),w3:w3(35)},
-       {key:"Face Pull",n:"Face Pull (cable rope)",rx:n(3)+" × 12"+wk3Tag("20 lb")+" · rope at eye level · neutral grip, thumbs back, loose hands · split stance · elbows lead to shoulder height, hands by ears · 1 s pause, no long hold"+SS("SL RDL","Face Pull"),sets:n(3),note:wk3Note(),w3:w3(20)}]),
+       {key:"SL RDL",prog:"sat",n:"Single-Leg RDL",rx:t(n(3)+" × 8/leg"+startTag("~35 lb")+" · balance-forward · DB in the hand opposite the working leg · right → left")+SS("SL RDL","Face Pull"),sets:n(3)},
+       {key:"Face Pull",prog:"sat",n:"Face Pull (cable rope)",rx:n(3)+" × 12 · rope at eye level · neutral grip, thumbs back, loose hands · split stance · elbows lead to shoulder height, hands by ears · 1 s pause, no long hold"+SS("SL RDL","Face Pull"),sets:n(3)}]),
      // Walking lunges alternate legs by nature, so no right → left cue. ~50 s, then rest.
      m3blk("D","Lunge",120,n(3),[
-       {key:"Backward Walking Lunges",n:"Backward Walking Lunges",rx:t(n(3)+" × 8/leg"+startTag("~15 lb each hand, arms straight")+wk3Tag("15 lb")+" · full range"),sets:n(3),note:wk3Note(),w3:w3(15)}]),
+       {key:"Backward Walking Lunges",prog:"sat",n:"Backward Walking Lunges",rx:t(n(3)+" × 8/leg"+startTag("~15 lb each hand, arms straight")+" · full range"),sets:n(3)}]),
      // 50 s work / 60 s rest: the bell starts each 1:50 round. ivl bypasses q15's 15 s rounding.
      m3blk("E","Sled",110,n(5),[
-       {key:"Sled Push",n:"Sled Push (or treadmill push)",rx:n(5)+" × 50 s work / 60 s rest"+wk3Tag("0.8 mph (hold)")+" · sled: arms straight · Treadmill option: motor on, 0.8 mph, hands low on the curved rails, slight elbow bend OK, short steps, safety clip on · ~50 s ≈ 20 yd · shoulders down, drive with legs · log load × yards",sets:n(5),rUnit:"yd",note:wk3Note()}]),
+       {key:"Sled Push",n:"Sled Push (or treadmill push)",rx:n(5)+" × 50 s work / 60 s rest · sled: arms straight · Treadmill option: motor on, 0.8 mph, hands low on the curved rails, slight elbow bend OK, short steps, safety clip on · ~50 s ≈ 20 yd · shoulders down, drive with legs · log load × yards",sets:n(5),rUnit:"yd"}]),
      // Was an 8–10 min Cardio Ramp; the sled already covers conditioning (2026-10-26).
      {letter:"F",t:"Cooldown (optional)",mins:5,bells:1,ex:[
        {n:"Optional cooldown — easy bike or incline walk",rx:"5 min · skip it if short on time · cap 7/10 effort",sets:0}]}]};
@@ -1856,20 +1848,49 @@ function topSet(sets){
     if(r>0&&(!t||w>t.w||(w===t.w&&r>t.r))) t={w,r}; });
   return t;
 }
+/* Meso 03's loading rule, as set 1's weight hint (2026-11-09). Judged on the last session that
+   trained the key, against the rx it was saved with. Main lifts and accessories (prog "main" /
+   "acc") step up when every prescribed set reached the top of the rep range; Saturday's lifts
+   ("sat") when every set hit its reps and the session RPE was 7 or under. Steps: +5, or ex.inc
+   (Rack Pull, Leg Press 10); accessories +2.5 under 20 lb. Anything else holds: a missed set, any
+   symptom logged on it last time (even one that went away), the Deload week, a Saturday with no
+   RPE. Returns {w, why} — why is the line under set 1 — or null with no Last time, no load, or an
+   rx with no rep count, so the plain top-set hint stands. */
+const repTop=rx=>{ const m=/^\s*\d+\s*×\s*(\d+)(?:\s*[–-]\s*(\d+))?/.exec(rx||""); return m?+(m[2]||m[1]):null; };
+function loadStep(day,ex,logs){
+  if(!PLAN_DAYS.includes(day)||!ex||!ex.prog) return null;
+  logs=logs||loadLogs();
+  let last=null,rpe=0,sym=null;
+  for(let i=logs.length-1;i>=0&&!last;i--){
+    const e=(logs[i].entries||[]).find(x=>x.key===ex.key); if(!e) continue;
+    const done=e.sets.some(s=>s.w||s.r), n=(e.symptoms||[]).length;
+    if(sym===null&&(done||n)) sym=n>0; /* lastSymptomsFor's rule: a pain-stopped session counts */
+    if(done){ last=e; rpe=logs[i].rpe||0; }
+  }
+  const t=last&&topSet(last.sets), top=last&&repTop(last.rx);
+  if(!t||!t.w||!top) return null;
+  const u=ex.rUnit==="yd"?" yd":"", hold=why=>({w:t.w,why:"hold: "+why});
+  if(meso03Deload()) return hold("Deload week");
+  if(sym) return hold("symptom logged last time");
+  if(!last.sets.slice(0,last.programmed||last.sets.length).every(x=>parseFloat(x.r)>=top))
+    return hold("aim for "+(repTop(ex.rx)||top)+u);
+  if(ex.prog==="sat"&&!rpe) return hold("no session RPE last time");
+  if(ex.prog==="sat"&&rpe>7) return hold("RPE "+rpe+" last time");
+  const inc=ex.inc||(ex.prog==="acc"&&t.w<20?2.5:5);
+  return {w:t.w+inc, why:ex.prog==="sat"?"↑ all sets done at RPE "+rpe+" last time":"↑ all sets hit "+top+u+" last time"};
+}
 /* The grey weight hint (placeholder only — never a value, so nothing typed is ever overwritten)
    for set i. Meso 03 lifts all working sets at one weight, so last time's pyramid is the wrong
-   hint there: set 1 hints last time's top working weight (topSet, the progression rule), and once
-   set 1 has a weight every later set hints that. Before then, later sets hint no weight. Other days
-   keep last time's set-for-set numbers. In Meso 03 week 3 an exercise with a set load (w3) hints
-   that on set 1 instead — Same as last and ±5 then build on the target, not last week's top set. */
-function weightHint(day,last,i,set1W,w3){
+   hint there: set 1 hints the loading rule's next weight (step, from loadStep), else last time's
+   top working weight (topSet), and once set 1 has a weight every later set hints that. Before
+   then, later sets hint no weight. Other days keep last time's set-for-set numbers. */
+function weightHint(day,last,i,set1W,step){
   if(!PLAN_DAYS.includes(day)) return last&&last[i]?last[i].w:"";
-  if(i===0){ if(w3!=null) return String(w3); const t=topSet(last); return t&&t.w?String(t.w):""; }
+  if(i===0){ if(step) return String(step.w); const t=topSet(last); return t&&t.w?String(t.w):""; }
   return String(set1W||"").trim();
 }
-/* Set 1's reps hint comes from that same top set, so Same as last fills a pair that was actually
-   lifted together — except in week 3, where the weight is the target and the reps stay last time's
-   top-set reps. Sets 2+ (and other days) keep last time's reps set for set. */
+/* Set 1's reps hint comes from last time's top set, so Same as last fills a pair that was actually
+   lifted together. Sets 2+ (and other days) keep last time's reps set for set. */
 function repsHint(day,last,i){
   const t=i===0&&PLAN_DAYS.includes(day)?topSet(last):null;
   return t?String(t.r):last&&last[i]?last[i].r:"";
@@ -2928,7 +2949,7 @@ function renderFocus(){
   }
   const last=lastFor(ex.key), lw=last&&last[st.i]?last[st.i].w:"", lr=last&&last[st.i]?last[st.i].r:"";
   /* lw/lr stay last time's real numbers for the Last time line; the inputs' hints follow set 1. */
-  const s1=focusInput("w",{bi:st.bi,ei:st.ei,i:0}), hw=weightHint(curDay(),last,st.i,s1?s1.value:"",ex.w3), hr=repsHint(curDay(),last,st.i);
+  const s1=focusInput("w",{bi:st.bi,ei:st.ei,i:0}), step=st.i===0?loadStep(curDay(),ex):null, hw=weightHint(curDay(),last,st.i,s1?s1.value:"",step), hr=repsHint(curDay(),last,st.i);
   const nx=steps[focusIdx+1], nxEx=nx?s.blocks[nx.bi].ex[nx.ei]:null;
   const isRun=run&&run.bi===st.bi;
   const nowSym=painFor(st.bi,st.ei), lastSym=nowSym.length?[]:lastSymptomsFor(ex.key);
@@ -2945,6 +2966,7 @@ function renderFocus(){
     ${lastSym.map(e=>`<div class="p-line">⚠ Last session: ${escAttr(painText(e))}</div>`).join("")}
     <div class="f-row"><label>Weight</label><button class="f-step" onclick="focusStep('w',-5)">−5</button>
       <input id="fW" inputmode="decimal" value="${escAttr(w?w.value:"")}" placeholder="${escAttr(hw)}" oninput="focusPlates()"><button class="f-step" onclick="focusStep('w',5)">+5</button></div>
+    ${step&&step.why?`<div class="f-why">${escAttr(step.why)}</div>`:""}
     ${st.i===0&&barFor(ex)?`<div class="f-plates" id="fPlates" data-bar="${barFor(ex)}"></div>`:""}
     <div class="f-row"><label>${ex.rUnit==="sec"?"Seconds":ex.rUnit==="yd"?"Yards":ex.rUnit==="rds"?"Rounds":"Reps"}</label><button class="f-step" onclick="focusStep('r',-1)">−1</button>
       <input id="fR" inputmode="numeric" value="${escAttr(r?r.value:"")}" placeholder="${escAttr(hr)}"><button class="f-step" onclick="focusStep('r',1)">+1</button></div>
@@ -3370,7 +3392,7 @@ function render(){
       +(planCapped(day)
         ? `${day==="meso03Sat"?"Saturday (cap 7/10)":"Deload week"}: Gold = 100%, no progression needed · Bronze 80%+ · below that, Partial.`
         : `Gold = 100% + a progression · Silver 100% · Bronze 80%+ · below that, Partial.`)
-      +`<br><br><b>Loading:</b> ${meso03LoadingText()}`
+      +`<br><br><b>Loading:</b> ${MESO03_LOADING_RULE}`
     : `${MODEL_DESC[curModel()]} Target ${pxiSet.target} · Gold ±5%.`);
   if(planDay) h+=`<div class="plan-chip" id="planChip"></div>`;
   h+=infoBox("ibEq","meta eq","Equipment",EQ[day]);
@@ -3406,17 +3428,18 @@ function blockHtml(s,bi){
     if(ex.rx)h+=`<div class="ex-rx">${ex.rx}</div>`;
     if(ex.note)h+=`<div class="ex-note">${ex.note}</div>`;
     if(ex.sets>0){
-      const last=lastFor(ex.key);
+      const last=lastFor(ex.key), step=loadStep(curDay(),ex);
       /* Rows past ex.sets are the ones you added — same ids, same positional scheme, so the
          draft captures them without knowing anything about extras. */
       const extra=extraFor(bi,ei), total=ex.sets+extra;
       h+=`<div class="sets">`;
       for(let i=0;i<total;i++){
-        const pw=weightHint(curDay(),last,i,"",ex.w3), pr=repsHint(curDay(),last,i);
+        const pw=weightHint(curDay(),last,i,"",step), pr=repsHint(curDay(),last,i);
         h+=`<div class="set${i>=ex.sets?" extra":""}" data-set="${i+1}"><span class="n">${i+1}</span>
           <input inputmode="decimal" placeholder="${pw||'wt'}" id="w_${bi}_${ei}_${i}" oninput="onSetInput()">
           <span class="x">×</span>
           <input inputmode="numeric" placeholder="${pr||ex.rUnit||'reps'}" id="r_${bi}_${ei}_${i}" oninput="onSetInput()"></div>`;
+        if(i===0&&step&&step.why) h+=`<div class="why">${step.why}</div>`;
         if(i===0&&ex.bar) h+=`<div class="plates" id="pl_${bi}_${ei}"></div>`; /* filled by refreshWeightHints() */
       }
       h+=`</div>`;

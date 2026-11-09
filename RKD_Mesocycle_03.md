@@ -41,11 +41,18 @@
 
 **Main lifts:** 1–2 ramp sets, not logged, then all working sets at one weight. Ramp sets are never set rows in the app, so they don't count toward the plan score.
 
-**Weight hints (app, every Meso 03 exercise):** set 1's grey hint is last time's top working weight. Once set 1 has a weight, sets 2+ hint that same weight instead of last time's pyramid. They're hints only: a typed value is never overwritten, and tapping Same as last (or ±5) in set mode turns the hint into a value. Set 1's reps hint comes from that same top set, so Same as last fills a pair you actually lifted. Sets 2+ keep last time's reps, set for set.
+**Weight hints (app, every Meso 03 exercise):** set 1's grey hint applies the loading rule below to last time's top working weight (since 2026-11-09), with the reason in a grey line under it. Once set 1 has a weight, sets 2+ hint that same weight instead of last time's pyramid. They're hints only: a typed value is never overwritten, and tapping Same as last (or ±5) in set mode turns the hint into a value. Set 1's reps hint comes from that same top set, so Same as last fills a pair you actually lifted. Sets 2+ keep last time's reps, set for set.
 
-**Loading progression** (shown in the app's Scoring box on every Meso 03 lift day): Main lifts: all sets at RPE 7 or easier → add 5 lb next week (Rack Pull 10 lb). Accessories: stay at one weight until every set hits the top of the rep range, then go up. Single-arm: right side sets the load; left matches.
+**Loading progression** (rewritten 2026-11-09; shown in the app's Scoring box on every Meso 03 lift day, and applied by set 1's weight hint): Main lifts: every working set at the top of the rep range → add 5 lb next time (Rack Pull 10 lb); otherwise hold. Accessories: same test → add 5 lb (2.5 lb under 20 lb). Saturday: every set done and session RPE 7 or under → add 5 lb (Leg Press 10 lb). Any symptom on a lift, or the Deload week → hold. Single-arm: right side sets the load; left matches.
 
-**Week 3 loads (Nov 2–8, set 2026-10-31):** each loaded card shows "Week 3: <load>" in its rx, and the progression line "Hit all sets at top of range → add load next week; if not, hold." For that week the Scoring box's Loading line shows the same rule in place of the RPE rule above (the single-arm sentence stays). Set 1's grey weight hint is the target, not last time's top set, so Same as last and ±5 build on it. Set 1's reps hint is still last time's top-set reps. Wed Safety Bar Squat and Sat Leg Press add: "Hold last week's load if recovery is red or sleep <5.5 h." From week 4, Last time leads again.
+- "Top of the range" is last time's prescription (week 3's first Volume session judges Baseline's 4 × 6 at 6); a hold aims for this week's top.
+- Pain is per exercise: any symptom logged on that lift last time holds it, even one that went away.
+- Saturday with no session RPE logged holds.
+- Not progressed by the hint: activation, core and Sled Push.
+- The reason line reads e.g. "↑ all sets hit 8 last time", "hold: aim for 12", "hold: RPE 8 last time", "hold: symptom logged last time", "hold: Deload week".
+- Wed Safety Bar Squat and Sat Leg Press keep a standing note: "Hold last week's load if recovery is red or sleep <5.5 h." The hint can't see recovery, so that call is yours.
+
+**Week 3 loads (Nov 2–8, set 2026-10-31) — record only.** That week each loaded card showed "Week 3: <load>" in its rx, with the line "Hit all sets at top of range → add load next week; if not, hold.", and set 1's hint was the target. The tags were removed 2026-11-09 when the hint took over the rule; History keeps the rx each session was saved with.
 
 | Day | Week 3 targets |
 |---|---|
@@ -54,9 +61,9 @@
 | Fri | Romanian Deadlift 135 lb · Neutral-Grip Row 40 lb · Step-Up 20 lb · Suitcase Carry 45 lb/side · Prone Y 2.5 lb |
 | Sat | Leg Press 190 lb · Face Pull 20 lb · SL RDL 35 lb · Backward Walking Lunges 15 lb · Sled Push 0.8 mph (hold) |
 
-Pallof's set 1 hint is 7.5 lb, the bottom of its range. Sled Push has no weight hint: 0.8 mph is a speed, not a load. Activation slots without a load (Band Pull-Aparts, Scapular Wall Slide) and Friday's Core get no target or line.
+Sled Push had no weight target: 0.8 mph is a speed, not a load.
 
-**Starting weights (Baseline, weeks 1–2 only):** each session table below has a Start column, and the app shows it in the rx as "Start ~X". From week 3 it's dropped: week 3 has its own targets (above), and from week 4 set mode's Last time line takes over. Calibrate on the first working set: RPE 8+ → drop 10%. RPE 5 → add 5–10 lb. That line is in the Baseline phase cue (the app's HR target box, Mon/Wed/Fri). Saturday's is fitted to its 7/10 cap instead: first working set above 7/10 → drop 10%.
+**Starting weights (Baseline, weeks 1–2 only):** each session table below has a Start column, and the app shows it in the rx as "Start ~X". From week 3 it's dropped and the weight hint takes over. Calibrate on the first working set: RPE 8+ → drop 10%. RPE 5 → add 5–10 lb. That line is in the Baseline phase cue (the app's HR target box, Mon/Wed/Fri). Saturday's is fitted to its 7/10 cap instead: first working set above 7/10 → drop 10%.
 
 **Fixed all block:** activation slots (2 sets). Suitcase Carry runs 2 rounds, dropping to 1 in the Deload week.
 
