@@ -111,6 +111,7 @@ main{padding:12px 14px}
 .set input{width:80px; background:var(--surface); border:1px solid var(--line); border-radius:7px; color:var(--text); font-family:var(--mono); font-size:15px; padding:8px; text-align:center}
 .set input:focus{outline:none; border-color:var(--amber)}
 .set .x{color:var(--muted)}
+.plates{margin:-2px 0 2px 28px; font-family:var(--mono); font-size:12px; color:var(--muted)}
 .notecard{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:14px}
 .notecard label{font-size:13px; color:var(--muted); display:block; margin-bottom:6px}
 .notecard textarea{width:100%; background:var(--surface); border:1px solid var(--line); border-radius:8px; color:var(--text); padding:9px; font-size:15px; font-family:var(--body)}
@@ -312,6 +313,7 @@ body.ivt-amb.z5 #focus{background-image:var(--zg5)}
 .f-set{font-family:var(--disp); font-weight:700; font-size:64px; line-height:1}
 .f-set small{font-size:26px; color:rgba(255,255,255,.7)}
 .f-last{font-size:17px; color:rgba(255,255,255,.8)}
+.f-plates{margin-top:-4px; font-family:var(--mono); font-size:17px; text-align:center; white-space:pre-line; color:rgba(255,255,255,.8)}
 .f-row{display:flex; align-items:center; gap:10px}
 .f-row label{flex:0 0 58px; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,.7)}
 .f-row input{flex:1; min-width:0; height:64px; font-size:40px; font-family:var(--mono); text-align:center; background:rgba(0,0,0,.28); color:var(--text); border:1px solid rgba(255,255,255,.3); border-radius:10px}
@@ -1631,7 +1633,7 @@ function getSession(w,day){
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Band Pull-Aparts",n:"Band Pull-Aparts",rx:"2 × 15 · light, first in session",sets:2}]},
      {letter:"B",t:"Hinge",mins:12,ramp:RAMP,bells:rp.sets,ex:[
-       {key:"Rack Pull",n:"Rack Pull",rx:rp.rx,sets:rp.sets,note:wk3Note(),w3:w3(185)}]},
+       {key:"Rack Pull",n:"Rack Pull",rx:rp.rx,sets:rp.sets,note:wk3Note(),w3:w3(185),bar:"std"}]},
      // 2 × ~45 s + 15 s switch, then rest.
      m3blk("C","Unilateral",180,bss.sets,[
        {key:"Bulgarian SS",n:"Bulgarian Split Squat",rx:bss.rx,sets:bss.sets,note:wk3Note(),w3:w3(25)}]),
@@ -1652,7 +1654,7 @@ function getSession(w,day){
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · slow, elbows on the wall · first in session",sets:2}]},
      {letter:"B",t:"Squat",mins:12,ramp:RAMP,bells:sq.sets,ex:[
-       {key:"Safety Bar Squat",n:"Safety Bar Squat",rx:sq.rx,sets:sq.sets,note:wk3Note(true),w3:w3(150)}]},
+       {key:"Safety Bar Squat",n:"Safety Bar Squat",rx:sq.rx,sets:sq.sets,note:wk3Note(true),w3:w3(150),bar:"ssb"}]},
      // Single-arm, so it logs under SA Chest Press — per-arm loads would never read as PRs
      // against Chest Press's two-arm history. 2 × ~40 s press + 15 s to the cable + ~40 s
      // pullover, then rest.
@@ -1676,7 +1678,7 @@ function getSession(w,day){
        {key:"Prone Y-Raises",n:"Prone Y-Raises",rx:"2 × 15 · light, first in session"+wk3Tag("2.5 lb"),sets:2,note:wk3Note(),w3:w3(2.5)}]},
      // Barbell, on the existing key — Meso 02's history under it is already mostly barbell.
      {letter:"B",t:"Hinge",mins:12,ramp:RAMP,bells:rdl.sets,ex:[
-       {key:"Romanian Deadlift (DB)",n:"Romanian Deadlift (barbell)",rx:rdl.rx,sets:rdl.sets,note:wk3Note(),w3:w3(135)}]},
+       {key:"Romanian Deadlift (DB)",n:"Romanian Deadlift (barbell)",rx:rdl.rx,sets:rdl.sets,note:wk3Note(),w3:w3(135),bar:"std"}]},
      // 2 × ~40 s row + 15 s to the floor + ~45 s dead bug, then rest.
      m3blk("C","Pull + Core",225,ngr.sets,[
        {key:"Neutral-Grip Row",n:"Neutral-Grip Row (cable or DB)",rx:retestTag(ngr.rx),sets:ngr.sets,note:wk3Note(),w3:w3(40)},
@@ -1872,12 +1874,38 @@ function repsHint(day,last,i){
   const t=i===0&&PLAN_DAYS.includes(day)?topSet(last):null;
   return t?String(t.r):last&&last[i]?last[i].r:"";
 }
-/* Re-points sets 2+'s weight hints at set 1 as it's typed. Plan days only; the rows themselves are
-   drawn by blockHtml(), which can't know set 1's value until the draft is restored into them. */
+/* Plate math under set 1 (2026-11-09) — display only, nothing saved. Per side, biggest plates
+   first. A total that can't be loaded exactly shows the nearest one that can (a tie goes to the
+   lighter). Barbell lifts carry bar:"std" (45 lb) or bar:"ssb" (the safety bar, whose weight is
+   set in RKD → Scoring settings); until that's set, Safety Bar Squat shows no plates. */
+const PLATES=[45,35,25,10,5,2.5], STD_BAR=45;
+function plateBreakdown(total,bar){
+  total=parseFloat(total);
+  if(!(bar>0)||!(total>0)||total<bar) return null;
+  const lo=bar+5*Math.floor((total-bar)/5+1e-9), hi=lo+5, load=total-lo<=hi-total?lo:hi;
+  let side=(load-bar)/2; const plates=[];
+  PLATES.forEach(p=>{ while(side>=p-1e-9){ plates.push(p); side-=p; } });
+  return {total:load, exact:Math.abs(load-total)<1e-9, plates};
+}
+function plateText(total,bar){
+  const b=plateBreakdown(total,bar); if(!b) return "";
+  const per=b.plates.length?"per side: "+b.plates.join(" + "):"bar only";
+  return parseFloat(total)+" → "+(b.exact?"":"closest: "+b.total+" · ")+per;
+}
+function barFor(ex){
+  if(!ex||!ex.bar) return null;
+  return ex.bar==="std"?STD_BAR:pxiSet.ssbBar>0?pxiSet.ssbBar:null;
+}
+/* Set 1's weight, or its grey hint when nothing's typed — the number the plates are for. */
+const set1Weight=el=>el?(el.value.trim()||(el.placeholder!=="wt"?el.placeholder:"")):"";
+/* Re-points sets 2+'s weight hints at set 1 as it's typed, and the plate line under set 1. Plan
+   days only; the rows themselves are drawn by blockHtml(), which can't know set 1's value until the
+   draft is restored into them. */
 function refreshWeightHints(blocks){
   const day=curDay(); if(!PLAN_DAYS.includes(day)) return;
   (blocks||focusSession().blocks).forEach((b,bi)=>b.ex.forEach((ex,ei)=>{
     const s1=document.getElementById("w_"+bi+"_"+ei+"_0"); if(!(ex.sets>0)||!s1) return;
+    const pl=document.getElementById("pl_"+bi+"_"+ei); if(pl) pl.textContent=plateText(set1Weight(s1),barFor(ex));
     for(let i=1;i<ex.sets+extraFor(bi,ei);i++){
       const el=document.getElementById("w_"+bi+"_"+ei+"_"+i);
       if(el) el.placeholder=weightHint(day,null,i,s1.value)||"wt";
@@ -1950,7 +1978,7 @@ try{localStorage.setItem("_t","1");localStorage.removeItem("_t");}catch(e){stora
 let memLogs=[];
 const loadLogs=()=>{ if(!storageOK) return memLogs; try{return JSON.parse(localStorage.getItem("dtp-logs")||"[]");}catch(e){return [];} };
 const saveLogs=l=>{ if(storageOK) localStorage.setItem("dtp-logs",JSON.stringify(l)); else memLogs=l; };
-let pxiSet=(()=>{ const d={maxHr:185,restingHr:46,target:105,model:"auto"};
+let pxiSet=(()=>{ const d={maxHr:185,restingHr:46,target:105,model:"auto",ssbBar:null};
   if(!storageOK) return d;
   try{return Object.assign(d,JSON.parse(localStorage.getItem("dtp-pxi")||"{}"));}catch(e){return d;} })();
 const savePxiSet=()=>{ if(storageOK) localStorage.setItem("dtp-pxi",JSON.stringify(pxiSet)); };
@@ -2847,6 +2875,14 @@ function focusStep(p,delta){
   const el=document.getElementById(p==="w"?"fW":"fR"); if(!el) return;
   const v=Math.max(0,(parseFloat(el.value||el.placeholder)||0)+delta);
   el.value=String(Math.round(v*10)/10);
+  if(p==="w") focusPlates();
+}
+/* Set 1's plate line in set mode — follows the box as it's typed or stepped, before Done. */
+function focusPlates(){
+  const pl=document.getElementById("fPlates"); if(!pl) return;
+  const fw=document.getElementById("fW");
+  /* Two lines at set mode's size, so "closest: 185" and the plates don't wrap mid-list. */
+  pl.textContent=plateText(fw?(fw.value.trim()||fw.placeholder):"",+pl.dataset.bar).replace(" · ","\n");
 }
 /* Writes the set into the session page's inputs, then moves on. `same` fills last time's
    numbers first, so an unchanged set is a single tap. */
@@ -2908,7 +2944,8 @@ function renderFocus(){
     ${nowSym.map(e=>`<div class="p-line">⚠ Today: ${escAttr(painText(e))}</div>`).join("")}
     ${lastSym.map(e=>`<div class="p-line">⚠ Last session: ${escAttr(painText(e))}</div>`).join("")}
     <div class="f-row"><label>Weight</label><button class="f-step" onclick="focusStep('w',-5)">−5</button>
-      <input id="fW" inputmode="decimal" value="${escAttr(w?w.value:"")}" placeholder="${escAttr(hw)}"><button class="f-step" onclick="focusStep('w',5)">+5</button></div>
+      <input id="fW" inputmode="decimal" value="${escAttr(w?w.value:"")}" placeholder="${escAttr(hw)}" oninput="focusPlates()"><button class="f-step" onclick="focusStep('w',5)">+5</button></div>
+    ${st.i===0&&barFor(ex)?`<div class="f-plates" id="fPlates" data-bar="${barFor(ex)}"></div>`:""}
     <div class="f-row"><label>${ex.rUnit==="sec"?"Seconds":ex.rUnit==="yd"?"Yards":ex.rUnit==="rds"?"Rounds":"Reps"}</label><button class="f-step" onclick="focusStep('r',-1)">−1</button>
       <input id="fR" inputmode="numeric" value="${escAttr(r?r.value:"")}" placeholder="${escAttr(hr)}"><button class="f-step" onclick="focusStep('r',1)">+1</button></div>
     <div class="f-act">${hw||hr?`<button class="f-same" onclick="focusDone(true)">Same as last ✓</button>`:""}<button class="f-done" onclick="focusDone(false)">Done ✓</button></div>
@@ -2923,6 +2960,7 @@ function renderFocus(){
     ${nxEx?`<div class="f-next">Next: ${escAttr(nxEx.n||"Exercise")} · set ${nx.i+1}</div>`:""}
     <div class="f-nav"><button onclick="focusGo(-1)"${focusIdx===0?' disabled style="opacity:.35"':""}>‹ Prev</button><span>${focusIdx+1}/${steps.length}</span><button onclick="focusGo(1)">Next ›</button></div>`;
   if(focusTyped){ document.getElementById("fW").value=focusTyped.w; document.getElementById("fR").value=focusTyped.r; }
+  focusPlates();
   if(typingNote&&noteOpen){ const ta=document.getElementById("fNote"); if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); } }
 }
 let focusTyped=null; /* {idx,w,r} — typed-but-unconfirmed numbers for the set on screen */
@@ -3379,6 +3417,7 @@ function blockHtml(s,bi){
           <input inputmode="decimal" placeholder="${pw||'wt'}" id="w_${bi}_${ei}_${i}" oninput="onSetInput()">
           <span class="x">×</span>
           <input inputmode="numeric" placeholder="${pr||ex.rUnit||'reps'}" id="r_${bi}_${ei}_${i}" oninput="onSetInput()"></div>`;
+        if(i===0&&ex.bar) h+=`<div class="plates" id="pl_${bi}_${ei}"></div>`; /* filled by refreshWeightHints() */
       }
       h+=`</div>`;
       h+=`<div class="setctl">`;
@@ -3636,6 +3675,7 @@ function renderPxiPage(m){
     <div class="fieldrow"><span>Max heart rate</span><input type="number" id="setMaxHr" min="120" max="220" value="${pxiSet.maxHr}"></div>
     <div class="fieldrow"><span>Resting heart rate (WHOOP baseline)</span><input type="number" id="setRestHr" min="30" max="90" value="${pxiSet.restingHr}"></div>
     <div class="fieldrow"><span>Target RKD (lift days before Meso 3)</span><input type="number" id="setTarget" min="10" max="500" value="${pxiSet.target}"></div>
+    <div class="fieldrow"><span>Safety bar weight, lb (for plate math — from the bar's label)</span><input type="number" id="setSsbBar" min="20" max="120" step="0.5" inputmode="decimal" placeholder="not set" value="${pxiSet.ssbBar>0?pxiSet.ssbBar:""}"></div>
     <div class="fieldrow"><span>Curve</span>
       <select id="setModel" style="flex:0 0 200px">
         <option value="auto"${pxiSet.model==="auto"?" selected":""}>Auto (by day)</option>
@@ -3648,6 +3688,7 @@ function renderPxiPage(m){
   document.getElementById("setMaxHr").addEventListener("change",e=>{pxiSet.maxHr=+e.target.value||185;savePxiSet();});
   document.getElementById("setRestHr").addEventListener("change",e=>{pxiSet.restingHr=+e.target.value||46;savePxiSet();});
   document.getElementById("setTarget").addEventListener("change",e=>{pxiSet.target=+e.target.value||105;savePxiSet();renderLiveScore();});
+  document.getElementById("setSsbBar").addEventListener("change",e=>{const v=parseFloat(e.target.value);pxiSet.ssbBar=v>0?v:null;savePxiSet();});
   document.getElementById("setModel").addEventListener("change",e=>{pxiSet.model=e.target.value;savePxiSet();renderPxiPage(m);});
   renderLiveScore();
   renderIvt(); /* fills the #ivtBody the shell above just created */

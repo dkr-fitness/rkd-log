@@ -602,7 +602,7 @@ eq(zone2MedalFor([0,10,20,0,0,0]).t,"OFF TARGET","67% in Z2 -> off target");
 section("Meso 3 Tuesday — Zone 2 stations");
 /* The real lastFor (lastFor itself stays stubbed for everything else), the live medal-limits card,
    and the default-day pick, which is inline init code wrapped as a function of the date. */
-loadRegions(region("function lastFor(key,logs){","function rpeNoteSaveHtml(){").replace("function lastFor(","function realLastFor("),
+loadRegions(region("function lastFor(key,logs){","function rpeNoteSaveHtml(){").replace("function lastFor(","function sourceLastFor("),
   region("function complianceRows(dayType,deload){","function updateCompliance(){"),
   "function defaultDayFor(now){\n"+region("const mesoDefaultDay=","if(mesoDefaultDay)")+"\nreturn mesoDefaultDay; }");
 var TUE_DATES={1:[2026,10,20],2:[2026,10,27],3:[2026,11,3],4:[2026,11,10],5:[2026,11,17],6:[2026,11,24],7:[2026,12,1],8:[2026,12,8]};
@@ -695,8 +695,8 @@ eq((prGrid(stLogs).match(/class="pr"/g)||[]).length,1,"stations add no PR tiles"
 ok(!/Conditioning Station|Upright bike|Curtsy lunge/.test(prGrid(stLogs)),"...and never appear in the grid");
 /* Copy summary's PR flag is gated on PR_KEYS by its caller, not inside priorBestValue(). */
 ok(SRC.indexOf("let best=e.key in PR_KEYS?priorBestValue(logs,idx,e.key):null;")>=0,"...nor a PR flag in Copy summary");
-eq(realLastFor("Conditioning Station",stLogs),null,"no Last time for the shared key (it would be another station's)");
-eq(realLastFor("Rack Pull",stLogs)[0].w,"225","...while a real lift still gets one");
+eq(sourceLastFor("Conditioning Station",stLogs),null,"no Last time for the shared key (it would be another station's)");
+eq(sourceLastFor("Rack Pull",stLogs)[0].w,"225","...while a real lift still gets one");
 LOGS=[{entries:[{key:"Conditioning Station",sets:[{w:"",r:"8"}],note:"bike was busy"}]}];
 eq(lastNoteFor("Conditioning Station"),"","...and no last note");
 LOGS=[];
@@ -1510,6 +1510,71 @@ ok(SRC.indexOf('placeholder="${escAttr(hr)}"')>=0&&SRC.indexOf("hr=repsHint(curD
 ok(SRC.indexOf('placeholder="${escAttr(hw)}"')>=0&&SRC.indexOf("hw=weightHint(curDay(),last,st.i,s1?s1.value:\"\",ex.w3)")>=0,"set mode's weight hint follows set 1 too (so Same as last and ±5 use it), and takes the week-3 target");
 ok(SRC.indexOf('const pw=weightHint(curDay(),last,i,"",ex.w3)')>=0,"session rows pass the week-3 target to set 1's hint");
 ok(SRC.indexOf("lastLineText(lw,lr,")>=0,"...while its Last time line still shows last time's real numbers");
+
+section("Plate math — per side under set 1, biggest plates first");
+eq(plateText(135,45),"135 → per side: 45","135");
+eq(plateText(165,45),"165 → per side: 45 + 10 + 5","165: biggest first (not 35 + 25)");
+eq(plateText(185,45),"185 → per side: 45 + 25","185");
+eq(plateText(195,45),"195 → per side: 45 + 25 + 5","195");
+eq(plateText(225,45),"225 → per side: 45 + 45","225");
+eq(plateText(187,45),"187 → closest: 185 · per side: 45 + 25","odd weight: the nearest loadable total, lighter side");
+eq(plateText(188,45),"188 → closest: 190 · per side: 45 + 25 + 2.5","...or heavier, when that's nearer");
+eq(plateText(187.5,45),"187.5 → closest: 185 · per side: 45 + 25","...a tie goes to the lighter");
+eq(plateText(140,45),"140 → per side: 45 + 2.5","2.5s load");
+eq(plateText(125,45),"125 → per side: 35 + 5","35s load");
+eq(plateText(315,45),"315 → per side: 45 + 45 + 45","three 45s");
+eq(plateText(45,45),"45 → bar only","the bar alone");
+eq(plateText(47,45),"47 → closest: 45 · bar only","...or nearest to it");
+eq(plateText(40,45),"","lighter than the bar: no line");
+eq(plateText("",45)+plateText("wt",45)+plateText(0,45),"","nothing entered: no line");
+eq(plateText("195",45),"195 → per side: 45 + 25 + 5","a box's string value works");
+eq(plateText(195,null),"","no bar weight: no line");
+eq(plateBreakdown(195,45).plates.reduce(function(a,b){return a+b;},0)*2+45,195,"plates add back up to the total");
+/* The safety bar's weight comes from settings; until it's set there's no line. */
+var savedSsb=pxiSet.ssbBar; pxiSet.ssbBar=null;
+eq(barFor({bar:"ssb"}),null,"safety bar not set → no bar weight");
+eq(barFor({bar:"std"}),45,"standard bar is 45");
+eq(barFor({}),null,"no bar flag → no plates");
+pxiSet.ssbBar=65;
+eq(barFor({bar:"ssb"}),65,"safety bar set to 65 → 65");
+eq(plateText(155,barFor({bar:"ssb"})),"155 → per side: 45","...and the plates use it: 155 on a 65 bar");
+eq(plateText(157,barFor({bar:"ssb"})),"157 → closest: 155 · per side: 45","...including the nearest-loadable rule");
+eq(barFor({bar:"std"}),45,"...while the standard bar stays 45");
+pxiSet.ssbBar=savedSsb;
+/* Which lifts get it: Rack Pull and RDL on the 45 bar, Safety Bar Squat on the safety bar, and
+   nothing else (Hip Thrust is a class barbell or DBs). */
+onDate(2026,11,10,function(){
+  var withBar=[];
+  ["meso03Mon","meso03Wed","meso03Fri","meso03Sat","meso03Tue"].forEach(function(d){
+    exList(d).forEach(function(e){ if(e.bar) withBar.push(e.key+":"+e.bar); });
+  });
+  eq(withBar.sort().join(),"Rack Pull:std,Romanian Deadlift (DB):std,Safety Bar Squat:ssb","only Rack Pull, RDL and Safety Bar Squat carry a bar");
+  ok(!exOf("meso03Mon","Hip Thrust").bar,"Hip Thrust has none");
+});
+onDate(2026,9,10,function(){ ok(!exList("fullBodyB").some(function(e){return e.bar;}),"earlier blocks' templates (Meso 1's goblet-or-safety-bar squat) have none"); });
+/* Rendered: one line under set 1 of a bar lift, none elsewhere. */
+resetState(); DAY="meso03Mon";
+var PBB={blocks:[{letter:"B",t:"Hinge",mins:12,bells:3,ex:[{key:"Rack Pull",n:"Rack Pull",rx:"",sets:3,bar:"std"},{key:"Hip Thrust",n:"Hip Thrust",rx:"",sets:3}]}]};
+var pbh=blockHtml(PBB,0);
+eq((pbh.match(/class="plates"/g)||[]).length,1,"one plate line per bar lift");
+ok(pbh.indexOf('id="w_0_0_0"')<pbh.indexOf('id="pl_0_0"')&&pbh.indexOf('id="pl_0_0"')<pbh.indexOf('id="w_0_0_1"'),"...between set 1 and set 2");
+ok(pbh.indexOf('id="pl_0_1"')<0,"...and none on Hip Thrust");
+/* Live: follows set 1's typed weight, else its hint; nothing written to any input. */
+DOM.w_0_0_0={id:"w_0_0_0",value:"",placeholder:"185"}; DOM.w_0_0_1={id:"w_0_0_1",value:"",placeholder:"wt"};
+DOM.w_0_0_2={id:"w_0_0_2",value:"",placeholder:"wt"}; DOM.pl_0_0={id:"pl_0_0",textContent:""};
+DOM.w_0_1_0={id:"w_0_1_0",value:"",placeholder:"80"};
+refreshWeightHints(PBB.blocks);
+eq(DOM.pl_0_0.textContent,"185 → per side: 45 + 25","hinted set 1: plates for the hint");
+eq(DOM.w_0_0_0.value,"","...and the box stays empty — display only");
+DOM.w_0_0_0.value="195"; refreshWeightHints(PBB.blocks);
+eq(DOM.pl_0_0.textContent,"195 → per side: 45 + 25 + 5","typed set 1: plates for what's typed");
+DOM.w_0_0_0.value=""; DOM.w_0_0_0.placeholder="wt"; refreshWeightHints(PBB.blocks);
+eq(DOM.pl_0_0.textContent,"","no weight typed or hinted: no line");
+resetState();
+ok(SRC.indexOf('placeholder="${escAttr(hw)}" oninput="focusPlates()"')>=0,"set mode: the plate line follows the weight box as it's typed");
+ok(SRC.indexOf("st.i===0&&barFor(ex)?`<div class=\"f-plates\"")>=0,"...on set 1's screen only, for a bar lift");
+ok(SRC.indexOf('if(p==="w") focusPlates();')>=0,"...and as ±5 steps it");
+ok(SRC.indexOf('id="setSsbBar"')>=0&&SRC.indexOf('pxiSet.ssbBar=v>0?v:null;savePxiSet();')>=0,"safety bar weight is a setting, saved with the scoring settings");
 
 section("HEP — rebuilt, keys unchanged");
 resetState();
