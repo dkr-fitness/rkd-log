@@ -599,6 +599,128 @@ eq(zone2MedalFor([0,0,30,0,0,0]).t,"GOLD","fully compliant session -> gold");
 eq(zone2MedalFor([0,2,28,0,0,0]).t,"SILVER","93% in Z2 -> silver");
 eq(zone2MedalFor([0,10,20,0,0,0]).t,"OFF TARGET","67% in Z2 -> off target");
 
+section("Meso 3 Tuesday — Zone 2 stations");
+/* The real lastFor (lastFor itself stays stubbed for everything else), the live medal-limits card,
+   and the default-day pick, which is inline init code wrapped as a function of the date. */
+loadRegions(region("function lastFor(key,logs){","function rpeNoteSaveHtml(){").replace("function lastFor(","function realLastFor("),
+  region("function complianceRows(dayType,deload){","function updateCompliance(){"),
+  "function defaultDayFor(now){\n"+region("const mesoDefaultDay=","if(mesoDefaultDay)")+"\nreturn mesoDefaultDay; }");
+var TUE_DATES={1:[2026,10,20],2:[2026,10,27],3:[2026,11,3],4:[2026,11,10],5:[2026,11,17],6:[2026,11,24],7:[2026,12,1],8:[2026,12,8]};
+var TUE_CARDS={
+  2:["Assault bike (legs drive, hands light)","Rocket lunge","Squat with overhead reach (bodyweight, arms straight)","Side lunge","Step-ups"],
+  3:["Stair climber","Reverse lunge","Sumo squat","Lateral shuffle","Dead bug"],
+  4:["Upright bike","Curtsy lunge","Glute-bridge march","Carioca","Light suitcase carry (switch sides each round)"],
+  5:["Treadmill push 0.8 mph","Walking lunge","Light KB deadlift (arms straight)","High-knee march","Bird dog"],
+  6:["Assault bike (legs drive, hands light)","Skater lunge","Squat with overhead reach (bodyweight, arms straight)","Box step-ups","Pallof walkout"],
+  7:["Incline walk 10–12%","Split-squat pulses","Bodyweight good morning","Low line hops","Light farmer carry"],
+  8:["Upright bike","Reverse lunge","Dead bug"]};
+TUE_CARDS[1]=TUE_CARDS[2]; /* week 1 had no card: it falls back to week 2's */
+var stationsOf=function(s){ return s.blocks.slice(1).map(function(b){return b.ex[0];}); };
+var EXCL_SENTENCE="No rower, SkiErg, battle ropes, wall balls, ball slams, forearm planks or hand-loaded crawls (elbows).";
+Object.keys(TUE_DATES).forEach(function(wk){
+  var d=TUE_DATES[wk];
+  onDate(d[0],d[1],d[2],function(){
+    eq(meso03Week(),+wk,"Tue "+d[1]+"/"+d[2]+" is Meso 3 week "+wk);
+    var s=realSession(8,"meso03Tue"), st=stationsOf(s);
+    eq(st.map(function(e){return e.n;}).join(" | "),TUE_CARDS[wk].join(" | "),"week "+wk+": the right card, in order"+(wk==="1"?" (week 2's)":wk==="8"?" (Deload, 3 stations)":""));
+    eq(s.type,"stations","...typed as stations");
+    eq(s.blocks[0].t+" "+s.blocks[0].mins,"Warm-up 5","...after a 5-min warm-up");
+    ok(st.every(function(e){return e.key==="Conditioning Station"&&e.sets===1&&e.rUnit==="rds";}),"...one shared key, one row per station, logged as rounds");
+    ok(st.every(function(e){return /^8 × 20 s work \/ 10 s rest · 1 min to switch/.test(e.rx);}),"...each 20/10 × 8 with a minute to switch");
+    ok(st.every(function(e){return /^Hotel: \S/.test(e.note||"");}),"...each with a hotel swap");
+    ok(s.blocks.slice(1).every(function(b){return b.bells===0&&b.mins===5;}),"...no block bells on stations; the interval timer runs them");
+    var txt=[s.name,s.info.replace(EXCL_SENTENCE,"")].concat(exList("meso03Tue").map(function(e){return e.n+" "+(e.rx||"")+" "+(e.note||"");})).join(" | ");
+    ok(!EXCLUDED.test(txt),"week "+wk+": no back squat, goblet, overhead pressing or rower/SkiErg");
+    ok(!/battle rope|wall ball|slam|forearm plank|crawl/i.test(txt),"...and none of the elbow exclusions");
+    eq(meso03Deload(),wk==="8","...Deload only in week 8");
+  });
+});
+eq(MESO03_TUE_INFO,"Steady effort, not all-out: HR in Z2 (60s %HRR, about 130–143 bpm), peak low Z3 (low 70s %HRR). "+EXCL_SENTENCE+" Carries light.","info line as written, exclusions after the HR line");
+ok(SRC.indexOf("MESO03_TUE_FORMAT+\" \"+s.info")>=0,"...and the Rules box shows it");
+/* Medal tiers at each boundary. */
+var tm=function(total,z3,hi,dl){ return tueMedalFor([total-z3-hi,0,0,z3,hi,0],dl).t; };
+eq(tm(25,5,0),"GOLD","25 min, Z3 5, no Z4/Z5 -> Gold");
+eq(tm(24.9,5,0),"SILVER","24.9 min -> Silver");
+eq(tm(25,5.1,0),"SILVER","Z3 5.1 -> Silver");
+eq(tm(25,5,0.1),"SILVER","any Z4/Z5 -> not Gold");
+eq(tm(20,8,1),"SILVER","20 min, Z3 8, Z4+Z5 1 -> Silver");
+eq(tm(19.9,8,1),"BRONZE","19.9 min -> Bronze");
+eq(tm(25,8.1,0),"BRONZE","Z3 8.1 -> Bronze");
+eq(tm(25,0,1.1),"BRONZE","Z4+Z5 1.1 -> Bronze");
+eq(tm(15,15,0),"BRONZE","15 min, all Z3 -> still Bronze (no other limit)");
+eq(tm(14.9,0,0),"Partial","14.9 min -> Partial, not OFF TARGET");
+eq(tueMedalFor([0,0,0,0,0,0]).t,"Partial","nothing logged -> Partial");
+eq(tueMedalFor([0,0,0,0,12,13]).t,"BRONZE","Z4+Z5 counts in total time: 25 min all hot -> Bronze");
+eq(tueMedalFor([0,0,24.96,0,0,0]).t,"GOLD","minutes round to 0.1 first, as Finish stamps them");
+eq(tm(15,5,0,true),"GOLD","Deload: 15 min, Z3 5, no Z4/Z5 -> Gold");
+eq(tm(14.9,5,0,true),"SILVER","Deload: 14.9 min -> Silver");
+eq(tm(15,5,0.1,true),"SILVER","Deload: any Z4/Z5 -> not Gold");
+eq(tm(12,8,1,true),"SILVER","Deload: 12 min, Z3 8, Z4+Z5 1 -> Silver");
+eq(tm(11.9,8,1,true),"BRONZE","Deload: 11.9 min -> Bronze");
+eq(tm(15,8.1,0,true),"BRONZE","Deload: Z3 8.1 -> Bronze");
+eq(tm(9,0,0,true),"BRONZE","Deload: 9 min -> Bronze");
+eq(tm(8.9,0,0,true),"Partial","Deload: 8.9 min -> Partial");
+eq(tueTierText(false),"Gold ≥25 min, Z3 ≤5, no Z4/Z5 · Silver ≥20 min, Z3 ≤8, Z4+Z5 ≤1 · Bronze ≥15 min · below that, Partial.","the scoring text is built from the tiers");
+eq(tueTierText(true),"Gold ≥15 min, Z3 ≤5, no Z4/Z5 · Silver ≥12 min, Z3 ≤8, Z4+Z5 ≤1 · Bronze ≥9 min · below that, Partial.","...Deload too");
+/* Finish stamps it; the Deload tiers follow the calendar. */
+onDate(2026,11,10,function(){
+  eq(finishMedal("meso03Tue","stations",[],60,[1,4,19,4,0,0]).medal,"GOLD","Finish, week 4: 28 min, Z3 4, no Z4/Z5 -> Gold");
+  eq(finishMedal("meso03Tue","stations",[],60,[0,2,14,1,0,0]).medal,"BRONZE","Finish, week 4: 17 min -> Bronze");
+  eq(finishMedal("meso03Tue","stations",[],null,null).medal,null,"no strap, no manual entry -> no medal");
+  eq(finishMedal("meso03Tue","stations",[],60,[1,4,19,4,0,0]).plan,undefined,"...and no plan count");
+});
+onDate(2026,12,8,function(){
+  eq(finishMedal("meso03Tue","stations",[],40,[1,2,13,1,0,0]).medal,"GOLD","Finish, Deload: 17 min -> Gold");
+});
+ok(SRC.indexOf('target:medal==null||plan||s.type==="stations"?null:')>=0,"stamped with no target, like plan days");
+/* The live card shows the same limits. */
+live.zoneSecs=[60,240,1140,240,0,0];
+eq(complianceRows("stations",false).map(function(r){return r.cls;}).join(),"ok,ok,ok","card: 28 min, Z3 4, no Z4/Z5 -> all green");
+live.zoneSecs=[0,0,1200,420,30,0];
+eq(complianceRows("stations",false).map(function(r){return r.cls;}).join(),"ok,warn,warn","card: Z3 7, Z4 0.5 -> amber (Silver limits)");
+live.zoneSecs=[0,0,600,540,90,0];
+eq(complianceRows("stations",false).map(function(r){return r.cls;}).join(),"warn,bad,bad","card: 20.5 min, Z3 9, Z4 1.5 -> under Gold, past Silver");
+live.zoneSecs=[0,0,900,0,0,0];
+eq(complianceRows("stations",true)[0].cls,"ok","card, Deload: 15 min is Gold time");
+eq(complianceRows("stations",true)[0].r,"Gold ≥15 · Silver ≥12 · Bronze ≥9 min","...and says so");
+eq(complianceRows("zone2").length,5,"the shared Tue/Thu card is unchanged");
+live.zoneSecs=[0,0,0,0,0,0];
+/* Conditioning stations are not lifts: no PR, no Last time, no hints. */
+ok(!("Conditioning Station" in PR_KEYS),"Conditioning Station is not PR-tracked");
+ok(EXTRA_EXERCISES.indexOf("Conditioning Station")<0,"...and not an EXTRA_EXERCISES entry (those get PR keys)");
+var stLogs=[{entries:[{key:"Conditioning Station",name:"Upright bike",sets:[{w:"",r:"8"}]},
+                      {key:"Conditioning Station",name:"Curtsy lunge",sets:[{w:"10",r:"8"}]},
+                      {key:"Rack Pull",name:"Rack Pull",sets:[{w:"225",r:"5"}]}]}];
+eq((prGrid(stLogs).match(/class="pr"/g)||[]).length,1,"stations add no PR tiles");
+ok(!/Conditioning Station|Upright bike|Curtsy lunge/.test(prGrid(stLogs)),"...and never appear in the grid");
+/* Copy summary's PR flag is gated on PR_KEYS by its caller, not inside priorBestValue(). */
+ok(SRC.indexOf("let best=e.key in PR_KEYS?priorBestValue(logs,idx,e.key):null;")>=0,"...nor a PR flag in Copy summary");
+eq(realLastFor("Conditioning Station",stLogs),null,"no Last time for the shared key (it would be another station's)");
+eq(realLastFor("Rack Pull",stLogs)[0].w,"225","...while a real lift still gets one");
+LOGS=[{entries:[{key:"Conditioning Station",sets:[{w:"",r:"8"}],note:"bike was busy"}]}];
+eq(lastNoteFor("Conditioning Station"),"","...and no last note");
+LOGS=[];
+ok(SRC.indexOf("function lastSymptomsFor(key){\n  if(!key||NO_LAST_TIME.includes(key)) return [];")>=0,"...and no last-session symptoms");
+eq(PASTE_WORKOUT_KEYS["Conditioning Station"],"Conditioning Station","Paste Workout knows Conditioning Station");
+ok(!parsePastedWorkout("RKD-WORKOUT\nDATE: 2026-11-10\nConditioning Station | 1x8 | Upright bike\nEND-WORKOUT").error,"...and accepts it");
+ok(SRC.indexOf('meso03Mon:"Mon",meso03Tue:"Tue",')>=0,"history labels it Tue");
+ok(/Zone 2 stations/.test(hrText("meso03Tue",8)),"HR target box covers it");
+/* Other blocks' Tuesdays, and Thursday, are unchanged. */
+[[2026,9,22,"Meso 2"],[2026,12,15,"after Meso 3"],[2026,11,12,"Meso 3 Thursday"]].forEach(function(c){
+  onDate(c[0],c[1],c[2],function(){
+    var day=c[3].indexOf("Thursday")>=0?"thu":"tue", s=realSession(8,day);
+    eq(s.name+" | "+s.type+" | "+s.blocks.length+" | "+s.blocks[0].t,"ZONE 2 — Optional | zone2 | 1 | Zone 2 · straight",c[3]+": "+day+" is still the straight Zone 2");
+    eq(finishMedal(day,"zone2",[],50,[0,2,28,0,0,0]).medal,"SILVER","...still medalled on % time in Z2");
+  });
+});
+onDate(2026,9,22,function(){ eq(defaultDayFor(new Date()),undefined,"Meso 2 Tuesday opens on the shared tue"); });
+onDate(2026,12,15,function(){ eq(defaultDayFor(new Date()),null,"after Meso 3, Tuesday opens on the shared tue"); });
+onDate(2026,11,10,function(){ eq(defaultDayFor(new Date()),"meso03Tue","Meso 3 Tuesday opens on the stations"); });
+onDate(2026,11,12,function(){
+  eq(defaultDayFor(new Date()),undefined,"Meso 3 Thursday still opens on the shared thu");
+  ok(thuRuleText().indexOf(MESO03_THU_RECOVERY)===0,"...still WHOOP-recovery gated");
+});
+
 section("Meso 3 lift days — medal on plan completion");
 /* A Finish-shaped entry: rx prescribed sets, the first `done` of them with reps, then any extras.
    top is the [load,reps] every done set carries. */
@@ -1641,7 +1763,8 @@ ok(SRC.indexOf('if(viewWeeks){ backToThisWeek(); toast("Back to this week — WH
 ok(SRC.indexOf("flushDraft(); viewWeeks=0; }")>=0,"leaving the Session tab ends a preview");
 ok(SRC.indexOf("if(viewWeeks) return \"\"; /* RPE, strain, notes and Finish")>=0,"preview: no RPE/strain/notes/Finish card");
 ok(SRC.indexOf("if(!viewWeeks){\n    h+=staleDraftBannerHtml();")>=0,"preview: no draft banner or HEP panel");
-eq((SRC.match(/restoreSessionDraft\(\);[^\n]*lockPreviewForm\(m\);/g)||[]).length,5,"every Session render path locks the preview form");
+/* Six: lift days, Tue/Thu Zone 2, Meso 03's Tuesday stations, Sat with and without blocks, Sun. */
+eq((SRC.match(/restoreSessionDraft\(\);[^\n]*lockPreviewForm\(m\);/g)||[]).length,6,"every Session render path locks the preview form");
 ok(SRC.indexOf("blockTag(blockFor(planDate()))")>=0,"the title shows the previewed week");
 
 section("Interval timer — built-in presets");

@@ -385,6 +385,7 @@ body.ivt-amb.z5 #focus{background-image:var(--zg5)}
   <select id="daySel" onchange="onDayChange()">
     <optgroup id="ogMeso03" label="Mesocycle 03 · 10/19–12/13">
       <option value="meso03Mon">Mon · Hinge Lead</option>
+      <option value="meso03Tue">Tue · Z2 Stations</option>
       <option value="meso03Wed">Wed · Squat + Push</option>
       <option value="meso03Fri">Fri · Pull + Hinge</option>
       <option value="meso03Sat">Sat · Full Range</option>
@@ -459,6 +460,7 @@ const EQ={
  meso03Mon:"Light band (pull-aparts) · rack pull station · DBs (Bulgarian split squat) · bench + bar or DB (hip thrust) · cable or band (Pallof) · KB or DB (suitcase carry)",
  meso03Wed:"Safety squat bar + rack · DB + floor (single-arm floor press) · cable + rope (pressdown, pullover)",
  meso03Fri:"Light DBs or bodyweight (Y-raise) · DBs (RDL, step-up) · box or bench (step-up) · cable or DB (neutral-grip row) · KB or DB (suitcase carry)",
+ meso03Tue:"Bike, stair climber, treadmill or incline walk (by week) · open floor · light KB or DB on carry and deadlift weeks · band (Pallof walkout, week 6)",
  meso03Sat:"Leg press machine · DB (single-leg RDL) · open floor (backward lunges) · cable + rope (face pull) · sled or treadmill · bike or treadmill (optional cooldown)"};
 // Mesocycle 01 (rebuild block) — a fixed 3-week structure
 // running 8/17–9/6. Its own week phase is computed from
@@ -515,9 +517,52 @@ function inMeso03Window(){
 /* Meso 03's week by its own calendar rather than blockFor(), so its templates preview as week 1
    before 10/19 instead of borrowing Meso 02's week number. phaseForWeek() clamps either end. */
 function meso03Week(){ return Math.floor((planDate()-MESO03_START)/864e5/7)+1; }
-/* Thursday's Zone 2 is gated on WHOOP recovery in Meso 03 only; Tue and other blocks unchanged. */
+/* Thursday's Zone 2 is gated on WHOOP recovery in Meso 03 only; other blocks' Thursdays unchanged. */
 const MESO03_THU_RECOVERY="Check WHOOP recovery first: green → Zone 2, 25–35 min · yellow/red → easy walk or mobility 20–30 min instead.";
 const thuRuleText=()=>(inMeso03Window()?MESO03_THU_RECOVERY+" ":"")+"If you did Tuesday, strongly consider full rest today — one optional session per week is plenty during heavy weeks (6–8).";
+const meso03Deload=()=>phaseForWeek(meso03Week(),"meso03")==="Deload";
+/* Meso 03 Tuesday (2026-11-09): Zone 2 intervals on stations that rotate weekly, in place of the
+   shared straight Zone 2 (its own template id, meso03Tue, so other blocks' Tuesdays and old logs
+   are untouched). Order is machine → lunge → squat/hinge → footwork → core/carry; the Deload week
+   keeps three. Week 1 had no card and falls back to week 2's. Each station is [name, hotel swap];
+   the hotel swaps are drafted, not clinical. */
+const MESO03_TUE_INFO="Steady effort, not all-out: HR in Z2 (60s %HRR, about 130–143 bpm), peak low Z3 (low 70s %HRR). No rower, SkiErg, battle ropes, wall balls, ball slams, forearm planks or hand-loaded crawls (elbows). Carries light.";
+const MESO03_TUE_FORMAT="5 min easy bike, then each station 20 s work / 10 s rest × 8 (4 min), 1 min to switch. Order: machine → lunge → squat/hinge → footwork → core/carry. Load the 20/10 × 8 timer on the RKD tab and start it at each station.";
+const MESO03_TUE_STATIONS={
+ 2:[["Assault bike (legs drive, hands light)","any bike or the elliptical"],
+    ["Rocket lunge","bodyweight — no change"],
+    ["Squat with overhead reach (bodyweight, arms straight)","bodyweight — no change"],
+    ["Side lunge","bodyweight — no change"],
+    ["Step-ups","bottom stair or a sturdy bench"]],
+ 3:[["Stair climber","incline walk, bike or elliptical"],
+    ["Reverse lunge","bodyweight — no change"],
+    ["Sumo squat","bodyweight — no change"],
+    ["Lateral shuffle","a hallway or clear floor"],
+    ["Dead bug","on a towel"]],
+ 4:[["Upright bike","any bike or the elliptical"],
+    ["Curtsy lunge","bodyweight — no change"],
+    ["Glute-bridge march","on a towel"],
+    ["Carioca","side shuffle if space is tight"],
+    ["Light suitcase carry (switch sides each round)","a light DB, or a light bag in one hand"]],
+ 5:[["Treadmill push 0.8 mph","incline walk or bike"],
+    ["Walking lunge","reverse lunge in place if the room is small"],
+    ["Light KB deadlift (arms straight)","a light DB, or a bodyweight hip hinge"],
+    ["High-knee march","in place — no change"],
+    ["Bird dog","on a towel"]],
+ 6:[["Assault bike (legs drive, hands light)","any bike or the elliptical"],
+    ["Skater lunge","bodyweight — no change"],
+    ["Squat with overhead reach (bodyweight, arms straight)","bodyweight — no change"],
+    ["Box step-ups","bottom stair or a sturdy bench"],
+    ["Pallof walkout","band anchored in a door; no band → dead bug"]],
+ 7:[["Incline walk 10–12%","stair climber or bike; outdoors, a hill"],
+    ["Split-squat pulses","bodyweight — no change"],
+    ["Bodyweight good morning","bodyweight — no change"],
+    ["Low line hops","a towel as the line; quick side steps if the floor is hard"],
+    ["Light farmer carry","light DBs, or two light bags"]],
+ 8:[["Upright bike","any bike or the elliptical"],
+    ["Reverse lunge","bodyweight — no change"],
+    ["Dead bug","on a towel"]]};
+const meso03TueStations=()=>MESO03_TUE_STATIONS[meso03Week()]||MESO03_TUE_STATIONS[2];
 const MESO03_PHASE_CUE={
  Baseline:"RPE 6–7. Establish working loads; leave reps in reserve. First working set RPE 8+ → drop 10%. RPE 5 → add 5–10 lb.",
  Volume:"RPE 7–8. Fill the rep range before adding load.",
@@ -658,6 +703,7 @@ function hrText(day,w){
    meso03Mon:`Hinge lead — strength curve, Z1–Z2 base, Rack Pull spikes to Z3 OK. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
    meso03Wed:`Squat + push — strength curve throughout, stay pain-free through the Chest Press cap. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
    meso03Fri:`Pull + hinge — strength curve throughout. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
+   meso03Tue:`Zone 2 stations — 20 s work / 10 s rest, steady not all-out. Live in Z2 (60s %HRR), peak low Z3; the medal counts strap time and time above Z2. ${mesoPhase3().label}`,
    meso03Sat:`Full range — effort cap 7/10. Strength curve, RKD counts in weekly totals; medal on plan completion (Gold = every set done, no progression needed). ${mesoPhase3().label} — ${mesoPhase3().label==="Deload Phase"?"2 sets of everything this week.":"fixed sets all block; only the tempo cue changes (none on Face Pull)."}${mesoPhase3().label==="Baseline Phase"?" "+MESO03_SAT_CALIBRATION:""}`}[day];
 }
 // Shared pre-activation cue — surfaces on every exercise that needs the right-lat
@@ -1709,6 +1755,14 @@ function getSession(w,day){
     else blocks.push({letter:"D",t:"No finisher — taper",mins:0,bells:0,ex:[{n:"Leave the gym feeling fresh.",rx:"",sets:0}]});
     return {name:"FRIDAY — Split Squat + Power/Carry", type:"lift", blocks};
   }
+  if(day==="meso03Tue"){
+    // Stations log load × rounds (8) on one shared, non-PR key; the station is the display name.
+    // No bells on the stations — the interval timer runs the 20/10s.
+    return {name:"ZONE 2 STATIONS — Optional", type:"stations", info:MESO03_TUE_INFO, blocks:[
+      {letter:"W",t:"Warm-up",mins:5,bells:1,ex:[{n:"Easy bike",rx:"one 5:00 countdown · easy, building into Z2",sets:0}]}]
+      .concat(meso03TueStations().map((st,i)=>({letter:String.fromCharCode(65+i),t:"Station "+(i+1),mins:5,bells:0,ex:[
+        {key:"Conditioning Station",n:st[0],rx:"8 × 20 s work / 10 s rest · 1 min to switch · log load × rounds",sets:1,rUnit:"rds",note:"Hotel: "+st[1]}]})))};
+  }
   if(day==="tue"||day==="thu"){
     return {name:"ZONE 2 — Optional", type:"zone2", blocks:[
       {letter:"Z",t:"Zone 2 · straight",mins:30,bells:1,ex:[{n:"Ruck walk (10 lb), Peloton, jog, bike, or assault runner — conversational pace · NO rower/ski erg (grip + pulling)",rx:"one 30:00 countdown · stop anywhere in the 25–35 min window",sets:0}]}]};
@@ -1769,6 +1823,24 @@ function medalFor(pxi,target){
    this just gives that same emphasis a live-scored medal like lift days get. */
 function pctZ2(mins){ const total=mins.reduce((a,b)=>a+(b||0),0); return total>0?Math.round((mins[2]||0)/total*100):0; }
 function zone2MedalFor(mins){ return medalFor(pctZ2(mins),100); }
+/* Meso 03 Tuesday medal: within the plan, on total strap time (every zone, warm-up included) and
+   how little of it ran hot. Minutes round to 0.1 first — what Finish stamps — so the live chip and
+   the stamped medal agree. Deload scales the minutes down. Below Bronze is Partial, as on plan days. */
+const TUE_TIERS={
+  full:  [{t:"GOLD",c:"var(--gold)",min:25,z3:5,hi:0},{t:"SILVER",c:"var(--silver)",min:20,z3:8,hi:1},{t:"BRONZE",c:"var(--bronze)",min:15,z3:Infinity,hi:Infinity}],
+  deload:[{t:"GOLD",c:"var(--gold)",min:15,z3:5,hi:0},{t:"SILVER",c:"var(--silver)",min:12,z3:8,hi:1},{t:"BRONZE",c:"var(--bronze)",min:9,z3:Infinity,hi:Infinity}]};
+function tueMins(mins){
+  const r=x=>Math.round((x||0)*10)/10;
+  return {total:r(mins.reduce((a,b)=>a+(b||0),0)), z3:r(mins[3]), hi:r((mins[4]||0)+(mins[5]||0))};
+}
+function tueMedalFor(mins,deload){
+  const m=tueMins(mins), tier=TUE_TIERS[deload?"deload":"full"].find(x=>m.total>=x.min&&m.z3<=x.z3&&m.hi<=x.hi);
+  return tier?{t:tier.t,c:tier.c}:{t:"Partial",c:"var(--muted)"};
+}
+function tueTierText(deload){
+  const [g,s,b]=TUE_TIERS[deload?"deload":"full"];
+  return `Gold ≥${g.min} min, Z3 ≤${g.z3}, no Z4/Z5 · Silver ≥${s.min} min, Z3 ≤${s.z3}, Z4+Z5 ≤${s.hi} · Bronze ≥${b.min} min · below that, Partial.`;
+}
 const LIFT_DAYS=["upper","lower","mixed","fullBodyA","fullBodyB","fullBodyC","meso02Mon","meso02Wed","meso02Fri",
                  "meso03Mon","meso03Wed","meso03Fri","meso03Sat"];
 /* Meso 03 lift days medal on doing the plan, not on heart rate. RKD still accrues and still
@@ -1832,7 +1904,7 @@ function planScore(entries,lastOf){
 }
 /* Saturday (7/10 cap) and the Deload week take Gold at 100% with no progression, so the medal
    never asks for more than the cap or the deload allows. There's no Silver on those days. */
-const planCapped=day=>day==="meso03Sat"||phaseForWeek(meso03Week(),"meso03")==="Deload";
+const planCapped=day=>day==="meso03Sat"||meso03Deload();
 function planMedalFor(p,capped){
   if(!p||!p.total) return null;
   if(p.done>=p.total) return capped||p.prog>0?{t:"GOLD",c:"var(--gold)"}:{t:"SILVER",c:"var(--silver)"};
@@ -1844,6 +1916,7 @@ const planText=p=>"Sets "+p.done+"/"+p.total+" · "+p.prog+" progression"+(p.pro
    other lift days still need an RKD to grade. */
 function finishMedal(day,type,entries,pxi,zoneMins,lastOf){
   if(type==="zone2"){ const md=zoneMins?zone2MedalFor(zoneMins):null; return {medal:md?md.t:null}; }
+  if(type==="stations"){ const md=zoneMins?tueMedalFor(zoneMins,meso03Deload()):null; return {medal:md?md.t:null}; }
   if(type==="recovery") return {medal:"Done ✓"}; /* Sun: completion badge only, never a score */
   if(PLAN_DAYS.includes(day)){
     const plan=planScore(entries,lastOf), md=plan.done>0?planMedalFor(plan,planCapped(day)):null;
@@ -1921,7 +1994,7 @@ function setExNote(bi,ei,v){ const k=setKey(bi,ei); if(String(v).trim()) exNotes
 /* The note from the last session that trained this movement — same "last session" rule as
    lastSymptomsFor(), so an old note isn't carried past a session that left none. */
 function lastNoteFor(key){
-  if(!key) return "";
+  if(!key||NO_LAST_TIME.includes(key)) return "";
   const logs=loadLogs();
   for(let i=logs.length-1;i>=0;i--){
     const e=(logs[i].entries||[]).find(x=>x.key===key);
@@ -2208,10 +2281,19 @@ function setBand(z,label,bpm,pct){
   ivtSyncChrome(); /* the timer's ambient wash mirrors this band, so it changes zone with it */
 }
 
-/* Zone-minute compliance (Tue/Thu Z2 + Sat class) — sheet: 25–35 min Z2, ≤5 min Z3, 0 min Z4/Z5 */
-function complianceRows(dayType){
+/* Zone-minute compliance (Tue/Thu Z2 + Sat class) — sheet: 25–35 min Z2, ≤5 min Z3, 0 min Z4/Z5.
+   Meso 03's Tuesday stations get the medal limits instead. */
+function complianceRows(dayType,deload){
   const m=live.zoneSecs.map(s=>s/60);
   const hi=m[4]+m[5];
+  /* Meso 03 Tuesday stations: the three medal limits, live. Green at Gold, amber at Silver. */
+  if(dayType==="stations"){
+    const t=tueMins(m), [g,s,b]=TUE_TIERS[deload?"deload":"full"];
+    return [
+      {l:"Time", r:`Gold ≥${g.min} · Silver ≥${s.min} · Bronze ≥${b.min} min`, v:t.total, cls:t.total>=g.min?"ok":"warn"},
+      {l:"Z3", r:`Gold ≤${g.z3} · Silver ≤${s.z3} min`, v:t.z3, cls:t.z3<=g.z3?"ok":t.z3<=s.z3?"warn":"bad"},
+      {l:"Z4–Z5", r:`Gold 0 · Silver ≤${s.hi} min`, v:t.hi, cls:t.hi<=g.hi?"ok":t.hi<=s.hi?"warn":"bad"}];
+  }
   /* Z0/Z1 are informational only — the protocol neither targets nor caps them, so no ok/warn/bad
      class. "Z0" is ZONE_NAMES[0] ("Below zones"), the same zoneOfBpm() bucket the band shows. */
   if(dayType==="zone2") return [
@@ -2228,7 +2310,7 @@ function complianceRows(dayType){
 }
 function updateCompliance(){
   const el=document.getElementById("zc"); if(!el)return;
-  const rows=complianceRows(el.dataset.type);
+  const rows=complianceRows(el.dataset.type,el.dataset.deload==="1");
   el.innerHTML=rows.map(r=>`<div class="zc-row ${r.cls}"><span class="zl">${r.l}</span><span class="zr">${r.r}</span><span class="zv">${r.v.toFixed(1)}m</span></div>`).join("");
 }
 
@@ -2287,6 +2369,9 @@ function ivtApplyPreset(p){
 }
 /* Indices, not names, in the onclick handlers: every mutation re-renders, so they're never
    stale, and a preset name can hold quotes without any escaping to get wrong. */
+/* Meso 03 Tuesday's stations: loads 20/10 × 8 and takes you to the RKD tab, where the timer starts.
+   Not a built-in — it's the Tabata numbers under the session's own name, so nothing reads "all-out". */
+function ivtLoadStations(){ ivtApplyPreset({name:"Stations 20/10 × 8",prep:IVT_DEFAULTS.prep,work:20,rest:10,rounds:8}); setView("pxi"); }
 function ivtLoadBuiltin(i){ const p=IVT_BUILTINS[i]; if(p) ivtApplyPreset(p); }
 function ivtLoadCustom(i){ const p=loadIvtPresets()[i]; if(p) ivtApplyPreset(p); }
 /* Two-tap delete, same shape as the draft banner's armDiscard/cancelDiscard: the first tap arms
@@ -2721,7 +2806,7 @@ function painResolve(gone){
 }
 /* Symptoms from the last session that trained this movement — shown before you start it again. */
 function lastSymptomsFor(key){
-  if(!key) return [];
+  if(!key||NO_LAST_TIME.includes(key)) return [];
   const logs=loadLogs();
   for(let i=logs.length-1;i>=0;i--){
     const e=(logs[i].entries||[]).find(x=>x.key===key);
@@ -2824,7 +2909,7 @@ function renderFocus(){
     ${lastSym.map(e=>`<div class="p-line">⚠ Last session: ${escAttr(painText(e))}</div>`).join("")}
     <div class="f-row"><label>Weight</label><button class="f-step" onclick="focusStep('w',-5)">−5</button>
       <input id="fW" inputmode="decimal" value="${escAttr(w?w.value:"")}" placeholder="${escAttr(hw)}"><button class="f-step" onclick="focusStep('w',5)">+5</button></div>
-    <div class="f-row"><label>${ex.rUnit==="sec"?"Seconds":ex.rUnit==="yd"?"Yards":"Reps"}</label><button class="f-step" onclick="focusStep('r',-1)">−1</button>
+    <div class="f-row"><label>${ex.rUnit==="sec"?"Seconds":ex.rUnit==="yd"?"Yards":ex.rUnit==="rds"?"Rounds":"Reps"}</label><button class="f-step" onclick="focusStep('r',-1)">−1</button>
       <input id="fR" inputmode="numeric" value="${escAttr(r?r.value:"")}" placeholder="${escAttr(hr)}"><button class="f-step" onclick="focusStep('r',1)">+1</button></div>
     <div class="f-act">${hw||hr?`<button class="f-same" onclick="focusDone(true)">Same as last ✓</button>`:""}<button class="f-done" onclick="focusDone(false)">Done ✓</button></div>
     ${noteOpen
@@ -3090,6 +3175,7 @@ function setView(v){
   document.getElementById("tabHep").className="tab"+(v==="hep"?" active":"");render();}
 /* logs is optional — the plan count passes one parse in rather than re-reading per exercise. */
 function lastFor(key,logs){
+  if(NO_LAST_TIME.includes(key)) return null;
   logs=logs||loadLogs();
   for(let i=logs.length-1;i>=0;i--){const e=(logs[i].entries||[]).find(x=>x.key===key);
     if(e&&e.sets.some(s=>s.w||s.r))return e.sets;}
@@ -3170,6 +3256,20 @@ function render(){
   }
   h+=formReferenceHtml(s);
 
+  /* ---- Meso 03 Tue: Zone 2 stations ---- */
+  if(s.type==="stations"){
+    const dl=meso03Deload();
+    h+=infoBox("ibTueRules","meta","Rules",MESO03_TUE_FORMAT+" "+s.info+" Skip freely — it must make the next lift better, not worse.");
+    h+=`<button class="btn2" style="width:100%;margin:0 0 12px" onclick="ivtLoadStations()">Load the 20/10 × 8 timer</button>`;
+    h+=infoBox("ibTueScore","meta px","Scoring",`Same strength curve as lift days — RKD accrues live and counts in weekly totals. The medal is staying in the plan, on total strap time (warm-up included) and time above Z2${dl?" — Deload week":""}: ${tueTierText(dl)}`);
+    h+=infoBox("ibEq","meta eq","Equipment",EQ[day]);
+    h+=`<button class="focusbtn" onclick="openFocus()">Set mode — one station at a time</button>`;
+    s.blocks.forEach((b,bi)=>{ h+=blockHtml(s,bi); });
+    h+=`<div class="notecard"><label>Medal limits (live from WHOOP)</label><div id="zc" data-type="stations" data-deload="${dl?1:0}"></div></div>`;
+    h+=rpeNoteSaveHtml();
+    h+=`<button class="restbtn" onclick="logRest()">Log full rest day instead</button>`;
+    m.innerHTML=h; curRPE=0; restoreSessionDraft(); lockPreviewForm(m); updateCompliance(); return;
+  }
   /* ---- Tue / Thu: optional Zone 2 ---- */
   if(s.type==="zone2"){
     h+=infoBox("ibZ2Rules","meta","Rules",`Optional 25–35 min in Zone 2 — Peloton class, jog, ski, row, assault runner. ≤5 min Z3, zero Z4/Z5. Conversational pace. Skip freely — it must make the next lift better, not worse.`);
@@ -3258,7 +3358,7 @@ function updatePlanChip(){
 function blockHtml(s,bi){
   const b=s.blocks[bi], ivl=interval(b);
   let h=`<div class="block" id="blk${bi}"><div class="block-h"><div class="t">${b.letter} · ${b.t}</div>
-    <div class="bells">${b.bells?(b.bells===1?fmt(b.mins*60)+" straight":b.bells+" × "+fmt(ivl)):""} · ${b.mins} min</div>
+    <div class="bells">${b.bells?(b.bells===1?fmt(b.mins*60)+" straight":b.bells+" × "+fmt(ivl))+" · ":""}${b.mins} min</div>
     ${b.bells?`<button class="playb" onclick="playBlock(${bi})">▶</button>`:""}</div>`;
   b.ex.forEach((ex,ei)=>{
     h+=`<div class="ex">`;
@@ -3393,7 +3493,8 @@ function saveSession(){
   if(live.secs>0){ pxi=Math.round(live.pxi); zoneMins=live.zoneSecs.map(x=>Math.round(x/6)/10); }
   else if(pendingManual){ pxi=pendingManual.pxi; zoneMins=pendingManual.mins; model=pendingManual.model; }
   if(s.type==="recovery") pxi=null;
-  /* Tue/Thu: pxi is the live strength-curve accrual, but the medal is % of session time in Z2.
+  /* Tue/Thu: pxi is the live strength-curve accrual, but the medal is % of session time in Z2
+     (Meso 03's Tuesday stations: the within-plan minutes medal, tueMedalFor).
      Meso 03 lift days medal on the plan (finishMedal); earlier lift days on pxi vs. the target. */
   const prior=loadLogs(), fm=finishMedal(day,s.type,entries,pxi,zoneMins,k=>lastFor(k,prior));
   const medal=fm.medal, plan=fm.plan||null;
@@ -3411,7 +3512,7 @@ function saveSession(){
     day,name:s.name,type:s.type,entries,rpe:curRPE,
     note:document.getElementById("note").value,strain,duration:elapsedSec(),
     pxi,zoneMins,pxiModel:pxi!=null?model:null,medal,
-    target:medal==null||plan?null:(s.type==="zone2"?100:pxiSet.target)};
+    target:medal==null||plan||s.type==="stations"?null:(s.type==="zone2"?100:pxiSet.target)};
   if(plan) entry.plan=plan; /* {done,total,prog} — History and Copy summary read it */
   const actEl=document.getElementById("z2act"); if(actEl)entry.activity=actEl.value;
   const logs=loadLogs();
@@ -3474,6 +3575,12 @@ function renderLiveScore(){
   const parts=[]; for(let i=1;i<=5;i++){ if(mins[i]>=0.5) parts.push("Z"+i+" "+mins[i].toFixed(0)+"m"); }
   document.getElementById("liveMins").textContent=parts.length?parts.join(" · "):"no zone time yet";
   const me=document.getElementById("liveMedal");
+  if(curDay()==="meso03Tue"){
+    const md=tueMedalFor(mins,meso03Deload());
+    if(live.secs>0){ me.textContent=md.t+" pace · "+tueMins(mins).total.toFixed(0)+" min logged"; me.style.color=md.c; }
+    else { me.textContent=""; me.style.color="var(--muted)"; }
+    return;
+  }
   if(curDay()==="tue"||curDay()==="thu"){
     const pz=pctZ2(mins), md=medalFor(pz,100);
     if(live.secs>0&&md){ me.textContent=md.t+" pace · "+pz+"% in Z2"; me.style.color=md.c; }
@@ -3536,7 +3643,7 @@ function renderPxiPage(m){
         <option value="cardio"${pxiSet.model==="cardio"?" selected":""}>Cardio ramp</option>
         <option value="summit"${pxiSet.model==="summit"?" selected":""}>Summit (Z4 boost)</option>
       </select></div>
-    <div class="meta px" style="margin:8px 0 0"><b>${curModel().toUpperCase()}:</b> ${MODEL_DESC[curModel()]} Medals — Meso 3 lift days (incl. its Full Range Sat) medal on plan completion, not RKD: Gold 100% + a progression · Silver 100% · Bronze 80%+ · else Partial; Saturday and the Deload week take Gold at 100%. Earlier lift days: Gold ±5% · Silver 6–10% · Bronze 11–15% vs. Target RKD. Tue/Thu: the same ± tiers vs. 100% time-in-Z2. RKD still counts in weekly totals on every scored day. The Sat Conditioning Sub is reference only, no medal.</div>
+    <div class="meta px" style="margin:8px 0 0"><b>${curModel().toUpperCase()}:</b> ${MODEL_DESC[curModel()]} Medals — Meso 3 lift days (incl. its Full Range Sat) medal on plan completion, not RKD: Gold 100% + a progression · Silver 100% · Bronze 80%+ · else Partial; Saturday and the Deload week take Gold at 100%. Earlier lift days: Gold ±5% · Silver 6–10% · Bronze 11–15% vs. Target RKD. Tue/Thu: the same ± tiers vs. 100% time-in-Z2 — except Meso 3's Tuesday stations, which medal on staying in the plan: ${tueTierText(false)} Deload week: ${TUE_TIERS.deload.map(x=>x.t[0]+x.t.slice(1).toLowerCase()+" ≥"+x.min).join(" · ")} min, same zone limits. RKD still counts in weekly totals on every scored day. The Sat Conditioning Sub is reference only, no medal.</div>
   </div>`;
   document.getElementById("setMaxHr").addEventListener("change",e=>{pxiSet.maxHr=+e.target.value||185;savePxiSet();});
   document.getElementById("setRestHr").addEventListener("change",e=>{pxiSet.restingHr=+e.target.value||46;savePxiSet();});
@@ -3552,6 +3659,7 @@ function manualScore(){
   const lift=LIFT_DAYS.includes(curDay()), zone2Day=curDay()==="tue"||curDay()==="thu";
   let md=null, tag="reference only";
   if(PLAN_DAYS.includes(curDay())) tag="RKD only · medal is plan completion";
+  else if(curDay()==="meso03Tue"){ md=tueMedalFor(mins,meso03Deload()); tag=md.t+" · "+tueMins(mins).total+" min logged"; }
   else if(lift){ md=medalFor(pxi,pxiSet.target); tag=md?md.t+" · target "+pxiSet.target:tag; }
   else if(zone2Day){ const pz=pctZ2(mins); md=medalFor(pz,100); tag=md?md.t+" · "+pz+"% in Z2":tag; }
   pendingManual={pxi,mins,model};
@@ -3563,6 +3671,11 @@ function manualScore(){
 
 /* ================= HISTORY / PRS ================= */
 const e1rm=(w,r)=>w*(1+r/30);
+/* Keys shared by different movements — Meso 03 Tuesday's stations all log as "Conditioning
+   Station" — so "last time" would be whichever station came first. Not PR-tracked either (absent
+   from PR_KEYS), and lastFor/lastNoteFor/lastSymptomsFor return nothing for them: no Last time
+   line, no weight or reps hints. */
+const NO_LAST_TIME=["Conditioning Station"];
 const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Supported Row":"lb","DB Shoulder Press":"lb","DB Row":"lb","Back Squat":"lb","OHP":"lb","BB Row":"lb","Weighted Pull-Up":"+lb","Dead Hang":"sec","SKB RDL":"kg","Hip Thrust":"lb","Wall Push-Up Progression":"reps","Rope Triceps Pressdown":"lb","Bulgarian SS":"lb","Cable Pullover":"lb","Single-Arm DB Row":"lb","Neutral-Grip Cable Row":"lb","Romanian Deadlift (DB)":"lb","Rack Pull":"lb","Chest Press":"lb","Triceps Extension":"lb","Neutral-Grip Row":"lb","Goblet Squat":"lb","SA Chest Press":"lb","SA RDL":"lb","Safety Bar Squat":"lb","Plate Pinch Hold":"hold"};
 /* "hold" = longest hold, in seconds, read from the reps box (Plate Pinch Hold logs plate load ×
    seconds). Dead Hang predates it and keeps its own seconds-in-the-weight-box rule. */
@@ -3597,7 +3710,7 @@ const EXERCISE_GROUP={};
  ["Core",["Hanging Knee Tuck","SB Hip Rolls","DB Side Bend","DB Psoas March","Plank alt Shoulder Taps",
     "KB Around The World","SB Back Extension","KB Halo"]]
 ].forEach(([g,ks])=>ks.forEach(k=>EXERCISE_GROUP[k]=g));
-const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun",strengthFree:"Freeform",fullBodyA:"FB-A",fullBodyB:"FB-B",fullBodyC:"FB-C",meso02Mon:"Mon",meso02Wed:"Wed",meso02Fri:"Fri",meso03Mon:"Mon",meso03Wed:"Wed",meso03Fri:"Fri",meso03Sat:"Sat"};
+const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun",strengthFree:"Freeform",fullBodyA:"FB-A",fullBodyB:"FB-B",fullBodyC:"FB-C",meso02Mon:"Mon",meso02Wed:"Wed",meso02Fri:"Fri",meso03Mon:"Mon",meso03Tue:"Tue",meso03Wed:"Wed",meso03Fri:"Fri",meso03Sat:"Sat"};
 const escAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 /* Keyed by block + week-within-block, so two unrelated blocks never share a bucket.
    Was keyed on l.week (weekSel), which pinned everything after Aug 24 into a single "8".
@@ -3963,7 +4076,7 @@ function applyImport(d){
    with no entry here has no key in any getSession() template either (warm-up filler or an
    uncapped/unscored finisher even natively), so it falls back to the untracked placeholder,
    same as always. */
-const PASTE_WORKOUT_EXERCISES=["Scapular Wall Isometric","Band Pull-Aparts","Prone Y-Raises","Deadlift","Chest-Supported DB Row","Goblet Squat","Floor Push-Ups","Single-Arm DB Row","Suitcase Carry","Neutral-Grip Cable Row","Romanian Deadlift (DB)","DB Shoulder Press","Cable Pullover","Leg Press","Rope Triceps Pressdown","Glute Bridges","Broad Jump","Backward Walking Lunges","Rack Pull","Bulgarian Split Squat","Pallof Press","Chest Press","Scapular Wall Slide","Triceps Extension (pushdown or overhead)","Neutral-Grip Row (cable or DB)","Core (Dead Bug or similar)","Scapular Wall Slides x5","Pillowcase Wall Isometric x5","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)","Box Jump","DB Step-Up","Sled Push","Single-KB RDL","Conventional Deadlift","Single-Leg RDL","Band Row","Band Face Pull","Bird Dog / Dead Bug","Sled Drag","Cardio Ramp","Farmer Carry","Neutral-Grip DB Row","Safety Bar Squat","Hip Thrust","Plate Pinch Hold","Face Pull (cable rope)","Sled Push (or treadmill push)"];
+const PASTE_WORKOUT_EXERCISES=["Scapular Wall Isometric","Band Pull-Aparts","Prone Y-Raises","Deadlift","Chest-Supported DB Row","Goblet Squat","Floor Push-Ups","Single-Arm DB Row","Suitcase Carry","Neutral-Grip Cable Row","Romanian Deadlift (DB)","DB Shoulder Press","Cable Pullover","Leg Press","Rope Triceps Pressdown","Glute Bridges","Broad Jump","Backward Walking Lunges","Rack Pull","Bulgarian Split Squat","Pallof Press","Chest Press","Scapular Wall Slide","Triceps Extension (pushdown or overhead)","Neutral-Grip Row (cable or DB)","Core (Dead Bug or similar)","Scapular Wall Slides x5","Pillowcase Wall Isometric x5","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)","Box Jump","DB Step-Up","Sled Push","Single-KB RDL","Conventional Deadlift","Single-Leg RDL","Band Row","Band Face Pull","Bird Dog / Dead Bug","Sled Drag","Cardio Ramp","Farmer Carry","Neutral-Grip DB Row","Safety Bar Squat","Hip Thrust","Plate Pinch Hold","Face Pull (cable rope)","Sled Push (or treadmill push)","Conditioning Station"];
 /* Exercises with their own PR_KEYS entry but no Mon/Wed/Fri day template to inherit a key from —
    self-keyed (name === key) rather than needing a PASTE_WORKOUT_KEYS mapping. Grows over time.
    The block below is BFT class-history exercises pulled in wholesale: final names, side/left-
@@ -3990,7 +4103,7 @@ const EXTRA_EXERCISES=["SA Chest Press","SA RDL",
 /* Every EXTRA_EXERCISES entry gets a real, e1RM-tracked PR_KEYS slot (self-keyed to its name) —
    registered here rather than duplicated into the PR_KEYS literal above. */
 EXTRA_EXERCISES.forEach(n=>{ if(!(n in PR_KEYS)) PR_KEYS[n]="lb"; });
-const PASTE_WORKOUT_KEYS={"Scapular Wall Isometric":"Scapular Wall Isometric","Band Pull-Aparts":"Band Pull-Aparts","Prone Y-Raises":"Prone Y-Raises","Deadlift":"Deadlift","Chest-Supported DB Row":"Chest-Supported Row","Goblet Squat":"Goblet Squat","Floor Push-Ups":"Wall Push-Up Progression","Single-Arm DB Row":"Single-Arm DB Row","Suitcase Carry":"Suitcase Carry","Neutral-Grip Cable Row":"Neutral-Grip Cable Row","Romanian Deadlift (DB)":"Romanian Deadlift (DB)","DB Shoulder Press":"DB Shoulder Press","Cable Pullover":"Cable Pullover","Leg Press":"Leg Press","Rope Triceps Pressdown":"Rope Triceps Pressdown","Glute Bridges":"Glute Bridges","Broad Jump":"Broad Jump","Backward Walking Lunges":"Backward Walking Lunges","Rack Pull":"Rack Pull","Bulgarian Split Squat":"Bulgarian SS","Pallof Press":"Pallof","Chest Press":"Chest Press","Scapular Wall Slide":"Scapular Wall Slide","Triceps Extension (pushdown or overhead)":"Triceps Extension","Neutral-Grip Row (cable or DB)":"Neutral-Grip Row","Core (Dead Bug or similar)":"Bird Dog","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)":"DB Shoulder Press","Box Jump":"Jump","DB Step-Up":"Step-Up","Single-KB RDL":"SKB RDL","Conventional Deadlift":"Deadlift","Single-Leg RDL":"SL RDL","Band Row":"Band Row","Band Face Pull":"Face Pull","Bird Dog / Dead Bug":"Bird Dog","Neutral-Grip DB Row":"DB Row","Safety Bar Squat":"Safety Bar Squat","Hip Thrust":"Hip Thrust","Sled Push":"Sled Push","Plate Pinch Hold":"Plate Pinch Hold","Face Pull (cable rope)":"Face Pull","Sled Push (or treadmill push)":"Sled Push"};
+const PASTE_WORKOUT_KEYS={"Scapular Wall Isometric":"Scapular Wall Isometric","Band Pull-Aparts":"Band Pull-Aparts","Prone Y-Raises":"Prone Y-Raises","Deadlift":"Deadlift","Chest-Supported DB Row":"Chest-Supported Row","Goblet Squat":"Goblet Squat","Floor Push-Ups":"Wall Push-Up Progression","Single-Arm DB Row":"Single-Arm DB Row","Suitcase Carry":"Suitcase Carry","Neutral-Grip Cable Row":"Neutral-Grip Cable Row","Romanian Deadlift (DB)":"Romanian Deadlift (DB)","DB Shoulder Press":"DB Shoulder Press","Cable Pullover":"Cable Pullover","Leg Press":"Leg Press","Rope Triceps Pressdown":"Rope Triceps Pressdown","Glute Bridges":"Glute Bridges","Broad Jump":"Broad Jump","Backward Walking Lunges":"Backward Walking Lunges","Rack Pull":"Rack Pull","Bulgarian Split Squat":"Bulgarian SS","Pallof Press":"Pallof","Chest Press":"Chest Press","Scapular Wall Slide":"Scapular Wall Slide","Triceps Extension (pushdown or overhead)":"Triceps Extension","Neutral-Grip Row (cable or DB)":"Neutral-Grip Row","Core (Dead Bug or similar)":"Bird Dog","Neutral-Grip DB Shoulder Press (seated · kick up from knees, no clean)":"DB Shoulder Press","Box Jump":"Jump","DB Step-Up":"Step-Up","Single-KB RDL":"SKB RDL","Conventional Deadlift":"Deadlift","Single-Leg RDL":"SL RDL","Band Row":"Band Row","Band Face Pull":"Face Pull","Bird Dog / Dead Bug":"Bird Dog","Neutral-Grip DB Row":"DB Row","Safety Bar Squat":"Safety Bar Squat","Hip Thrust":"Hip Thrust","Sled Push":"Sled Push","Plate Pinch Hold":"Plate Pinch Hold","Face Pull (cable rope)":"Face Pull","Sled Push (or treadmill push)":"Sled Push","Conditioning Station":"Conditioning Station"};
 function parsePastedSets(setsReps){
   const m=String(setsReps).trim().match(/^(\d+)/);
   return m?Math.max(1,parseInt(m[1],10)):3;
@@ -4076,20 +4189,25 @@ const BLOCK_LIFTS={legacy:["upper","lower","mixed"],
                    meso02:["meso02Mon","meso02Wed","meso02Fri"],
                    meso03:["meso03Mon","meso03Wed","meso03Fri","meso03Sat"]};
 const BLOCK_OG={legacy:"ogLegacy",meso01:"ogMeso01",meso02:"ogMeso02",meso03:"ogMeso03"};
+/* A block with its own Tuesday (Meso 03's stations) — it takes the Tue slot, like a 4th
+   BLOCK_LIFTS entry takes Sat. */
+const BLOCK_TUE={meso03:"meso03Tue"};
 /* Fold Tue/Thu/Sat/Sun into the current block's group in weekday order and float it to the
    top, so the list opens on a complete Mon–Sun week. appendChild moves an existing node, so
    this both reorders the block's own options and pulls the shared ones across; the emptied
    "Every week" group is then removed. Replaces the old " (inactive)" suffixes — the dated
    group labels and top placement carry that now, without widening any option text.
-   A block with its own Saturday (a 4th BLOCK_LIFTS entry, Meso 03) takes the Sat slot, and the
-   shared "sat" moves to the end of the group so it stays selectable for history.
+   A block with its own Saturday (a 4th BLOCK_LIFTS entry, Meso 03) takes the Sat slot, and one
+   with its own Tuesday (BLOCK_TUE) the Tue slot; the shared "tue"/"sat" move to the end of the
+   group so they stay selectable for history.
    Off-block (after 12/13, before 7/6) there is no current block, so the static layout stands
    and Tue/Thu/Sat/Sun stay in their own "Every week" group. */
 function orderDaySel(){
   const id=blockFor().id, lifts=BLOCK_LIFTS[id], og=document.getElementById(BLOCK_OG[id]||"");
   const shared=document.getElementById("ogShared");
   if(!og||!lifts||!shared) return;
-  [lifts[0],"tue",lifts[1],"thu",lifts[2],lifts[3]||"sat","sun"].concat(lifts[3]?["sat"]:[]).forEach(v=>{
+  const tue=BLOCK_TUE[id];
+  [lifts[0],tue||"tue",lifts[1],"thu",lifts[2],lifts[3]||"sat","sun"].concat(tue?["tue"]:[],lifts[3]?["sat"]:[]).forEach(v=>{
     const o=daySel.querySelector('option[value="'+v+'"]'); if(o) og.appendChild(o);});
   shared.remove();
   daySel.insertBefore(og,daySel.firstChild);
@@ -4100,7 +4218,7 @@ document.getElementById("optSun").textContent=inMeso01Window()?"Sun · Gentle Yo
 daySel.value=["sun","upper","tue","lower","thu","mixed","sat"][now.getDay()];
 const mesoDefaultDay=inMeso01Window()?{1:"fullBodyA",3:"fullBodyB",5:"fullBodyC"}[now.getDay()]
                     :inMeso02Window()?{1:"meso02Mon",3:"meso02Wed",5:"meso02Fri"}[now.getDay()]
-                    :inMeso03Window()?{1:"meso03Mon",3:"meso03Wed",5:"meso03Fri",6:"meso03Sat"}[now.getDay()]:null;
+                    :inMeso03Window()?{1:"meso03Mon",2:"meso03Tue",3:"meso03Wed",5:"meso03Fri",6:"meso03Sat"}[now.getDay()]:null;
 if(mesoDefaultDay) daySel.value=mesoDefaultDay;
 /* Same-day draft (tab was killed mid-session, reopened the same day): adopt it silently — that's
    continuity, not a decision worth prompting over. Whichever day it was on, the page opens there.

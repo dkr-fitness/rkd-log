@@ -21,7 +21,7 @@
 | Day | Session |
 |---|---|
 | Mon | Hinge Lead |
-| Tue | Zone 2 (25–35 min) |
+| Tue | Zone 2 stations — 20/10 intervals, rotating weekly |
 | Wed | Squat + Push |
 | Thu | Zone 2 (25–35 min) |
 | Fri | Pull + Hinge |
@@ -147,7 +147,27 @@ Fixed sets all block; the Deload week takes 2 sets of everything (Sled Push 2 ro
 
 ## Conditioning
 
-**Tue/Thu Zone 2:** shared with every block. Strength curve, medal on % of session time in Z2. **Thursday in this block:** check WHOOP recovery first: green → Zone 2, 25–35 min · yellow/red → easy walk or mobility 20–30 min instead. The app shows that in Thursday's rule box inside the Meso 03 window only.
+**Tuesday — Zone 2 stations (since 2026-11-09):** this block's Tuesday is its own template (`meso03Tue`); the shared `tue` stays as-is for history and outside the window.
+
+- **Format:** 5 min easy bike, then each station 20 s work / 10 s rest × 8 (4 min), 1 min to switch. The interval timer runs the 20/10s (the session's "Load the 20/10 × 8 timer" button). Order: machine → lunge → squat/hinge → footwork → core/carry.
+- **Info line:** "Steady effort, not all-out: HR in Z2 (60s %HRR, about 130–143 bpm), peak low Z3 (low 70s %HRR). No rower, SkiErg, battle ropes, wall balls, ball slams, forearm planks or hand-loaded crawls (elbows). Carries light."
+- **Logging:** one row per station, load × rounds completed (8). Every station logs under the shared key `Conditioning Station`, with the station as its display name. Conditioning, not lifts: no PR tile, no PR flag, and no Last time line or weight hints (they'd show another station's numbers).
+- **Medal (on total strap time, warm-up included):** Gold ≥25 min, Z3 ≤5, no Z4/Z5 · Silver ≥20 min, Z3 ≤8, Z4+Z5 ≤1 · Bronze ≥15 min · else Partial. **Deload:** Gold ≥15 · Silver ≥12 · Bronze ≥9 min, same zone limits. RKD still accrues on the strength curve and counts in weekly totals. Earlier Tuesday logs keep the medals they were stamped with.
+
+| Wk | Machine | Lunge | Squat / hinge | Footwork | Core / carry |
+|---|---|---|---|---|---|
+| 1 | *(no card — uses week 2's)* | | | | |
+| 2 | Assault bike (legs drive, hands light) | Rocket lunge | Squat with overhead reach (bodyweight, arms straight) | Side lunge | Step-ups |
+| 3 | Stair climber | Reverse lunge | Sumo squat | Lateral shuffle | Dead bug |
+| 4 | Upright bike | Curtsy lunge | Glute-bridge march | Carioca | Light suitcase carry (switch sides each round) |
+| 5 | Treadmill push 0.8 mph | Walking lunge | Light KB deadlift (arms straight) | High-knee march | Bird dog |
+| 6 | Assault bike (legs drive, hands light) | Skater lunge | Squat with overhead reach (bodyweight, arms straight) | Box step-ups | Pallof walkout |
+| 7 | Incline walk 10–12% | Split-squat pulses | Bodyweight good morning | Low line hops | Light farmer carry |
+| 8 Deload | Upright bike | Reverse lunge | — | — | Dead bug |
+
+Each station carries a hotel swap for travel (e.g. stair climber → incline walk, bike or elliptical). *The hotel swaps are drafted, not clinician-reviewed.*
+
+**Thursday — Zone 2:** shared with every block. Strength curve, medal on % of session time in Z2. **Thursday in this block:** check WHOOP recovery first: green → Zone 2, 25–35 min · yellow/red → easy walk or mobility 20–30 min instead. The app shows that in Thursday's rule box inside the Meso 03 window only.
 
 **Saturday:** see above. This block's Saturday is its own template (`meso03Sat`). The shared Sat Conditioning Sub stays as-is for history and outside this window, and it's still unscored.
 
