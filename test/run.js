@@ -1590,26 +1590,27 @@ eq(ALL_KEYS.filter(function(k,i){ return ALL_KEYS.indexOf(k)!==i; }).length,0,"n
 var B1=HEP_BLOCKS[0], LIB=HEP_BLOCKS[2];
 eq(B1.hepIdx,0,"B1 keeps hepIdx 0");
 eq(B1.ex.map(function(e){return e.key;}).join(","),
-   "b1_scapwallslides,b1_pillowcase,b1_levator,b1_fingerspreads,b1_platepinch,b1_ulnarslider,b1_radialglide","B1 runs in the new order");
+   "b1_scapwallslides,b1_pillowcase,b1_wallball,b1_levator,b1_fingerspreads,b1_platepinch,b1_ulnarslider,b1_radialglide","B1 runs in the new order");
 eq(HEP_BLOCKS[1].ex.map(function(e){return e.key;}).join(","),"float_nightsplint","Float is night elbow position only");
+ok(LIB.ex.every(function(e){return e.key!=="b1_wallball";}),"wall ball circles moved out of the Library into B1");
 ok(LIB.library&&LIB.hepIdx==null,"Library is read-only and has no daily target");
 eq(LIB.ex.filter(function(e){return e.retire;}).map(function(e){return e.key;}).sort().join(","),
    "b1_elbowdist,b1_wristdev,float_arom","exactly the three July items are marked retire-pending");
 eq(hepTargetIdx().join(","),"0","only B1 counts toward the daily score");
-/* Auto-complete: Library logs never tick B1, and B1 needs all seven of its own items. */
+/* Auto-complete: Library logs never tick B1, and B1 needs all eight of its own items. */
 var det={}; LIB.ex.forEach(function(e){ det[e.key]=[1]; });
 autoCheckHepBlocks(det); eq(loadHep()[0],false,"logging every Library item does not complete B1");
-B1.ex.slice(0,6).forEach(function(e){ det[e.key]=[1]; });
-autoCheckHepBlocks(det); eq(loadHep()[0],false,"six of seven B1 items does not complete it");
+B1.ex.slice(0,7).forEach(function(e){ det[e.key]=[1]; });
+autoCheckHepBlocks(det); eq(loadHep()[0],false,"seven of eight B1 items does not complete it");
 det.b1_radialglide=[8];
-autoCheckHepBlocks(det); eq(loadHep()[0],true,"the seventh completes B1");
+autoCheckHepBlocks(det); eq(loadHep()[0],true,"the eighth completes B1");
 
 section("HEP — prescribed set boxes, logged as typed");
 /* The real renderHepTab(), with its title line and date label stubbed. */
 loadRegions("var todayLabel=function(){return \"Sun, Sep 20\";};\n"+region("function renderHepTab(m){","function toggleHepBlockCollapse(bi){"));
-var HEP_SETS={b1_scapwallslides:2,b1_pillowcase:1,b1_levator:2,b1_fingerspreads:2,b1_platepinch:2,
+var HEP_SETS={b1_scapwallslides:2,b1_pillowcase:1,b1_wallball:1,b1_levator:2,b1_fingerspreads:2,b1_platepinch:2,
               b1_ulnarslider:2,b1_radialglide:2,float_nightsplint:1};
-var HEP_SIDES=["b1_levator","b1_fingerspreads","b1_platepinch","b1_ulnarslider","b1_radialglide"];
+var HEP_SIDES=["b1_wallball","b1_levator","b1_fingerspreads","b1_platepinch","b1_ulnarslider","b1_radialglide"];
 HEP_BLOCKS.slice(0,2).forEach(function(b){ b.ex.forEach(function(e){
   eq(e.sets,HEP_SETS[e.key],e.key+": "+HEP_SETS[e.key]+" prescribed sets");
   eq(!!e.sides,HEP_SIDES.indexOf(e.key)>=0,"...per side: "+(HEP_SIDES.indexOf(e.key)>=0));
@@ -1622,7 +1623,9 @@ Object.keys(HEP_SETS).forEach(function(k){ var n=HEP_SETS[k]*(HEP_SIDES.indexOf(
 /* Per-side: each set row holds its R box then its L box, side by side. */
 ok(/<span class="n">1<\/span><input inputmode="decimal" placeholder="R sec" id="hepIn_b1_levator_0"[^>]*><input inputmode="decimal" placeholder="L sec" id="hepIn_b1_levator_1"[^>]*><\/div>/.test(H),"per-side set 1: R and L boxes on one row, right first");
 ok(/<span class="n">2<\/span><input inputmode="decimal" placeholder="R reps" id="hepIn_b1_ulnarslider_2"/.test(H),"...set 2 starts with R again (box 3)");
-eq((H.match(/<span class="n">\d+<\/span>/g)||[]).length,2+1+2+2+2+2+2+1,"one numbered row per set, not per box");
+eq((H.match(/<span class="n">\d+<\/span>/g)||[]).length,2+1+1+2+2+2+2+2+1,"one numbered row per set, not per box");
+ok(/<span class="n">1<\/span><input inputmode="decimal" placeholder="R sec" id="hepIn_b1_wallball_0"[^>]*><input inputmode="decimal" placeholder="L sec" id="hepIn_b1_wallball_1"[^>]*><\/div><\/div>/.test(H),"wall ball circles: one row, R sec then L sec");
+ok(H.indexOf('<div class="ex-name">Standing wall ball circles</div><div class="ex-rx">1 min per arm · arm straight, small circles, shoulders down</div><div class="ex-note">Mini Swiss ball, 2–3 lb</div>')>=0,"...with the ball size as its note line");
 ok(!/logHepEntry|>Log</.test(H),"no Log button");
 ok((H.match(/id="hepIn_[^"]*"/g)||[]).every(function(x){ return /_\d+"$/.test(x); }),"no free-entry input left — every input is a numbered set box");
 ok(/id="hepIn_b1_levator_0" value="" oninput="hepBoxInput\('b1_levator',4\)"/.test(H),"each box saves on input, no second tap");
@@ -1643,7 +1646,7 @@ ok(/id="hepIn_b1_scapwallslides_0" value="10"/.test(hepRender()),"a logged value
 /* A day logged under the old 3-entry cap keeps all three. */
 saveHepDetail({b1_scapwallslides:[10,10,8]});
 eq(hepBoxes(hepRender(),"b1_scapwallslides"),3,"an old 3-entry day keeps a box per logged value");
-/* Logging the seventh B1 item through its boxes completes B1, as before. */
+/* Logging the eighth B1 item through its boxes completes B1, as before. */
 resetState(); saveHepDetail({});
 HEP_BLOCKS[0].ex.forEach(function(e){ hepType(e.key,0,"5"); hepBoxInput(e.key,e.sets*(e.sides?2:1)); });
 eq(loadHep()[0],true,"filling one box on every B1 item completes B1");

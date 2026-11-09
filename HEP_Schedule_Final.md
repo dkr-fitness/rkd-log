@@ -12,17 +12,18 @@ reference as stretch reminders, never logged or counted. `index.html` matches th
 ---
 
 ## B1 Gym — pre-lift
-On lifting days: HEP → lift. Auto-completes when all seven items are logged.
+On lifting days: HEP → lift. Auto-completes when all eight items are logged.
 
 | # | Exercise | Dose | Log | Notes |
 |---|---|---|---|---|
 | 1 | Scapular Wall Slides | 2×10 | reps | Slow, elbows stay on the wall |
 | 2 | Pillowcase Isometric | 5 × 5 s holds | reps | |
-| 3 | Levator Scap Stretch | 2×30 s per side | seconds | Keep the stretching arm straight. ⚠️ If warming or tingling into fingertips, back off. Supine preferred over seated/standing |
-| 4 | Finger Spreads | 2×15 each hand | reps | Rubber band around the fingers. **New** |
-| 5 | Plate Pinch Hold | 2×20–30 s per side | seconds | 5 lb plate, thumb flat on one face, fingers flat on the other, arm straight, right first. **New** |
-| 6 | Ulnar Nerve Slider | 2×8 per arm, both arms | reps | Arm out, palm up: bend the elbow while tilting the head toward that arm, straighten it while tilting away. Smooth, never a stretch. **New** |
-| 7 | Radial Nerve Glide | 2×8 per arm | reps | Thumb tucked into a fist, elbow straight, push the hand back and away from the body, tilt the head to the opposite side. **New** |
+| 3 | Standing Wall Ball Circles | 1 min per arm | seconds, R and L | Arm straight, small circles, shoulders down. Mini Swiss ball, 2–3 lb. Moved from the Library 2026-11-09 |
+| 4 | Levator Scap Stretch | 2×30 s per side | seconds | Keep the stretching arm straight. ⚠️ If warming or tingling into fingertips, back off. Supine preferred over seated/standing |
+| 5 | Finger Spreads | 2×15 each hand | reps | Rubber band around the fingers. **New** |
+| 6 | Plate Pinch Hold | 2×20–30 s per side | seconds | 5 lb plate, thumb flat on one face, fingers flat on the other, arm straight, right first. **New** |
+| 7 | Ulnar Nerve Slider | 2×8 per arm, both arms | reps | Arm out, palm up: bend the elbow while tilting the head toward that arm, straighten it while tilting away. Smooth, never a stretch. **New** |
+| 8 | Radial Nerve Glide | 2×8 per arm | reps | Thumb tucked into a fist, elbow straight, push the hand back and away from the body, tilt the head to the opposite side. **New** |
 
 **Stop the glides for the day if tingling increases or lingers.**
 
@@ -41,7 +42,6 @@ Collapsed by default. Read-only: no log inputs, not counted, keys unchanged. Dos
 | Exercise | July dose | Notes |
 |---|---|---|
 | Prone Chest Stretch on Chair | 3x daily | No aggravation |
-| Standing Wall Ball Circles (mini Swiss ball, 2–3 lb) | 1 min, 1–3x daily | Progress duration |
 | Elbow Distraction Self Mobilization | 3 × 10 osc. or 10 s holds, 1–2x daily | **Retire pending.** Stop on any neural symptoms |
 | Wrist AROM — Radial/Ulnar Deviation | 3 × 10, 3x daily | **Retire pending.** Stop on any neural symptoms. A slider, not a tensioner: continuous motion, no end-range holds |
 | Full Plank with Scapular AROM | 5 reps, 10–15 s, 1x daily | Circuit with Isometric Internal Rotation |
