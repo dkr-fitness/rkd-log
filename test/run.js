@@ -690,9 +690,9 @@ section("Meso 3 Thursday — Zone 2 + mobility");
 var THU_ROUTINES={
   A:["90/90 Hip Switches","Half-Kneeling Hip Flexor Stretch","Lunge with T-Spine Reach","Standing Cat-Cow","Open Books","Child's Pose Side Reach","Supported Deep Squat Hold"],
   B:["Knee-to-Wall Ankle Rocks","Wall Calf Stretch","Supine Hamstring Floss","Half-Kneeling Adductor Rock-Back","Cossack Squat","Supported Deep Squat Pry"],
-  C:["Foam Roller T-Spine Extension","Half-Kneeling T-Spine Rotation","Wall Scap Push-Up","Straight-Arm Low Doorway Pec Stretch","Bench Lat Prayer Stretch","Foam Roller Snow Angels"]};
+  C:["Foam Roller T-Spine Extension","Half-Kneeling T-Spine Rotation","Wall Scap Push-Up","Straight-Arm Low Doorway Pec Stretch","Standing Lat Stretch on Rack","Foam Roller Snow Angels"]};
 var THU_SETS={A:"2,2,2,1,2,1,2",B:"2,1,2,2,2,2",C:"1,2,2,2,2,1"};
-var THU_SEC={A:"Half-Kneeling Hip Flexor Stretch,Child's Pose Side Reach,Supported Deep Squat Hold",B:"Wall Calf Stretch,Supported Deep Squat Pry",C:"Straight-Arm Low Doorway Pec Stretch,Bench Lat Prayer Stretch"};
+var THU_SEC={A:"Half-Kneeling Hip Flexor Stretch,Child's Pose Side Reach,Supported Deep Squat Hold",B:"Wall Calf Stretch,Supported Deep Squat Pry",C:"Straight-Arm Low Doorway Pec Stretch,Standing Lat Stretch on Rack"};
 var THU_DATES={1:[2026,10,22,"A"],2:[2026,10,29,"B"],3:[2026,11,5,"C"],4:[2026,11,12,"A"],5:[2026,11,19,"B"],6:[2026,11,26,"C"],7:[2026,12,3,"A"],8:[2026,12,10,"B"]};
 var mobOf=function(s){ return s.blocks.slice(1).map(function(b){return b.ex[0];}); };
 thuPick={cardio:"green",routine:null};
@@ -706,7 +706,7 @@ Object.keys(THU_DATES).forEach(function(wk){
     eq(defaultDayFor(new Date()),"meso03Thu","...and Thursday opens on it");
     var txt=[s.name].concat(exList("meso03Thu").map(function(e){return e.n+" "+(e.rx||"")+" "+(e.note||"");})).join(" | ");
     ok(!EXCLUDED.test(txt.replace("no rower/SkiErg","")),"week "+wk+": no back squat, goblet, overhead pressing or rower/SkiErg");
-    ok(!/quadruped|hand down|on hands|push the floor|frog/i.test(txt),"...and no hand-loaded positions");
+    ok(!/quadruped|hand down|on hands|push the floor|frog|elbows on/i.test(txt),"...and no hand- or elbow-loaded positions");
   });
 });
 onDate(2026,11,26,function(){

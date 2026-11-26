@@ -200,7 +200,7 @@ Each station carries a hotel swap for travel (e.g. stair climber → incline wal
 | | Half-Kneeling T-Spine Rotation | 2 × 6/side | Arms crossed on the chest, rotate toward the front knee, hips stay square |
 | | Wall Scap Push-Up | 2 × 10 | Arms straight, push the wall away |
 | | Straight-Arm Low Doorway Pec Stretch | 2 × 30 s/side | Arm low on the frame for the lower chest; soften the elbow if it tingles |
-| | Bench Lat Prayer Stretch | 2 × 30 s | Elbows on the bench, sit the hips back |
+| | Standing Lat Stretch on Rack | 2 × 30 s | Hands on a rack post at hip height, arms straight, sit the hips back and let the chest drop |
 | | Foam Roller Snow Angels | 1 × 8 | Lying lengthwise, arms mostly straight — never force the right shoulder |
 
 **Saturday:** see above. This block's Saturday is its own template (`meso03Sat`). The shared Sat Conditioning Sub stays as-is for history and outside this window, and it's still unscored.
