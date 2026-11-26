@@ -1417,6 +1417,20 @@ FORM_GLOSSARY["Rope Triceps Pressdown"]=Object.assign({},FORM_GLOSSARY["Triceps 
    two-arm Chest Press PR history. Same movement family and the same symptom caveat, so it
    shares the Chest Press entry rather than going without one. */
 FORM_GLOSSARY["SA Chest Press"]=FORM_GLOSSARY["Chest Press"];
+/* Meso 03's Wednesday squat is a straight-bar back squat on the old "Safety Bar Squat" key
+   (2026-11-25), so its template points here with formKey; Meso 01's goblet-or-safety-bar squat
+   keeps the safety-bar entry. Wording is the user's own (2026-11-25), not clinician-reviewed. */
+FORM_GLOSSARY["Back Squat (straight bar)"]={
+  name:"Back Squat (straight bar)",
+  setup:[
+   "Bar sits on the upper traps (high-bar). Grip just outside shoulder width or wider, wide enough that elbows stay comfortable and wrists stay straight.",
+   "Elbows point down toward the floor, not flared back. Pull the bar into your back.",
+   "Big breath into the belly and brace before every rep, ribs down."],
+  execution:[
+   "Sit down between your heels, knees tracking over your toes, chest proud. Go as deep as your back stays neutral.",
+   "Drive through mid-foot; hips and chest rise together."],
+  injuryNotes:[
+   "Elbow/nerve: if your pinky or ring finger tingles, widen your grip first. Back off if there's pain."]};
 function formRefSection(title,items,ordered){
   if(!items||!items.length) return "";
   const tag=ordered?"ol":"ul";
@@ -1427,17 +1441,20 @@ function formReferenceHtml(s){
   if(!s||!s.blocks) return "";
   const seen=new Set();
   formRefKeys=[];
+  /* An exercise can point at a different entry than its log key with formKey (Meso 03's Back
+     Squat, logged under "Safety Bar Squat"). */
   s.blocks.forEach(b=>b.ex.forEach(ex=>{
-    if(ex.key&&FORM_GLOSSARY[ex.key]&&!seen.has(ex.key)){ seen.add(ex.key); formRefKeys.push(ex.key); }
+    const fk=ex.formKey||ex.key;
+    if(fk&&FORM_GLOSSARY[fk]&&!seen.has(fk)){ seen.add(fk); formRefKeys.push(fk); }
   }));
   if(!formRefKeys.length) return "";
   let h=`<div class="notecard collapsed" id="formRefPanel"><label class="formref-label" onclick="toggleFormRefPanel()">Form Reference<span class="formref-ind">▾</span></label><div class="formref-body">`;
   formRefKeys.forEach((key,i)=>{
     const g=FORM_GLOSSARY[key];
-    let dispName=key;
-    s.blocks.some(b=>b.ex.some(ex=>{ if(ex.key===key){ dispName=ex.n; return true; } return false; }));
+    let dispName=g.name||key;
+    if(!g.name) s.blocks.some(b=>b.ex.some(ex=>{ if((ex.formKey||ex.key)===key){ dispName=ex.n; return true; } return false; }));
     h+=`<div class="formref-ex collapsed" id="formRefEx${i}"><div class="formref-ex-name" onclick="toggleFormRefEx(${i})">${dispName}<span class="formref-ex-ind">▾</span></div><div class="formref-ex-body">`
-      +`<div class="formref-status">${g.status}</div>`
+      +(g.status?`<div class="formref-status">${g.status}</div>`:"")
       +formRefSection("Setup",g.setup,true)
       +formRefSection("Execution",g.execution,false)
       +formRefSection("Checkpoints",g.checkpoints,false)
@@ -1703,7 +1720,7 @@ function getSession(w,day){
      {letter:"B",t:"Squat",mins:12,ramp:RAMP,bells:sq.sets,ex:[
        // A straight-bar back squat (2026-11-25), on the old "Safety Bar Squat" key so Last time,
        // the loading rule and past logs still link up. SQUAT_NAME shows it as Back Squat.
-       {key:"Safety Bar Squat",prog:"main",n:SQUAT_NAME,rx:sq.rx,sets:sq.sets,note:MESO03_RECOVERY,plates:true,ramps:RAMPS}]},
+       {key:"Safety Bar Squat",formKey:"Back Squat (straight bar)",prog:"main",n:SQUAT_NAME,rx:sq.rx,sets:sq.sets,note:MESO03_RECOVERY,plates:true,ramps:RAMPS}]},
      // Single-arm, so it logs under SA Chest Press — per-arm loads would never read as PRs
      // against Chest Press's two-arm history. 2 × ~40 s press + 15 s to the cable + ~40 s
      // pullover, then rest.

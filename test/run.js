@@ -1797,6 +1797,19 @@ Object.keys(PHASE_DATES).forEach(function(ph){
 eq(entryName({name:"Safety Bar Squat",key:"Safety Bar Squat"}),"Back Squat","History: an entry saved before the rename reads Back Squat");
 eq(entryName({name:"Goblet or Safety Bar Squat",key:"Safety Bar Squat"}),"Goblet or Safety Bar Squat","...Meso 1's goblet-or-safety-bar entries keep their name");
 eq(entryName({name:"Rack Pull",key:"Rack Pull"}),"Rack Pull","...everything else unchanged");
+/* Form Reference: Meso 3's Back Squat shows the straight-bar entry; Meso 1 keeps the safety bar's. */
+loadRegions(region("const FORM_GLOSSARY=","function toggleFormRefPanel(){"));
+onDate(2026,11,25,function(){
+  var fr=formReferenceHtml(realSession(8,"meso03Wed"));
+  ok(fr.indexOf("Back Squat (straight bar)")>=0,"Meso 3 Wednesday: Form Reference shows Back Squat (straight bar)");
+  ok(fr.indexOf("Bar sits on the upper traps (high-bar).")>=0&&fr.indexOf("widen your grip first. Back off if there's pain.")>=0,"...with the straight-bar wording");
+  ok(!/handles in front|reaching back|excluded version|camber/i.test(fr),"...and none of the safety-bar text (Chest Press's own \"handles\" is fine)");
+  ok(fr.indexOf("undefined")<0,"...no empty status line");
+});
+onDate(2026,9,10,function(){
+  var fr1=formReferenceHtml(realSession(8,"fullBodyB"));
+  ok(/handles in front/.test(fr1)&&fr1.indexOf("Back Squat (straight bar)")<0,"Meso 1's goblet-or-safety-bar squat keeps the safety-bar entry");
+});
 ok(SRC.indexOf("✎ ${escAttr(entryName(e))}")>=0&&SRC.indexOf("⚠ ${escAttr(entryName(e))}")>=0&&SRC.indexOf("- ${entryName(e)}: prescribed")>=0,"History notes, symptoms and Copy summary all use the display name");
 
 section("HEP — rebuilt, keys unchanged");
