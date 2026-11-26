@@ -293,14 +293,16 @@ section("Meso 3 templates — against Meso03_Plan.xlsx");
 var M3DAYS=["meso03Mon","meso03Wed","meso03Fri","meso03Sat"];
 /* One date per phase: wk 1 Baseline, wk 3 Volume, wk 6 Performance, wk 8 Deload (all Mondays). */
 var PHASE_DATES={Baseline:[2026,10,19],Volume:[2026,11,2],Performance:[2026,11,23],Deload:[2026,12,7]};
-var EXCLUDED=/back[ -]squat|goblet|overhead press|shoulder press|military|\bOHP\b|push press|rower|row erg|ski ?erg/i;
+/* Back squat left this list 2026-11-25: Wednesday's squat is a straight-bar back squat
+   (the user's call, with its own elbow/tingling cue — tested below). */
+var EXCLUDED=/goblet|overhead press|shoulder press|military|\bOHP\b|push press|rower|row erg|ski ?erg/i;
 Object.keys(PHASE_DATES).forEach(function(ph){
   var d=PHASE_DATES[ph];
   onDate(d[0],d[1],d[2],function(){
     M3DAYS.forEach(function(day){
       var s=realSession(8,day), txt=[s.name].concat(exList(day).map(function(e){return e.n+" "+(e.rx||"")+" "+(e.note||"");})).join(" | ");
       /* "no overhead" is the pushdown rule itself, so only pressing/excluded patterns count. */
-      ok(!EXCLUDED.test(txt.replace(/no overhead/g,"")),ph+" "+day+": no back squat, goblet, overhead pressing or rower/SkiErg");
+      ok(!EXCLUDED.test(txt.replace(/no overhead/g,"")),ph+" "+day+": no goblet, overhead pressing or rower/SkiErg");
     });
   });
 });
@@ -1017,7 +1019,8 @@ ok(/No PRs yet/.test(prGrid([{entries:[]}])),"sessions but no PRs -> explanatory
 var hh=prGrid([{entries:[{key:"Plate Pinch Hold",sets:[{w:"20",r:"25"},{w:"20",r:"31"},{w:"25",r:"18"}]},
                          {key:"Safety Bar Squat",sets:[{w:"185",r:"6"}]}]}]);
 ok(/Plate Pinch Hold<\/div><div class="v">31s</.test(hh),"pinch hold PR is the longest hold, in seconds, from the reps box");
-ok(/Safety Bar Squat · e1RM/.test(hh),"Safety Bar Squat is PR-tracked as an e1RM lift");
+ok(/Back Squat \(Meso 3\) · e1RM/.test(hh),"Meso 3's squat (key Safety Bar Squat) is PR-tracked as an e1RM lift, labelled Back Squat (Meso 3)");
+ok(!/Safety Bar/.test(hh),"...and the tile no longer says safety bar");
 /* Export/Import moved to the top of the page, so it is the one thing this slice always emits —
    including on a device with nothing logged yet, which is exactly when you reach for Import. */
 ok(/exportLogs\(\)/.test(prGrid([])),"export/import renders even with no sessions");
@@ -1710,7 +1713,7 @@ eq(rampText(200,0,[.5]),"Warm-up · not logged\n50% · 100 lb → 45 · 5 per si
 eq(rampText("",45,[.5,.75])+rampText(185,null,[.5,.75])+rampText(185,45,null)+rampText(40,45,[.5]),"","no weight, no bar, no ramps, or below the bar: nothing");
 /* Bar weight per exercise, from the settings, else its default. */
 var savedSsb=pxiSet.ssbBar, savedBars=pxiSet.bars; pxiSet.ssbBar=null; pxiSet.bars={};
-eq(barFor({key:"Safety Bar Squat",plates:true}),null,"safety bar not set → no bar weight");
+eq(barFor({key:"Safety Bar Squat",plates:true}),45,"Back Squat (key Safety Bar Squat) not set → a 45 lb straight bar");
 eq(barFor({key:"Rack Pull",plates:true}),45,"Rack Pull defaults to 45");
 eq(barFor({key:"Romanian Deadlift (DB)",plates:true}),45,"RDL defaults to 45");
 eq(barFor({key:"Hip Thrust",plates:true}),45,"Hip Thrust defaults to 45");
@@ -1719,7 +1722,7 @@ eq(barFor({key:"Some New Lift",plates:true}),45,"a lift newly marked plate-loade
 eq(barFor({key:"Rack Pull"}),null,"not marked plate-loaded → no plates");
 eq(barFor({}),null,"...nor an exercise with no key");
 pxiSet.ssbBar=65;
-eq(barFor({key:"Safety Bar Squat",plates:true}),65,"safety bar set to 65 → 65 (still pxiSet.ssbBar)");
+eq(barFor({key:"Safety Bar Squat",plates:true}),65,"Back Squat's bar edited to 65 → 65 (still stored as pxiSet.ssbBar)");
 eq(plateText(155,65),"155 lb → 45 per side","...and the plates use it: 155 on a 65 bar");
 pxiSet.bars={"Hip Thrust":35,"Rack Pull":0};
 eq(barFor({key:"Hip Thrust",plates:true}),35,"Hip Thrust's bar edited to 35");
@@ -1763,19 +1766,38 @@ DOM.w_0_0_2.value=""; refreshWeightHints(PBB.blocks);
 eq(DOM.pl_0_0_2.textContent,"","...cleared again: gone");
 DOM.w_0_0_0.value=""; DOM.w_0_0_0.placeholder="wt"; DOM.w_0_0_1.value=""; refreshWeightHints(PBB.blocks);
 eq(DOM.pl_0_0.textContent+DOM.rp_0_0.textContent,"","no weight typed or hinted: no line, no ramps");
-/* Safety bar not entered yet: a prompt instead of plates. */
+/* Back Squat with nothing entered: plates on the 45 lb bar, no prompt. */
 savedSsb=pxiSet.ssbBar; pxiSet.ssbBar=null;
-var SQB={blocks:[{letter:"B",t:"Squat",mins:12,bells:3,ex:[{key:"Safety Bar Squat",n:"Safety Bar Squat",rx:"",sets:3,plates:true,ramps:[.5,.75]}]}]};
+var SQB={blocks:[{letter:"B",t:"Squat",mins:12,bells:3,ex:[{key:"Safety Bar Squat",n:"Back Squat",rx:"",sets:3,plates:true,ramps:[.5,.75]}]}]};
 DOM.w_0_0_0.placeholder="135"; refreshWeightHints(SQB.blocks);
-eq(DOM.pl_0_0.textContent,BAR_MISSING,"safety bar unset: set 1 asks for its weight");
-eq(DOM.rp_0_0.textContent,"","...and no ramps");
+eq(DOM.pl_0_0.textContent,"135 lb → 45 per side","Back Squat unset: plates on a 45 lb bar");
+eq(DOM.rp_0_0.textContent,"Ramp sets · not logged\n50% · 65 lb → 10 per side\n75% · 100 lb → 25 · 2.5 per side","...with its ramps (67.5 halfway → 65, one plate)");
 pxiSet.ssbBar=savedSsb;
+ok(SRC.indexOf("BAR_MISSING")<0&&SRC.indexOf("safety bar's weight")<0,"no safety-bar prompt left anywhere");
+eq(BAR_NAMES["Safety Bar Squat"],"Back Squat","Bar weights card names it Back Squat");
 resetState();
 ok(SRC.indexOf('placeholder="${escAttr(hw)}" oninput="focusPlates()"')>=0,"set mode: the plate line follows the weight box as it's typed");
 ok(SRC.indexOf("${ex.plates?`<div class=\"f-plates\"")>=0,"...on every set's screen of a plate lift");
 ok(SRC.indexOf("${ex.plates&&ex.ramps&&st.i===0?`<div class=\"f-ramps\"")>=0,"...with the ramps on set 1's screen");
 ok(SRC.indexOf('if(p==="w") focusPlates();')>=0,"...and as ±5 steps it");
 ok(SRC.indexOf('if(k==="Safety Bar Squat") pxiSet.ssbBar=v>0?v:null;')>=0&&SRC.indexOf('savePxiSet();\n  }));')>=0,"bar weights are settings, saved with the scoring settings (safety bar still in ssbBar)");
+
+section("Meso 3 Wednesday squat — Back Squat on the old key");
+var NEWCUE="straight bar · grip wide enough that elbows stay comfortable · back off if there's pain or pinky/ring-finger tingling";
+Object.keys(PHASE_DATES).forEach(function(ph){
+  var d=PHASE_DATES[ph];
+  onDate(d[0],d[1],d[2],function(){
+    var sq=exList("meso03Wed").filter(function(e){return e.key==="Safety Bar Squat";});
+    eq(sq.length,1,ph+": one squat, still on the Safety Bar Squat key (Last time / past logs link up)");
+    eq(sq[0].n,"Back Squat",ph+": named Back Squat");
+    ok(sq[0].rx.indexOf(NEWCUE)>=0,ph+": the straight-bar elbow/tingling cue");
+    ok(!/handles|reach back|safety bar/i.test(sq[0].rx+" "+sq[0].n),ph+": no safety-bar wording left");
+  });
+});
+eq(entryName({name:"Safety Bar Squat",key:"Safety Bar Squat"}),"Back Squat","History: an entry saved before the rename reads Back Squat");
+eq(entryName({name:"Goblet or Safety Bar Squat",key:"Safety Bar Squat"}),"Goblet or Safety Bar Squat","...Meso 1's goblet-or-safety-bar entries keep their name");
+eq(entryName({name:"Rack Pull",key:"Rack Pull"}),"Rack Pull","...everything else unchanged");
+ok(SRC.indexOf("✎ ${escAttr(entryName(e))}")>=0&&SRC.indexOf("⚠ ${escAttr(entryName(e))}")>=0&&SRC.indexOf("- ${entryName(e)}: prescribed")>=0,"History notes, symptoms and Copy summary all use the display name");
 
 section("HEP — rebuilt, keys unchanged");
 resetState();

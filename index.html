@@ -623,7 +623,10 @@ const MESO03_PHASE_CUE={
 /* Meso 03's load progression (rewritten 2026-11-09), shown once in the Scoring box on its lift
    days. Set 1's weight hint applies it (loadStep), so the box and the hint say the same thing. */
 const MESO03_LOADING_RULE="Main lifts: every working set at the top of the rep range → add 5 lb next time (Rack Pull 10 lb); otherwise hold. Accessories: same test → add 5 lb (2.5 lb under 20 lb). Saturday: every set done and session RPE 7 or under → add 5 lb (Leg Press 10 lb). Any symptom on a lift, or the Deload week → hold. Set 1's hint does the math. Single-arm: right side sets the load; left matches.";
-/* A standing note on Safety Bar Squat and Leg Press (since week 3) — the hint can't see recovery. */
+/* Meso 03's Wednesday squat is a straight-bar back squat, logged under the old "Safety Bar Squat"
+   key (2026-11-25) so Last time and past logs still link up. This is the name it shows under. */
+const SQUAT_NAME="Back Squat";
+/* A standing note on Back Squat (key "Safety Bar Squat") and Leg Press (since week 3) — the hint can't see recovery. */
 const MESO03_RECOVERY="Hold last week's load if recovery is red or sleep <5.5 h.";
 /* Saturday's Baseline calibration. The weekday line ("RPE 8+ → drop 10%") is already over
    Saturday's 7/10 cap, so this one is fitted to the cap instead. */
@@ -1690,7 +1693,7 @@ function getSession(w,day){
        {key:"Suitcase Carry",prog:"acc",n:"Suitcase Carry",rx:sc.rx,sets:sc.sets,rUnit:"yd"}])]};
   }
   if(day==="meso03Wed"){
-    const sq=meso3MainRx("hands on the handles — never reach back for a straight bar","~135–145 lb"),
+    const sq=meso3MainRx("straight bar · grip wide enough that elbows stay comfortable · back off if there's pain or pinky/ring-finger tingling","~135–145 lb"),
           cp=meso3AccRx("/side","single-arm floor press, right → left · floor sets the 90° stop, pain-free only · "+SA_EXTRA+SS("Chest Press","Pullover"),"~40–45 lb"),
           po=meso3AccRx("","arms nearly straight — lats without elbow bend"+SS("Chest Press","Pullover"),"~12.5–15 lb"),
           tp=meso3AccRx("/side","single-arm, pushdown only (no overhead)"+RL+" · "+SA_EXTRA,"~12.5–15 lb");
@@ -1698,7 +1701,9 @@ function getSession(w,day){
      {letter:"A",t:"Activation",mins:4,bells:2,ex:[
        {key:"Scapular Wall Slide",n:"Scapular Wall Slide",rx:"2 × 10 · slow, elbows on the wall · first in session",sets:2}]},
      {letter:"B",t:"Squat",mins:12,ramp:RAMP,bells:sq.sets,ex:[
-       {key:"Safety Bar Squat",prog:"main",n:"Safety Bar Squat",rx:sq.rx,sets:sq.sets,note:MESO03_RECOVERY,plates:true,ramps:RAMPS}]},
+       // A straight-bar back squat (2026-11-25), on the old "Safety Bar Squat" key so Last time,
+       // the loading rule and past logs still link up. SQUAT_NAME shows it as Back Squat.
+       {key:"Safety Bar Squat",prog:"main",n:SQUAT_NAME,rx:sq.rx,sets:sq.sets,note:MESO03_RECOVERY,plates:true,ramps:RAMPS}]},
      // Single-arm, so it logs under SA Chest Press — per-arm loads would never read as PRs
      // against Chest Press's two-arm history. 2 × ~40 s press + 15 s to the cable + ~40 s
      // pullover, then rest.
@@ -1962,11 +1967,10 @@ function repsHint(day,last,i){
    Per side, heaviest plates first ("165 lb → 45 · 10 · 5 per side", not 35 · 25). A total that
    can't be loaded exactly shows the nearest one that can (a tie goes to the lighter) and says so.
    A template exercise opts in with plates:true; its bar weight is per exercise key (barFor()),
-   editable in RKD → Bar weights. The safety bar has no default — until its weight is entered,
-   Safety Bar Squat shows a prompt instead of plates. Leg Press's "bar" is 0: plates only. */
+   editable in RKD → Bar weights. Leg Press's "bar" is 0: plates only. */
 const PLATES=[45,35,25,10,5,2.5], STD_BAR=45;
-const BAR_DEFAULTS={"Rack Pull":45,"Safety Bar Squat":null,"Romanian Deadlift (DB)":45,"Hip Thrust":45,"Leg Press":0};
-const BAR_NAMES={"Romanian Deadlift (DB)":"Romanian Deadlift","Leg Press":"Leg Press (plates only, sled not counted)"};
+const BAR_DEFAULTS={"Rack Pull":45,"Safety Bar Squat":45,"Romanian Deadlift (DB)":45,"Hip Thrust":45,"Leg Press":0};
+const BAR_NAMES={"Safety Bar Squat":SQUAT_NAME,"Romanian Deadlift (DB)":"Romanian Deadlift","Leg Press":"Leg Press (plates only, sled not counted)"};
 function plateBreakdown(total,bar){
   total=parseFloat(total);
   if(bar==null||!(bar>=0)||!(total>0)||total<bar) return null;
@@ -2002,11 +2006,11 @@ function rampText(work,bar,ramps){
   return lines.length?(ramps.length>1?"Ramp sets":"Warm-up")+" · not logged\n"+lines.join("\n"):"";
 }
 /* The bar under a plate-loaded exercise: its saved weight, else its default (45 for a lift not
-   listed in BAR_DEFAULTS). The safety bar keeps its own setting (pxiSet.ssbBar, unchanged). null
-   = no plate math (not plate-loaded, or the safety bar's weight isn't known yet). */
+   listed in BAR_DEFAULTS). Back Squat (key "Safety Bar Squat") keeps its old storage field,
+   pxiSet.ssbBar, so nothing is renamed. null = not plate-loaded, no plate math. */
 function barFor(ex){
   if(!ex||!ex.plates) return null;
-  if(ex.key==="Safety Bar Squat") return pxiSet.ssbBar>0?pxiSet.ssbBar:null;
+  if(ex.key==="Safety Bar Squat"&&pxiSet.ssbBar>0) return pxiSet.ssbBar;
   const v=(pxiSet.bars||{})[ex.key];
   if(typeof v==="number"&&v>=0) return v;
   return ex.key in BAR_DEFAULTS?BAR_DEFAULTS[ex.key]:STD_BAR;
@@ -2021,7 +2025,6 @@ function plateLiftKeys(){
   });
   return out;
 }
-const BAR_MISSING="Plates: enter the safety bar's weight in RKD → Bar weights";
 /* Set 1's weight, or its grey hint when nothing's typed — the number the plates are for. */
 const set1Weight=el=>el?(el.value.trim()||(el.placeholder!=="wt"?el.placeholder:"")):"";
 /* Re-points sets 2+'s weight hints at set 1 as it's typed (plan days only), and the plate lines:
@@ -2034,7 +2037,7 @@ function refreshWeightHints(blocks){
     const s1=document.getElementById("w_"+bi+"_"+ei+"_0"); if(!(ex.sets>0)||!s1) return;
     const bar=barFor(ex), w1=set1Weight(s1), id="_"+bi+"_"+ei;
     const pl=document.getElementById("pl"+id);
-    if(pl) pl.textContent=bar==null?(ex.plates&&ex.key==="Safety Bar Squat"?BAR_MISSING:""):plateText(w1,bar);
+    if(pl) pl.textContent=bar==null?"":plateText(w1,bar);
     const rp=document.getElementById("rp"+id); if(rp) rp.textContent=bar==null?"":rampText(w1,bar,ex.ramps);
     for(let i=1;i<ex.sets+extraFor(bi,ei);i++){
       const el=document.getElementById("w"+id+"_"+i);
@@ -3035,7 +3038,7 @@ function focusPlates(){
   const fw=document.getElementById("fW"), w=fw?(fw.value.trim()||fw.placeholder):"";
   const bar=pl.dataset.bar===""?null:+pl.dataset.bar;
   /* Two lines at set mode's size, so "nearest 185 lb" and the plates don't wrap mid-list. */
-  pl.textContent=bar==null?(pl.dataset.ssb?BAR_MISSING:""):plateText(w,bar).replace(": ",":\n");
+  pl.textContent=bar==null?"":plateText(w,bar).replace(": ",":\n");
   const rp=document.getElementById("fRamps");
   if(rp) rp.textContent=bar==null?"":rampText(w,bar,rp.dataset.ramps.split(",").map(Number));
 }
@@ -3101,7 +3104,7 @@ function renderFocus(){
     <div class="f-row"><label>Weight</label><button class="f-step" onclick="focusStep('w',-5)">−5</button>
       <input id="fW" inputmode="decimal" value="${escAttr(w?w.value:"")}" placeholder="${escAttr(hw)}" oninput="focusPlates()"><button class="f-step" onclick="focusStep('w',5)">+5</button></div>
     ${step&&step.why?`<div class="f-why">${escAttr(step.why)}</div>`:""}
-    ${ex.plates?`<div class="f-plates" id="fPlates" data-bar="${barFor(ex)??""}" data-ssb="${ex.key==="Safety Bar Squat"?1:""}"></div>`:""}
+    ${ex.plates?`<div class="f-plates" id="fPlates" data-bar="${barFor(ex)??""}"></div>`:""}
     ${ex.plates&&ex.ramps&&st.i===0?`<div class="f-ramps" id="fRamps" data-ramps="${ex.ramps.join(",")}"></div>`:""}
     <div class="f-row"><label>${ex.rUnit==="sec"?"Seconds":ex.rUnit==="yd"?"Yards":ex.rUnit==="rds"?"Rounds":"Reps"}</label><button class="f-step" onclick="focusStep('r',-1)">−1</button>
       <input id="fR" inputmode="numeric" value="${escAttr(r?r.value:"")}" placeholder="${escAttr(hr)}"><button class="f-step" onclick="focusStep('r',1)">+1</button></div>
@@ -3895,8 +3898,8 @@ function renderPxiPage(m){
 
   <div class="notecard">
     <label>Bar weights (plate math)</label>
-    ${plateLiftKeys().map(k=>{ const ssb=k==="Safety Bar Squat", cur=ssb?(pxiSet.ssbBar>0?pxiSet.ssbBar:""):(typeof (pxiSet.bars||{})[k]==="number"?pxiSet.bars[k]:"");
-      return `<div class="fieldrow"><span>${escAttr(BAR_NAMES[k]||k)}${ssb?" — from the bar's label":""}, lb</span><input type="number" class="barSet" data-key="${escAttr(k)}" min="0" max="120" step="0.5" inputmode="decimal" placeholder="${ssb?"—":BAR_DEFAULTS[k]??STD_BAR}" value="${cur}"></div>`; }).join("")}
+    ${plateLiftKeys().map(k=>{ const cur=k==="Safety Bar Squat"?(pxiSet.ssbBar>0?pxiSet.ssbBar:""):(typeof (pxiSet.bars||{})[k]==="number"?pxiSet.bars[k]:"");
+      return `<div class="fieldrow"><span>${escAttr(BAR_NAMES[k]||k)}, lb</span><input type="number" class="barSet" data-key="${escAttr(k)}" min="0" max="120" step="0.5" inputmode="decimal" placeholder="${BAR_DEFAULTS[k]??STD_BAR}" value="${cur}"></div>`; }).join("")}
     <div class="meta px" style="margin:8px 0 0">The empty bar each lift's plate math starts from. Blank = the default shown. Display only — nothing scored or saved with a session.</div>
   </div>`;
   document.getElementById("setMaxHr").addEventListener("change",e=>{pxiSet.maxHr=+e.target.value||185;savePxiSet();});
@@ -3943,7 +3946,9 @@ const PR_KEYS={"Bench Press":"lb","Deadlift":"lb","Leg Press":"lb","Chest-Suppor
    the identity every saved log entry and PR history is keyed on, same backward-compat rule as
    the pxi/dtp-* internals. Only the label moves on. The wall ladder is retired; the movement has
    been Floor Push-Ups in every template since late Block 1. */
-const PR_LABEL={"Wall Push-Up Progression":"Floor Push-Ups","Romanian Deadlift (DB)":"Romanian Deadlift"};
+/* "Safety Bar Squat" is Meso 03's straight-bar back squat (2026-11-25). Its tile can't be called
+   plain "Back Squat" — Meso 02's Back Squat has its own key and tile. */
+const PR_LABEL={"Wall Push-Up Progression":"Floor Push-Ups","Romanian Deadlift (DB)":"Romanian Deadlift","Safety Bar Squat":"Back Squat (Meso 3)"};
 /* Anatomical grouping for the History PR grid's "everything else" section (see renderHistory) —
    splits it into Upper / Lower / Core sub-headers instead of one long undifferentiated list.
    Covers every PR_KEYS entry that isn't guaranteed to already be in the active block: the
@@ -4005,6 +4010,11 @@ function togglePrRest(){
 function toggleWeeklyRest(){
   const el=document.getElementById("wkRestPanel"); if(el) el.classList.toggle("collapsed");
 }
+/* Meso 03's squat was always a straight-bar back squat; entries saved before the rename
+   (name "Safety Bar Squat") read as Back Squat in History and Copy summary. Display only — the
+   stored name is untouched, and Meso 01's "Goblet or Safety Bar Squat" entries keep theirs.
+   SQUAT_NAME sits with MESO03_RECOVERY. */
+const entryName=e=>e&&e.name==="Safety Bar Squat"?SQUAT_NAME:e?e.name:"";
 function renderHistory(m){
   document.getElementById("title").textContent="History & PRs";
   const logs=loadLogs();
@@ -4101,8 +4111,8 @@ END-WORKOUT"></textarea>
     h+=`<div class="hist-card"><div class="h"><span>${blockTag(blockOf(l))}${dl?" · "+dl:""} · ${l.name}</span>
       <span style="display:flex;align-items:center;gap:8px">${l.pxi!=null?`<span class="pxi-pill"${l.pxi<0?' style="color:var(--red)"':''}>RKD ${l.pxi}</span>`:""}${l.medal?`<span class="medal-pill" style="color:${medalColor}">${l.medal}</span>`:""}${strainPill}${symPill}${noteIcon}<span style="font-weight:400;color:var(--muted);font-size:13px">${dt.toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span></span></div>
     <div class="sub">${l.duration?fmt(l.duration)+" · ":""}${l.rpe?"RPE "+l.rpe:""}${l.plan?(l.rpe?" · ":"")+planText(l.plan):""}${l.activity?" · "+l.activity:""}${l.zoneMins?" · "+l.zoneMins.map((z,i)=>i>0&&z>=0.5?"Z"+i+" "+Math.round(z)+"m":null).filter(Boolean).join(" "):""}</div>
-    ${(l.entries||[]).map(e=>(e.symptoms||[]).map(x=>`<div class="ex-pain">⚠ ${escAttr(e.name)}: ${escAttr(painText(x))}</div>`).join("")
-      +(e.note?`<div class="ex-xnote">✎ ${escAttr(e.name)}: ${escAttr(e.note)}</div>`:"")).join("")}
+    ${(l.entries||[]).map(e=>(e.symptoms||[]).map(x=>`<div class="ex-pain">⚠ ${escAttr(entryName(e))}: ${escAttr(painText(x))}</div>`).join("")
+      +(e.note?`<div class="ex-xnote">✎ ${escAttr(entryName(e))}: ${escAttr(e.note)}</div>`:"")).join("")}
     ${l.note?`<div class="note-full" id="noteFull${idx}" style="display:none">${escAttr(l.note)}</div>`:""}
     <div class="row2"><button onclick="copySummary(${idx})">Copy summary</button></div></div>`;});
   m.innerHTML=h;
@@ -4126,7 +4136,7 @@ function exerciseSummaryLine(logs,idx,e){
   /* Symptoms go in the summary because it's what drives programming feedback — a lift that
      produced tingling is the first thing a next-session recommendation has to account for. */
   const sym=(e.symptoms||[]).map(x=>`\n  symptom: ${painText(x)}`).join("")+(e.note?`\n  note: ${e.note}`:"");
-  if(!sets.length)return `- ${e.name}: prescribed ${e.rx||"—"}\n  actual: no data${sym}`;
+  if(!sets.length)return `- ${entryName(e)}: prescribed ${e.rx||"—"}\n  actual: no data${sym}`;
   let best=e.key in PR_KEYS?priorBestValue(logs,idx,e.key):null;
   const parts=sets.map(s=>{
     const w=parseFloat(s.w),r=parseFloat(s.r);
@@ -4142,7 +4152,7 @@ function exerciseSummaryLine(logs,idx,e){
   /* Extra sets are the whole point of tracking them structurally — the summary is what drives
      programming feedback, so it has to say the prescription was exceeded and by how much. */
   const over=e.extra>0?`  (+${e.extra} set${e.extra===1?"":"s"} over the programmed ${e.programmed})\n`:"";
-  return `- ${e.name}: prescribed ${e.rx||"—"}\n${over}  actual: ${parts.join(", ")}${sym}`;
+  return `- ${entryName(e)}: prescribed ${e.rx||"—"}\n${over}  actual: ${parts.join(", ")}${sym}`;
 }
 function buildSummary(logs,idx){
   const l=logs[idx];

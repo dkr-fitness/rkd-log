@@ -2,13 +2,13 @@
 
 **Dates:** Mon 10/19 – Sun 12/13 (8 weeks)
 **Follows:** Mesocycle 02 (9/7–10/18), which ran Baseline ×2 then Volume ×4 for muscle gain.
-**Basis:** Same Mon/Wed/Fri split structure as Meso 02, plus a scored Saturday. Back Squat, Goblet Squat and Floor Push-Ups are not in this block. Safety Bar Squat takes the squat slot.
+**Basis:** Same Mon/Wed/Fri split structure as Meso 02, plus a scored Saturday. Goblet Squat and Floor Push-Ups are not in this block. The Wednesday squat slot is a straight-bar **Back Squat** (renamed from "Safety Bar Squat" 2026-11-25 — there's no safety bar; it was always a straight-bar back squat). It still logs under the `Safety Bar Squat` key so Last time, the loading rule and past logs link up.
 
 ## Design Logic
 
 **Phases.** Eight weeks: Baseline ×2, Volume ×3, Performance ×2, then one Deload week. It's the first block with a Performance phase actually in use (Meso 02's plan dropped it) and the first with a Deload.
 
-**Main lifts vs accessories.** One lift per training day follows the main-lift progression: Rack Pull (Mon), Safety Bar Squat (Wed), Romanian Deadlift (Fri). Everything else follows the accessory progression, except the activation slots and the carry/grip work, which stay fixed.
+**Main lifts vs accessories.** One lift per training day follows the main-lift progression: Rack Pull (Mon), Back Squat (Wed), Romanian Deadlift (Fri). Everything else follows the accessory progression, except the activation slots and the carry/grip work, which stay fixed.
 
 **Unilateral work.** Single-arm and per-side work runs right side first. The movement names stay as they were, with the single-arm or per-side detail in the prescription, so PR history carries over. The exception is Chest Press, which logs under the existing `SA Chest Press` key so per-arm loads aren't compared against two-arm history.
 
@@ -50,14 +50,14 @@
 - Saturday with no session RPE logged holds.
 - Not progressed by the hint: activation, core and Sled Push.
 - The reason line reads e.g. "↑ all sets hit 8 last time", "hold: aim for 12", "hold: RPE 8 last time", "hold: symptom logged last time", "hold: Deload week".
-- Wed Safety Bar Squat and Sat Leg Press keep a standing note: "Hold last week's load if recovery is red or sleep <5.5 h." The hint can't see recovery, so that call is yours.
+- Wed Back Squat and Sat Leg Press keep a standing note: "Hold last week's load if recovery is red or sleep <5.5 h." The hint can't see recovery, so that call is yours.
 
 **Week 3 loads (Nov 2–8, set 2026-10-31) — record only.** That week each loaded card showed "Week 3: <load>" in its rx, with the line "Hit all sets at top of range → add load next week; if not, hold.", and set 1's hint was the target. The tags were removed 2026-11-09 when the hint took over the rule; History keeps the rx each session was saved with.
 
 | Day | Week 3 targets |
 |---|---|
 | Mon | Rack Pull 185 lb (hold) · Bulgarian SS 25 lb (drop to 20 if set 1 <8) · Hip Thrust 80 lb all sets · Pallof 7.5–10 lb · Suitcase Carry 45 lb/side |
-| Wed | Safety Bar Squat 150 lb · SA Chest Press 45 lb · Cable Pullover 15 lb · Rope Pressdown 17.5 lb |
+| Wed | Back Squat (then "Safety Bar Squat") 150 lb · SA Chest Press 45 lb · Cable Pullover 15 lb · Rope Pressdown 17.5 lb |
 | Fri | Romanian Deadlift 135 lb · Neutral-Grip Row 40 lb · Step-Up 20 lb · Suitcase Carry 45 lb/side · Prone Y 2.5 lb |
 | Sat | Leg Press 190 lb · Face Pull 20 lb · SL RDL 35 lb · Backward Walking Lunges 15 lb · Sled Push 0.8 mph (hold) |
 
@@ -111,7 +111,7 @@ This is a model, not measured. Compare it against logged durations after a week.
 | Block | Exercise | Sets × Reps | Start | Note | Bell |
 |---|---|---|---|---|---|
 | A · Activation | Scapular Wall Slide | 2×10 | — | Slow, elbows on the wall · first in session | 2:00 |
-| B · Main | Safety Bar Squat | 4×6 @ RPE 6–7 | ~135–145 lb | Hands on the handles, never reach back for a straight bar · 1–2 ramp sets, not logged · then all working sets at one weight | 12 min ÷ sets |
+| B · Main | Back Squat | 4×6 @ RPE 6–7 | ~135–145 lb | Straight bar · grip wide enough that elbows stay comfortable · back off if there's pain or pinky/ring-finger tingling · 1–2 ramp sets, not logged · then all working sets at one weight | 12 min ÷ sets |
 | C · Superset | Chest Press (A1) | 3×8–10/side | ~40–45 lb | Single-arm floor press, right → left · floor sets the 90° stop, pain-free only · optional extra set, right arm only | 3:45 |
 | | Cable Pullover (A2) | 3×8–10 | ~12.5–15 lb | **Arms nearly straight — lats without elbow bend** | |
 | D | Rope Triceps Pressdown | 3×8–10/side | ~12.5–15 lb | Single-arm, **pushdown only (no overhead)** · right → left → rest · optional extra set, right arm only | 2:30 |
@@ -217,11 +217,11 @@ Each station carries a hotel swap for travel (e.g. stair climber → incline wal
 - Plate Pinch Hold: new key, PR = longest hold in seconds. On Wednesday until 2026-10-26, now HEP-only. Cleared: it causes no pain. Its Form Reference entry is drafted and not clinician-reviewed.
 - Sled Push now has a key (`Sled Push`), so its sets are logged structurally. It isn't PR-tracked.
 
-**Newly PR-tracked:** Safety Bar Squat (e1RM). It had a key and a Form Reference entry from Meso 01 but no PR slot.
+**Newly PR-tracked:** Safety Bar Squat (e1RM). It had a key and a Form Reference entry from Meso 01 but no PR slot. Since 2026-11-25 the tile reads **Back Squat (Meso 3)** — Meso 02's Back Squat keeps its own key and tile, so the two histories stay separate.
 
 **Reused keys (PR history carries over):** Rack Pull, Bulgarian SS, Hip Thrust, Pallof, Suitcase Carry, Band Pull-Aparts, Scapular Wall Slide, SA Chest Press (displayed as Chest Press), Rope Triceps Pressdown, Cable Pullover, Prone Y-Raises, Romanian Deadlift (DB), Neutral-Grip Row, Step-Up, Bird Dog, Leg Press, SL RDL, Backward Walking Lunges, Face Pull (displayed as Face Pull (cable rope)), Sled Push (displayed as Sled Push (or treadmill push)).
 
-**Not in this block:** Back Squat, Goblet Squat, Floor Push-Ups.
+**Not in this block:** Goblet Squat, Floor Push-Ups. (Back Squat was on this list until 2026-11-25; the Wednesday squat is now named for what it is.)
 
 ---
 
