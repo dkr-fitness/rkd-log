@@ -115,6 +115,9 @@ function render(){}
    which is loaded from source and tested on its own. */
 function updatePlanChip(){}
 function setView(){}
+/* Set mode's session lookup (reads the week picker). refreshWeightHints() falls back to it when
+   onSetInput() passes no blocks; the hint and plate logic it feeds is tested directly. */
+function focusSession(){ return getSession(0,DAY); }
 /* Real enough to matter: the source setRPE() ends in onSetInput(), which clears draftHold. That
    side effect is load-bearing — it is how restoreSessionDraft() could undo the post-Finish hold. */
 function setRPE(v){ curRPE=v; onSetInput(); }
@@ -1671,70 +1674,108 @@ onDate(2026,12,8,function(){ /* week 8, Deload */
   eq(stp("meso03Wed","SA Chest Press",[LG("SA Chest Press",ACC,x(3,45,12))]),"45 | hold: Deload week","...and accessories");
 });
 
-section("Plate math — per side under set 1, biggest plates first");
-eq(plateText(135,45),"135 → per side: 45","135");
-eq(plateText(165,45),"165 → per side: 45 + 10 + 5","165: biggest first (not 35 + 25)");
-eq(plateText(185,45),"185 → per side: 45 + 25","185");
-eq(plateText(195,45),"195 → per side: 45 + 25 + 5","195");
-eq(plateText(225,45),"225 → per side: 45 + 45","225");
-eq(plateText(187,45),"187 → closest: 185 · per side: 45 + 25","odd weight: the nearest loadable total, lighter side");
-eq(plateText(188,45),"188 → closest: 190 · per side: 45 + 25 + 2.5","...or heavier, when that's nearer");
-eq(plateText(187.5,45),"187.5 → closest: 185 · per side: 45 + 25","...a tie goes to the lighter");
-eq(plateText(140,45),"140 → per side: 45 + 2.5","2.5s load");
-eq(plateText(125,45),"125 → per side: 35 + 5","35s load");
-eq(plateText(315,45),"315 → per side: 45 + 45 + 45","three 45s");
-eq(plateText(45,45),"45 → bar only","the bar alone");
-eq(plateText(47,45),"47 → closest: 45 · bar only","...or nearest to it");
+section("Plate math — per side, heaviest first, every plate-loaded lift");
+eq(plateText(135,45),"135 lb → 45 per side","135");
+eq(plateText(165,45),"165 lb → 45 · 10 · 5 per side","165: heaviest first (not 35 · 25)");
+eq(plateText(185,45),"185 lb → 45 · 25 per side","185");
+eq(plateText(195,45),"195 lb → 45 · 25 · 5 per side","195");
+eq(plateText(225,45),"225 lb → 45 · 45 per side","225");
+eq(plateText(187,45),"187 lb → can't load, nearest 185 lb: 45 · 25 per side","odd weight: says so, and the nearest loadable total, lighter side");
+eq(plateText(188,45),"188 lb → can't load, nearest 190 lb: 45 · 25 · 2.5 per side","...or heavier, when that's nearer");
+eq(plateText(187.5,45),"187.5 lb → can't load, nearest 185 lb: 45 · 25 per side","...a tie goes to the lighter");
+eq(plateText(140,45),"140 lb → 45 · 2.5 per side","2.5s load");
+eq(plateText(125,45),"125 lb → 35 · 5 per side","35s load");
+eq(plateText(315,45),"315 lb → 45 · 45 · 45 per side","three 45s");
+eq(plateText(45,45),"45 lb → bar only","the bar alone");
+eq(plateText(47,45),"47 lb → can't load, nearest 45 lb: bar only","...or nearest to it");
 eq(plateText(40,45),"","lighter than the bar: no line");
 eq(plateText("",45)+plateText("wt",45)+plateText(0,45),"","nothing entered: no line");
-eq(plateText("195",45),"195 → per side: 45 + 25 + 5","a box's string value works");
+eq(plateText("195",45),"195 lb → 45 · 25 · 5 per side","a box's string value works");
 eq(plateText(195,null),"","no bar weight: no line");
 eq(plateBreakdown(195,45).plates.reduce(function(a,b){return a+b;},0)*2+45,195,"plates add back up to the total");
-/* The safety bar's weight comes from settings; until it's set there's no line. */
-var savedSsb=pxiSet.ssbBar; pxiSet.ssbBar=null;
-eq(barFor({bar:"ssb"}),null,"safety bar not set → no bar weight");
-eq(barFor({bar:"std"}),45,"standard bar is 45");
-eq(barFor({}),null,"no bar flag → no plates");
+/* Leg Press: no bar, plates only. */
+eq(plateText(200,0),"200 lb → 45 · 45 · 10 per side","Leg Press 200 on a 0 bar");
+eq(plateText(180,0),"180 lb → 45 · 45 per side","Leg Press 180");
+eq(plateText(2,0),"","a 0 bar never shows an empty load");
+eq(plateText(95,35),"95 lb → 25 · 5 per side","a lighter (35 lb) class bar");
+/* Ramp sets: ~50% and ~75%, each rounded to what loads, never below the bar. */
+eq(rampText(185,45,[.5,.75]),"Ramp sets · not logged\n50% · 95 lb → 25 per side\n75% · 140 lb → 45 · 2.5 per side","Rack Pull 185: two ramps (92.5 is halfway → 95, one plate beats three)");
+eq(rampText(225,45,[.5,.75]),"Ramp sets · not logged\n50% · 115 lb → 35 per side\n75% · 170 lb → 45 · 10 · 5 · 2.5 per side","225: 112.5 halfway → 115 (one 35 beats 25 · 5 · 2.5), 168.75 → 170 (not halfway: nearest)");
+eq(rampText(65,45,[.5,.75]),"Ramp sets · not logged\n50% · 45 lb → bar only\n75% · 50 lb → 2.5 per side","light work: a ramp never goes below the bar");
+eq(rampText(195,45,[.5]),"Warm-up · not logged\n50% · 95 lb → 25 per side","97.5 halfway, 95 and 100 both one plate a side → the lighter");
+eq(rampText(205,45,[.5]),"Warm-up · not logged\n50% · 100 lb → 25 · 2.5 per side","102.5 halfway, 100 and 105 both two plates a side → the lighter");
+eq(rampText(275,45,[.5]),"Warm-up · not logged\n50% · 135 lb → 45 per side","137.5 halfway → 135 (one 45) beats 140 (45 · 2.5): fewer plates can be the lighter one too");
+eq(plateText(187.5,45),"187.5 lb → can't load, nearest 185 lb: 45 · 25 per side","working sets keep the plain rule: a halfway total still goes lighter");
+eq(rampText(200,0,[.5]),"Warm-up · not logged\n50% · 100 lb → 45 · 5 per side","Leg Press: one warm-up at 50%");
+eq(rampText("",45,[.5,.75])+rampText(185,null,[.5,.75])+rampText(185,45,null)+rampText(40,45,[.5]),"","no weight, no bar, no ramps, or below the bar: nothing");
+/* Bar weight per exercise, from the settings, else its default. */
+var savedSsb=pxiSet.ssbBar, savedBars=pxiSet.bars; pxiSet.ssbBar=null; pxiSet.bars={};
+eq(barFor({key:"Safety Bar Squat",plates:true}),null,"safety bar not set → no bar weight");
+eq(barFor({key:"Rack Pull",plates:true}),45,"Rack Pull defaults to 45");
+eq(barFor({key:"Romanian Deadlift (DB)",plates:true}),45,"RDL defaults to 45");
+eq(barFor({key:"Hip Thrust",plates:true}),45,"Hip Thrust defaults to 45");
+eq(barFor({key:"Leg Press",plates:true}),0,"Leg Press is plates only (0)");
+eq(barFor({key:"Some New Lift",plates:true}),45,"a lift newly marked plate-loaded gets 45");
+eq(barFor({key:"Rack Pull"}),null,"not marked plate-loaded → no plates");
+eq(barFor({}),null,"...nor an exercise with no key");
 pxiSet.ssbBar=65;
-eq(barFor({bar:"ssb"}),65,"safety bar set to 65 → 65");
-eq(plateText(155,barFor({bar:"ssb"})),"155 → per side: 45","...and the plates use it: 155 on a 65 bar");
-eq(plateText(157,barFor({bar:"ssb"})),"157 → closest: 155 · per side: 45","...including the nearest-loadable rule");
-eq(barFor({bar:"std"}),45,"...while the standard bar stays 45");
-pxiSet.ssbBar=savedSsb;
-/* Which lifts get it: Rack Pull and RDL on the 45 bar, Safety Bar Squat on the safety bar, and
-   nothing else (Hip Thrust is a class barbell or DBs). */
+eq(barFor({key:"Safety Bar Squat",plates:true}),65,"safety bar set to 65 → 65 (still pxiSet.ssbBar)");
+eq(plateText(155,65),"155 lb → 45 per side","...and the plates use it: 155 on a 65 bar");
+pxiSet.bars={"Hip Thrust":35,"Rack Pull":0};
+eq(barFor({key:"Hip Thrust",plates:true}),35,"Hip Thrust's bar edited to 35");
+eq(barFor({key:"Rack Pull",plates:true}),0,"...an edited 0 is kept, not mistaken for unset");
+eq(barFor({key:"Romanian Deadlift (DB)",plates:true}),45,"...and the others keep their defaults");
+pxiSet.ssbBar=savedSsb; pxiSet.bars=savedBars;
+/* Which lifts get it: the three main lifts (with two ramps), Hip Thrust, Leg Press (one warm-up). */
 onDate(2026,11,10,function(){
-  var withBar=[];
-  ["meso03Mon","meso03Wed","meso03Fri","meso03Sat","meso03Tue"].forEach(function(d){
-    exList(d).forEach(function(e){ if(e.bar) withBar.push(e.key+":"+e.bar); });
+  var withPl=[];
+  ["meso03Mon","meso03Wed","meso03Fri","meso03Sat","meso03Tue","meso03Thu"].forEach(function(d){
+    exList(d).forEach(function(e){ if(e.plates) withPl.push(e.key+":"+(e.ramps?e.ramps.join("/"):"-")); });
   });
-  eq(withBar.sort().join(),"Rack Pull:std,Romanian Deadlift (DB):std,Safety Bar Squat:ssb","only Rack Pull, RDL and Safety Bar Squat carry a bar");
-  ok(!exOf("meso03Mon","Hip Thrust").bar,"Hip Thrust has none");
+  eq(withPl.sort().join(),"Hip Thrust:-,Leg Press:0.5,Rack Pull:0.5/0.75,Romanian Deadlift (DB):0.5/0.75,Safety Bar Squat:0.5/0.75","plate-loaded: main lifts with two ramps, Leg Press with one warm-up, Hip Thrust with none");
 });
-onDate(2026,9,10,function(){ ok(!exList("fullBodyB").some(function(e){return e.bar;}),"earlier blocks' templates (Meso 1's goblet-or-safety-bar squat) have none"); });
-/* Rendered: one line under set 1 of a bar lift, none elsewhere. */
+onDate(2026,9,10,function(){ ok(!exList("fullBodyB").some(function(e){return e.plates;}),"earlier blocks' templates (Meso 1's goblet-or-safety-bar squat) have none"); });
+/* Rendered: ramps above set 1, a plate line under every set of a plate lift, none elsewhere. */
 resetState(); DAY="meso03Mon";
-var PBB={blocks:[{letter:"B",t:"Hinge",mins:12,bells:3,ex:[{key:"Rack Pull",n:"Rack Pull",rx:"",sets:3,bar:"std"},{key:"Hip Thrust",n:"Hip Thrust",rx:"",sets:3}]}]};
+var PBB={blocks:[{letter:"B",t:"Hinge",mins:12,bells:3,ex:[{key:"Rack Pull",n:"Rack Pull",rx:"",sets:3,plates:true,ramps:[.5,.75]},{key:"Pallof",n:"Pallof",rx:"",sets:3}]}]};
 var pbh=blockHtml(PBB,0);
-eq((pbh.match(/class="plates"/g)||[]).length,1,"one plate line per bar lift");
-ok(pbh.indexOf('id="w_0_0_0"')<pbh.indexOf('id="pl_0_0"')&&pbh.indexOf('id="pl_0_0"')<pbh.indexOf('id="w_0_0_1"'),"...between set 1 and set 2");
-ok(pbh.indexOf('id="pl_0_1"')<0,"...and none on Hip Thrust");
+eq((pbh.match(/class="plates"/g)||[]).length,3,"a plate line under each of the plate lift's sets");
+ok(pbh.indexOf('id="rp_0_0"')<pbh.indexOf('id="w_0_0_0"'),"...the ramps above set 1");
+ok(pbh.indexOf('id="w_0_0_0"')<pbh.indexOf('id="pl_0_0"')&&pbh.indexOf('id="pl_0_0"')<pbh.indexOf('id="w_0_0_1"'),"...set 1's line between set 1 and set 2");
+ok(pbh.indexOf('id="pl_0_1')<0&&pbh.indexOf('id="rp_0_1"')<0,"...and none on a lift that isn't plate-loaded");
 /* Live: follows set 1's typed weight, else its hint; nothing written to any input. */
 DOM.w_0_0_0={id:"w_0_0_0",value:"",placeholder:"185"}; DOM.w_0_0_1={id:"w_0_0_1",value:"",placeholder:"wt"};
-DOM.w_0_0_2={id:"w_0_0_2",value:"",placeholder:"wt"}; DOM.pl_0_0={id:"pl_0_0",textContent:""};
+DOM.w_0_0_2={id:"w_0_0_2",value:"",placeholder:"wt"}; DOM.pl_0_0={id:"pl_0_0",textContent:""}; DOM.rp_0_0={id:"rp_0_0",textContent:""};
+DOM.pl_0_0_1={id:"pl_0_0_1",textContent:""}; DOM.pl_0_0_2={id:"pl_0_0_2",textContent:""};
 DOM.w_0_1_0={id:"w_0_1_0",value:"",placeholder:"80"};
 refreshWeightHints(PBB.blocks);
-eq(DOM.pl_0_0.textContent,"185 → per side: 45 + 25","hinted set 1: plates for the hint");
+eq(DOM.pl_0_0.textContent,"185 lb → 45 · 25 per side","hinted set 1: plates for the hint");
+eq(DOM.rp_0_0.textContent,"Ramp sets · not logged\n50% · 95 lb → 25 per side\n75% · 140 lb → 45 · 2.5 per side","...and ramps for it");
 eq(DOM.w_0_0_0.value,"","...and the box stays empty — display only");
+eq(DOM.pl_0_0_1.textContent+DOM.pl_0_0_2.textContent,"","sets 2+: no line while they match set 1");
 DOM.w_0_0_0.value="195"; refreshWeightHints(PBB.blocks);
-eq(DOM.pl_0_0.textContent,"195 → per side: 45 + 25 + 5","typed set 1: plates for what's typed");
-DOM.w_0_0_0.value=""; DOM.w_0_0_0.placeholder="wt"; refreshWeightHints(PBB.blocks);
-eq(DOM.pl_0_0.textContent,"","no weight typed or hinted: no line");
+eq(DOM.pl_0_0.textContent,"195 lb → 45 · 25 · 5 per side","typed set 1: plates for what's typed");
+ok(/50% · 95 lb → 25 per side\n75% · 145 lb/.test(DOM.rp_0_0.textContent),"...and the ramps follow it (97.5 → 95, 146.25 → 145)");
+DOM.w_0_0_1.value="195"; DOM.w_0_0_2.value="205"; refreshWeightHints(PBB.blocks);
+eq(DOM.pl_0_0_1.textContent,"","set 2 typed the same as set 1: no repeat line");
+eq(DOM.pl_0_0_2.textContent,"205 lb → 45 · 35 per side","set 3 typed heavier: its own line");
+DOM.w_0_0_2.value=""; refreshWeightHints(PBB.blocks);
+eq(DOM.pl_0_0_2.textContent,"","...cleared again: gone");
+DOM.w_0_0_0.value=""; DOM.w_0_0_0.placeholder="wt"; DOM.w_0_0_1.value=""; refreshWeightHints(PBB.blocks);
+eq(DOM.pl_0_0.textContent+DOM.rp_0_0.textContent,"","no weight typed or hinted: no line, no ramps");
+/* Safety bar not entered yet: a prompt instead of plates. */
+savedSsb=pxiSet.ssbBar; pxiSet.ssbBar=null;
+var SQB={blocks:[{letter:"B",t:"Squat",mins:12,bells:3,ex:[{key:"Safety Bar Squat",n:"Safety Bar Squat",rx:"",sets:3,plates:true,ramps:[.5,.75]}]}]};
+DOM.w_0_0_0.placeholder="135"; refreshWeightHints(SQB.blocks);
+eq(DOM.pl_0_0.textContent,BAR_MISSING,"safety bar unset: set 1 asks for its weight");
+eq(DOM.rp_0_0.textContent,"","...and no ramps");
+pxiSet.ssbBar=savedSsb;
 resetState();
 ok(SRC.indexOf('placeholder="${escAttr(hw)}" oninput="focusPlates()"')>=0,"set mode: the plate line follows the weight box as it's typed");
-ok(SRC.indexOf("st.i===0&&barFor(ex)?`<div class=\"f-plates\"")>=0,"...on set 1's screen only, for a bar lift");
+ok(SRC.indexOf("${ex.plates?`<div class=\"f-plates\"")>=0,"...on every set's screen of a plate lift");
+ok(SRC.indexOf("${ex.plates&&ex.ramps&&st.i===0?`<div class=\"f-ramps\"")>=0,"...with the ramps on set 1's screen");
 ok(SRC.indexOf('if(p==="w") focusPlates();')>=0,"...and as ±5 steps it");
-ok(SRC.indexOf('id="setSsbBar"')>=0&&SRC.indexOf('pxiSet.ssbBar=v>0?v:null;savePxiSet();')>=0,"safety bar weight is a setting, saved with the scoring settings");
+ok(SRC.indexOf('if(k==="Safety Bar Squat") pxiSet.ssbBar=v>0?v:null;')>=0&&SRC.indexOf('savePxiSet();\n  }));')>=0,"bar weights are settings, saved with the scoring settings (safety bar still in ssbBar)");
 
 section("HEP — rebuilt, keys unchanged");
 resetState();
