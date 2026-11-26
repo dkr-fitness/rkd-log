@@ -23,7 +23,7 @@
 | Mon | Hinge Lead |
 | Tue | Zone 2 stations — 20/10 intervals, rotating weekly |
 | Wed | Squat + Push |
-| Thu | Zone 2 (25–35 min) |
+| Thu | Zone 2 + Mobility — cardio by WHOOP recovery, mobility routine rotating weekly |
 | Fri | Pull + Hinge |
 | Sat | Full Range — effort cap 7/10, scored |
 | Sun | CS4 — active recovery |
@@ -174,7 +174,34 @@ Fixed sets all block; the Deload week takes 2 sets of everything (Sled Push 2 ro
 
 Each station carries a hotel swap for travel (e.g. stair climber → incline walk, bike or elliptical). *The hotel swaps are drafted, not clinician-reviewed.*
 
-**Thursday — Zone 2:** shared with every block. Strength curve, medal on % of session time in Z2. **Thursday in this block:** check WHOOP recovery first: green → Zone 2, 25–35 min · yellow/red → easy walk or mobility 20–30 min instead. The app shows that in Thursday's rule box inside the Meso 03 window only.
+**Thursday — Zone 2 + Mobility (since 2026-11-25):** this block's Thursday is its own template (`meso03Thu`); the shared `thu` (straight Zone 2, medal on % of session time in Z2) stays as-is for history and outside the window, and every Thursday already logged keeps its medal.
+
+- **Rule:** "Check WHOOP recovery first: green → Zone 2, 18–20 min · yellow/red → easy 15-min walk instead. Mobility either way. If you did Tuesday, strongly consider full rest today — one optional session per week is plenty during heavy weeks (6–8)."
+- **Cardio half (picked on the day):** green = 18–20 min Zone 2 (bike, treadmill, incline walk or easy jog; no rower/SkiErg) with the live zone card: 15–20 min Z2, ≤5 min Z3, zero Z4/Z5. Yellow/red = 15-min easy walk, no zone target. Either is one row, minutes logged in the second box.
+- **Mobility half:** set rows like a lift day — reps or seconds in the second box, weight blank. Rotates by block week: **A** weeks 1, 4, 7 · **B** weeks 2, 5, 8 · **C** weeks 3, 6. Swappable on the day until something is logged in the routine. **Every routine:** "Keep weight off the elbows; if pinky/ring finger tingles, shorten the range."
+- **Medal:** plan completion across both halves — sets done ÷ sets prescribed, a pain entry not marked "went away" counts that movement complete. Gold = 100% · Bronze = 80%+ · below that, Partial (no Silver, no progression counted, as on Saturday). RKD still accrues on the strength curve and counts in weekly totals. "Log full rest day" stays.
+
+| Routine | Movement | Rx | Cue |
+|---|---|---|---|
+| **A · Hips + Upper Back** | 90/90 Hip Switches | 2 × 6/side | Sit tall, hands-free if you can |
+| | Half-Kneeling Hip Flexor Stretch | 2 × 30–45 s/side | Squeeze the back glute, reach the same-side arm up |
+| | Lunge with T-Spine Rotation | 2 × 5/side | Hand down, rotate and reach to the ceiling, 1 breath at the top |
+| | Standing Cat-Cow | 1 × 8 | Hands on thighs, knees soft, slow |
+| | Open Books | 2 × 8/side | Knees stacked, eyes follow the hand |
+| | Child's Pose Side Reach | 1 × 30 s each (center / left / right) | Arms long |
+| | Supported Deep Squat Hold | 2 × 30–45 s | Hold a rack post, arms straight |
+| **B · Ankles + Squat Depth** | Knee-to-Wall Ankle Rocks | 2 × 10/side | Heel down |
+| | Wall Calf Stretch | 1 × 45 s/side | Straight knee, then bent knee |
+| | Supine Hamstring Floss | 2 × 8/side | Band or strap, point and flex the foot |
+| | Half-Kneeling Adductor Rock-Back | 2 × 8/side | One leg out to the side, hands on hips |
+| | Cossack Squat | 2 × 5/side | Bodyweight, hold a post if needed |
+| | Supported Deep Squat Pry | 2 × 30 s | Arms straight on a post, shift side to side |
+| **C · Shoulders + Scap (elbow-friendly)** | Foam Roller T-Spine Extension | 1 × 8 | Arms crossed on the chest, not behind the head |
+| | Quadruped T-Spine Rotation | 2 × 6/side | Hand on the lower back |
+| | Wall Scap Push-Up | 2 × 10 | Arms straight, push the wall away |
+| | Straight-Arm Low Doorway Pec Stretch | 2 × 30 s/side | Arm low on the frame for the lower chest; soften the elbow if it tingles |
+| | Bench Lat Prayer Stretch | 2 × 30 s | Elbows on the bench, sit the hips back |
+| | Foam Roller Snow Angels | 1 × 8 | Lying lengthwise, arms mostly straight — never force the right shoulder |
 
 **Saturday:** see above. This block's Saturday is its own template (`meso03Sat`). The shared Sat Conditioning Sub stays as-is for history and outside this window, and it's still unscored.
 

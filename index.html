@@ -389,6 +389,7 @@ body.ivt-amb.z5 #focus{background-image:var(--zg5)}
       <option value="meso03Mon">Mon · Hinge Lead</option>
       <option value="meso03Tue">Tue · Z2 Stations</option>
       <option value="meso03Wed">Wed · Squat + Push</option>
+      <option value="meso03Thu">Thu · Z2 + Mobility</option>
       <option value="meso03Fri">Fri · Pull + Hinge</option>
       <option value="meso03Sat">Sat · Full Range</option>
     </optgroup>
@@ -463,6 +464,7 @@ const EQ={
  meso03Wed:"Safety squat bar + rack · DB + floor (single-arm floor press) · cable + rope (pressdown, pullover)",
  meso03Fri:"Light DBs or bodyweight (Y-raise) · DBs (RDL, step-up) · box or bench (step-up) · cable or DB (neutral-grip row) · KB or DB (suitcase carry)",
  meso03Tue:"Bike, stair climber, treadmill or incline walk (by week) · open floor · light KB or DB on carry and deadlift weeks · band (Pallof walkout, week 6)",
+ meso03Thu:"Bike, treadmill or incline walk (green day) · open floor or mat · rack post (deep squat) · band or strap (B: hamstring floss) · foam roller, bench and a doorway (C)",
  meso03Sat:"Leg press machine · DB (single-leg RDL) · open floor (backward lunges) · cable + rope (face pull) · sled or treadmill · bike or treadmill (optional cooldown)"};
 // Mesocycle 01 (rebuild block) — a fixed 3-week structure
 // running 8/17–9/6. Its own week phase is computed from
@@ -523,6 +525,52 @@ function meso03Week(){ return Math.floor((planDate()-MESO03_START)/864e5/7)+1; }
 const MESO03_THU_RECOVERY="Check WHOOP recovery first: green → Zone 2, 25–35 min · yellow/red → easy walk or mobility 20–30 min instead.";
 const thuRuleText=()=>(inMeso03Window()?MESO03_THU_RECOVERY+" ":"")+"If you did Tuesday, strongly consider full rest today — one optional session per week is plenty during heavy weeks (6–8).";
 const meso03Deload=()=>phaseForWeek(meso03Week(),"meso03")==="Deload";
+/* Meso 03 Thursday (2026-11-25): Zone 2 + mobility, its own template id (meso03Thu) like the
+   Tuesday stations, so the shared "thu" and every Thursday already logged are untouched. The
+   cardio half is picked on the day by WHOOP recovery: green = 18–20 min Zone 2 with the live zone
+   card (15–20 min Z2, ≤5 Z3, zero Z4/Z5), yellow/red = a 15-min easy walk with no zone target.
+   The mobility half rotates by Meso 03 week (A 1/4/7 · B 2/5/8 · C 3/6) and can be swapped on the
+   day. Every row is a set row (reps or seconds in the second box, weight blank), so the medal is
+   plan completion across both halves. Each movement is [name, sets, rx, rUnit, cue]. */
+const MESO03_THU_RULE="Check WHOOP recovery first: green → Zone 2, 18–20 min · yellow/red → easy 15-min walk instead. Mobility either way. If you did Tuesday, strongly consider full rest today — one optional session per week is plenty during heavy weeks (6–8).";
+const MESO03_THU_ELBOW="Keep weight off the elbows; if pinky/ring finger tingles, shorten the range.";
+const MESO03_THU_CARDIO={
+ green:{key:"Thursday Zone 2",t:"Zone 2",mins:20,label:"Green · Zone 2",
+   n:"Zone 2 — bike, treadmill, incline walk or easy jog · no rower/SkiErg",
+   rx:"18–20 min · conversational · log minutes when done"},
+ walk:{key:"Thursday Walk",t:"Easy walk",mins:15,label:"Yellow/Red · Walk",
+   n:"Easy walk",rx:"15 min · no zone target · log minutes when done"}};
+const MESO03_THU_ROUTINES={
+ A:{t:"Hips + Upper Back",ex:[
+   ["90/90 Hip Switches",2,"2 × 6/side",null,"Sit tall, hands-free if you can."],
+   ["Half-Kneeling Hip Flexor Stretch",2,"2 × 30–45 s/side","sec","Squeeze the back glute, reach the same-side arm up."],
+   ["Lunge with T-Spine Rotation",2,"2 × 5/side",null,"Hand down, rotate and reach to the ceiling, 1 breath at the top."],
+   ["Standing Cat-Cow",1,"1 × 8",null,"Hands on thighs, knees soft, slow."],
+   ["Open Books",2,"2 × 8/side",null,"Knees stacked, eyes follow the hand."],
+   ["Child's Pose Side Reach",1,"1 × 30 s each — center / left / right","sec","Arms long."],
+   ["Supported Deep Squat Hold",2,"2 × 30–45 s","sec","Hold a rack post, arms straight."]]},
+ B:{t:"Ankles + Squat Depth",ex:[
+   ["Knee-to-Wall Ankle Rocks",2,"2 × 10/side",null,"Heel down."],
+   ["Wall Calf Stretch",1,"1 × 45 s/side","sec","Straight knee, then bent knee."],
+   ["Supine Hamstring Floss",2,"2 × 8/side",null,"Band or strap, point and flex the foot."],
+   ["Half-Kneeling Adductor Rock-Back",2,"2 × 8/side",null,"One leg out to the side, hands on hips."],
+   ["Cossack Squat",2,"2 × 5/side",null,"Bodyweight, hold a post if needed."],
+   ["Supported Deep Squat Pry",2,"2 × 30 s","sec","Arms straight on a post, shift side to side."]]},
+ C:{t:"Shoulders + Scap (elbow-friendly)",ex:[
+   ["Foam Roller T-Spine Extension",1,"1 × 8",null,"Arms crossed on the chest, not behind the head."],
+   ["Quadruped T-Spine Rotation",2,"2 × 6/side",null,"Hand on the lower back."],
+   ["Wall Scap Push-Up",2,"2 × 10",null,"Arms straight, push the wall away."],
+   ["Straight-Arm Low Doorway Pec Stretch",2,"2 × 30 s/side","sec","Arm low on the frame for the lower chest; soften the elbow if it tingles."],
+   ["Bench Lat Prayer Stretch",2,"2 × 30 s","sec","Elbows on the bench, sit the hips back."],
+   ["Foam Roller Snow Angels",1,"1 × 8",null,"Lying lengthwise, arms mostly straight — never force the right shoulder."]]}};
+/* Week 1 → A, 2 → B, 3 → C, then round again (8 is B). */
+const meso03ThuAuto=()=>"ABC"[(((meso03Week()-1)%3)+3)%3];
+/* The day's picks. routine null = this week's rotation. Carried in the durable draft (applyDraft /
+   persistDraft) because the rows are positional — restoring into the wrong routine would put
+   values on the wrong movements — and stamped on the log at Finish. A preview of another week
+   always shows that week's rotation. */
+let thuPick={cardio:"green",routine:null};
+const thuRoutine=()=>(!viewWeeks&&thuPick.routine)||meso03ThuAuto();
 /* Meso 03 Tuesday (2026-11-09): Zone 2 intervals on stations that rotate weekly, in place of the
    shared straight Zone 2 (its own template id, meso03Tue, so other blocks' Tuesdays and old logs
    are untouched). Order is machine → lunge → squat/hinge → footwork → core/carry; the Deload week
@@ -702,6 +750,7 @@ function hrText(day,w){
    meso03Wed:`Squat + push — strength curve throughout, stay pain-free through the Chest Press cap. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
    meso03Fri:`Pull + hinge — strength curve throughout. ${mesoPhase3().label} · ${mesoPhase3().rpe}`,
    meso03Tue:`Zone 2 stations — 20 s work / 10 s rest, steady not all-out. Live in Z2 (60s %HRR), peak low Z3; the medal counts strap time and time above Z2. ${mesoPhase3().label}`,
+   meso03Thu:`Zone 2 + mobility — green day: live in Z2 (60s %HRR), ≤5 min Z3, no Z4/Z5. Walk day: easy, no zone target. The medal is plan completion, not heart rate. ${mesoPhase3().label}`,
    meso03Sat:`Full range — effort cap 7/10. Strength curve, RKD counts in weekly totals; medal on plan completion (Gold = every set done, no progression needed). ${mesoPhase3().label} — ${mesoPhase3().label==="Deload Phase"?"2 sets of everything this week.":"fixed sets all block; only the tempo cue changes (none on Face Pull)."}${mesoPhase3().label==="Baseline Phase"?" "+MESO03_SAT_CALIBRATION:""}`}[day];
 }
 // Shared pre-activation cue — surfaces on every exercise that needs the right-lat
@@ -1757,6 +1806,17 @@ function getSession(w,day){
       .concat(meso03TueStations().map((st,i)=>({letter:String.fromCharCode(65+i),t:"Station "+(i+1),mins:5,bells:0,ex:[
         {key:"Conditioning Station",n:st[0],rx:"8 × 20 s work / 10 s rest · 1 min to switch · log load × rounds",sets:1,rUnit:"rds",note:"Hotel: "+st[1]}]})))};
   }
+  if(day==="meso03Thu"){
+    // Cardio first (one row, minutes in the second box), then one block per mobility movement so
+    // set mode walks them in order rather than interleaving them like a superset. No bells on
+    // mobility; the cardio block's ▶ is a countdown for the chosen length.
+    const c=MESO03_THU_CARDIO[thuPick.cardio]?thuPick.cardio:"green", cd=MESO03_THU_CARDIO[c];
+    const r=thuRoutine(), rt=MESO03_THU_ROUTINES[r];
+    return {name:"ZONE 2 + MOBILITY — "+r+": "+rt.t, type:"mobility", cardio:c, routine:r, blocks:[
+      {letter:"Z",t:"Cardio · "+cd.t,mins:cd.mins,bells:1,ex:[{key:cd.key,n:cd.n,rx:cd.rx,sets:1,rUnit:"min"}]}]
+      .concat(rt.ex.map((x,i)=>({letter:String.fromCharCode(65+i),t:"Mobility "+r+(i+1),mins:0,bells:0,ex:[
+        {key:x[0],n:x[0],rx:x[2],sets:x[1],rUnit:x[3]||undefined,note:x[4]}]})))};
+  }
   if(day==="tue"||day==="thu"){
     return {name:"ZONE 2 — Optional", type:"zone2", blocks:[
       {letter:"Z",t:"Zone 2 · straight",mins:30,bells:1,ex:[{n:"Ruck walk (10 lb), Peloton, jog, bike, or assault runner — conversational pace · NO rower/ski erg (grip + pulling)",rx:"one 30:00 countdown · stop anywhere in the 25–35 min window",sets:0}]}]};
@@ -1960,12 +2020,23 @@ function planMedalFor(p,capped){
   if(p.done*5>=p.total*4) return {t:"BRONZE",c:"var(--bronze)"}; /* 80%, exact — no rounding up */
   return {t:"Partial",c:"var(--muted)"};
 }
-const planText=p=>"Sets "+p.done+"/"+p.total+" · "+p.prog+" progression"+(p.prog===1?"":"s");
+/* prog is null on Meso 03's Thursday, where "more reps than last time" in a stretch isn't a
+   progression worth counting — so the text leaves it out. */
+const planText=p=>"Sets "+p.done+"/"+p.total+(p.prog==null?"":" · "+p.prog+" progression"+(p.prog===1?"":"s"));
+/* Meso 03 Thursday (Zone 2 + mobility): the same completion count across the cardio row and every
+   mobility set, pain credit included. Gold at 100% (capped, like Saturday) — no progression to
+   chase, so none is counted and there's no Silver. Bronze 80%+, else Partial. */
+const PLAN_CHIP_DAYS=PLAN_DAYS.concat(["meso03Thu"]);
+function thuPlan(entries){ const p=planScore(entries,()=>null); p.prog=null; return p; }
 /* The medal a Finish stamps. Plan days medal whenever anything was done, strap or no strap;
    other lift days still need an RKD to grade. */
 function finishMedal(day,type,entries,pxi,zoneMins,lastOf){
   if(type==="zone2"){ const md=zoneMins?zone2MedalFor(zoneMins):null; return {medal:md?md.t:null}; }
   if(type==="stations"){ const md=zoneMins?tueMedalFor(zoneMins,meso03Deload()):null; return {medal:md?md.t:null}; }
+  if(type==="mobility"){
+    const plan=thuPlan(entries), md=plan.done>0?planMedalFor(plan,true):null;
+    return {medal:md?md.t:null,plan};
+  }
   if(type==="recovery") return {medal:"Done ✓"}; /* Sun: completion badge only, never a score */
   if(PLAN_DAYS.includes(day)){
     const plan=planScore(entries,lastOf), md=plan.done>0?planMedalFor(plan,planCapped(day)):null;
@@ -2343,6 +2414,14 @@ function complianceRows(dayType,deload){
       {l:"Z3", r:`Gold ≤${g.z3} · Silver ≤${s.z3} min`, v:t.z3, cls:t.z3<=g.z3?"ok":t.z3<=s.z3?"warn":"bad"},
       {l:"Z4–Z5", r:`Gold 0 · Silver ≤${s.hi} min`, v:t.hi, cls:t.hi<=g.hi?"ok":t.hi<=s.hi?"warn":"bad"}];
   }
+  /* Meso 03 Thursday, green day: the shared card's layout with the shorter Zone 2 window.
+     Display only — Thursday's medal is plan completion. */
+  if(dayType==="thuZ2") return [
+    {l:"Z0", r:"below zones — info only", v:m[0], cls:""},
+    {l:"Z1", r:"info only", v:m[1], cls:""},
+    {l:"Z2", r:"goal 15–20 min", v:m[2], cls:m[2]>=15&&m[2]<=20?"ok":(m[2]<15?"warn":"bad")},
+    {l:"Z3", r:"cap 5 min", v:m[3], cls:m[3]<=5?"ok":"bad"},
+    {l:"Z4–Z5", r:"zero — this must make Friday better, not worse", v:hi, cls:hi<0.5?"ok":"bad"}];
   /* Z0/Z1 are informational only — the protocol neither targets nor caps them, so no ok/warn/bad
      class. "Z0" is ZONE_NAMES[0] ("Below zones"), the same zoneOfBpm() bucket the band shows. */
   if(dayType==="zone2") return [
@@ -3070,6 +3149,8 @@ function draftSlot(day){
    Freeform with no set rows, and the first edit then wrote an empty draft over the real one. */
 function applyDraft(d,k,resumed){
   freeformNames=normalizeFreeform(d.freeform).slice();
+  /* Thursday's cardio/routine picks decide which rows exist, so they come back with the draft. */
+  if(d.day==="meso03Thu") thuPick=Object.assign({cardio:"green",routine:null},d.thu||{});
   extraSets=Object.assign({},d.extra||{});
   painEvents=JSON.parse(JSON.stringify(d.pain||{}));
   exNotes=Object.assign({},d.exNotes||{});
@@ -3133,6 +3214,7 @@ function persistDraft(){
     fields:f,rpe:rpe||0,strain:strain||"",note:note||"",
     activity:sessionDraft?sessionDraft.activity:null,
     freeform:freeformNames.slice(),
+    thu:day==="meso03Thu"?Object.assign({},thuPick):undefined,
     extra:Object.assign({},extraSets),
     pain:JSON.parse(JSON.stringify(painEvents)),
     exNotes:Object.assign({},exNotes),
@@ -3330,6 +3412,30 @@ function render(){
     h+=`<button class="restbtn" onclick="logRest()">Log full rest day instead</button>`;
     m.innerHTML=h; curRPE=0; restoreSessionDraft(); lockPreviewForm(m); updateCompliance(); return;
   }
+  /* ---- Meso 03 Thu: Zone 2 + mobility ---- */
+  if(s.type==="mobility"){
+    const green=s.cardio==="green", auto=meso03ThuAuto();
+    h+=infoBox("ibThuRule","meta warn","Thursday rule",MESO03_THU_RULE);
+    h+=infoBox("ibThuScore","meta px","Scoring",`Same strength curve as lift days — RKD accrues live and counts in weekly totals. The medal is the plan: sets done ÷ sets prescribed, cardio and mobility together (minutes in the cardio row count it done). Gold = 100% · Bronze 80%+ · below that, Partial. A ⚠ Pain entry not marked "went away" counts that movement as complete.`);
+    h+=`<div class="plan-chip" id="planChip"></div>`;
+    h+=infoBox("ibEq","meta eq","Equipment",EQ[day]);
+    h+=`<div class="notecard"><label>Cardio — by WHOOP recovery</label><div class="row2">`
+      +Object.keys(MESO03_THU_CARDIO).map(k=>`<button class="btn2${s.cardio===k?" acc":""}" style="flex:1" onclick="setThuPick('cardio','${k}')">${MESO03_THU_CARDIO[k].label}</button>`).join("")
+      +`</div></div>`;
+    h+=`<button class="focusbtn" onclick="openFocus()">Set mode — one set at a time</button>`;
+    h+=blockHtml(s,0);
+    if(green) h+=`<div class="notecard"><label>Zone caps (live from WHOOP)</label><div id="zc" data-type="thuZ2"></div></div>`;
+    h+=`<div class="notecard"><label>Mobility — routine ${s.routine}${s.routine===auto?" (this week's)":" (swapped from "+auto+")"}</label><div class="row2">`
+      +Object.keys(MESO03_THU_ROUTINES).map(k=>`<button class="btn2${s.routine===k?" acc":""}" style="flex:1" onclick="setThuPick('routine','${k}')">${k}</button>`).join("")
+      +`</div><div class="meta warn" style="margin:10px 0 0"><b>Every routine:</b> ${MESO03_THU_ELBOW}</div></div>`;
+    s.blocks.forEach((b,bi)=>{ if(bi>0) h+=blockHtml(s,bi); });
+    h+=rpeNoteSaveHtml();
+    h+=`<button class="restbtn" onclick="logRest()">Log full rest day instead</button>`;
+    m.innerHTML=h; curRPE=0; restoreSessionDraft();
+    /* A draft adopted just now (day switch) can carry other picks than the form was built with. */
+    if(s.cardio!==thuPick.cardio||s.routine!==thuRoutine()) return render();
+    updatePlanChip(); lockPreviewForm(m); updateCompliance(); return;
+  }
   /* ---- Tue / Thu: optional Zone 2 ---- */
   if(s.type==="zone2"){
     h+=infoBox("ibZ2Rules","meta","Rules",`Optional 25–35 min in Zone 2 — Peloton class, jog, ski, row, assault runner. ≤5 min Z3, zero Z4/Z5. Conversational pace. Skip freely — it must make the next lift better, not worse.`);
@@ -3408,12 +3514,33 @@ function render(){
 let livePlan=null;
 function updatePlanChip(){
   const el=document.getElementById("planChip"), day=curDay();
-  if(!el||!PLAN_DAYS.includes(day)) return;
-  const prior=loadLogs(), plan=planScore(sessionEntries(focusSession()),k=>lastFor(k,prior));
-  const md=plan.done>0?planMedalFor(plan,planCapped(day)):null;
+  if(!el||!PLAN_CHIP_DAYS.includes(day)) return;
+  const thu=day==="meso03Thu", prior=thu?null:loadLogs(), entries=sessionEntries(focusSession());
+  const plan=thu?thuPlan(entries):planScore(entries,k=>lastFor(k,prior));
+  const md=plan.done>0?planMedalFor(plan,thu||planCapped(day)):null;
   livePlan={day,plan,md};
   el.textContent=planText(plan)+(md?" · "+md.t:"");
   el.style.color=md?md.c:"var(--muted)";
+}
+/* Anything logged in Thursday's mobility rows (blocks 1+): a typed box, an added set, a symptom
+   or an exercise note. Those rows are positional, so a routine swap would move it all onto
+   another routine's movements — the swap is refused instead. */
+function thuMobilityLogged(){
+  const f=(sessionDraft&&sessionDraft.fields)||{}, mob=k=>{ const m=/^meso03Thu\|(\d+)_/.exec(k); return m&&+m[1]>0; };
+  return Object.keys(f).some(id=>{ const m=/^[wr]_(\d+)_/.exec(id); return m&&+m[1]>0&&f[id]!==""; })
+    ||Object.keys(extraSets).some(mob)||Object.keys(painEvents).some(k=>mob(k)&&painEvents[k].length)||Object.keys(exNotes).some(mob);
+}
+/* Thursday's cardio (green/walk) and routine (A/B/C) buttons. Cardio is one row in the same
+   position either way, so minutes already typed carry over to the other choice. */
+function setThuPick(what,val){
+  if(viewWeeks) return;
+  captureSessionDraft();
+  if(what==="routine"){
+    if(val===thuRoutine()) return;
+    if(thuMobilityLogged()){ toast("Clear this routine's entries to swap — they'd land on other movements"); return; }
+    thuPick.routine=val===meso03ThuAuto()?null:val;
+  } else thuPick.cardio=val;
+  closeFocus(); stopBlock(); render(); scheduleDraftSave();
 }
 function blockHtml(s,bi){
   const b=s.blocks[bi], ivl=interval(b);
@@ -3576,6 +3703,7 @@ function saveSession(){
     pxi,zoneMins,pxiModel:pxi!=null?model:null,medal,
     target:medal==null||plan||s.type==="stations"?null:(s.type==="zone2"?100:pxiSet.target)};
   if(plan) entry.plan=plan; /* {done,total,prog} — History and Copy summary read it */
+  if(s.type==="mobility"){ entry.cardio=s.cardio; entry.routine=s.routine; } /* Meso 03 Thursday's picks */
   const actEl=document.getElementById("z2act"); if(actEl)entry.activity=actEl.value;
   const logs=loadLogs();
   /* A fresh (never-resumed) session carries no draftId, so the check below cannot catch a second
@@ -3601,7 +3729,7 @@ function saveSession(){
      tick does the same via live.secs. Hold until onSetInput() sees a real edit. */
   resetCurDraft(); draftHold=true;
   live.zoneSecs=[0,0,0,0,0,0]; live.pxi=0; live.secs=0; pendingManual=null; sessionDraft=null;
-  freeformNames=[]; extraSets={}; painEvents={}; exNotes={};
+  freeformNames=[]; extraSets={}; painEvents={}; exNotes={}; thuPick={cardio:"green",routine:null};
   /* The session clock kept running across Finish, so elapsedSec() carried on climbing and a
      second Finish would have stamped a full duration onto a phantom entry. Close it out. */
   stopBlock(); if(sessInt){ clearInterval(sessInt); sessInt=null; } sessStart=null; sessAcc=0;
@@ -3649,7 +3777,7 @@ function renderLiveScore(){
     else { me.textContent=""; me.style.color="var(--muted)"; }
     return;
   }
-  if(PLAN_DAYS.includes(curDay())){
+  if(PLAN_CHIP_DAYS.includes(curDay())){
     const lp=livePlan&&livePlan.day===curDay()?livePlan:null;
     me.textContent=lp?planText(lp.plan)+(lp.md?" · "+lp.md.t:""):"Medal from plan completion";
     me.style.color=lp&&lp.md?lp.md.c:"var(--muted)";
@@ -3706,7 +3834,7 @@ function renderPxiPage(m){
         <option value="cardio"${pxiSet.model==="cardio"?" selected":""}>Cardio ramp</option>
         <option value="summit"${pxiSet.model==="summit"?" selected":""}>Summit (Z4 boost)</option>
       </select></div>
-    <div class="meta px" style="margin:8px 0 0"><b>${curModel().toUpperCase()}:</b> ${MODEL_DESC[curModel()]} Medals — Meso 3 lift days (incl. its Full Range Sat) medal on plan completion, not RKD: Gold 100% + a progression · Silver 100% · Bronze 80%+ · else Partial; Saturday and the Deload week take Gold at 100%. Earlier lift days: Gold ±5% · Silver 6–10% · Bronze 11–15% vs. Target RKD. Tue/Thu: the same ± tiers vs. 100% time-in-Z2 — except Meso 3's Tuesday stations, which medal on staying in the plan: ${tueTierText(false)} Deload week: ${TUE_TIERS.deload.map(x=>x.t[0]+x.t.slice(1).toLowerCase()+" ≥"+x.min).join(" · ")} min, same zone limits. RKD still counts in weekly totals on every scored day. The Sat Conditioning Sub is reference only, no medal.</div>
+    <div class="meta px" style="margin:8px 0 0"><b>${curModel().toUpperCase()}:</b> ${MODEL_DESC[curModel()]} Medals — Meso 3 lift days (incl. its Full Range Sat) medal on plan completion, not RKD: Gold 100% + a progression · Silver 100% · Bronze 80%+ · else Partial; Saturday and the Deload week take Gold at 100%. Earlier lift days: Gold ±5% · Silver 6–10% · Bronze 11–15% vs. Target RKD. Tue/Thu: the same ± tiers vs. 100% time-in-Z2 — except Meso 3's Tuesday stations, which medal on staying in the plan: ${tueTierText(false)} Deload week: ${TUE_TIERS.deload.map(x=>x.t[0]+x.t.slice(1).toLowerCase()+" ≥"+x.min).join(" · ")} min, same zone limits. Meso 3's Thursday (Zone 2 + mobility) medals on plan completion across both halves: Gold 100% · Bronze 80%+ · else Partial. RKD still counts in weekly totals on every scored day. The Sat Conditioning Sub is reference only, no medal.</div>
   </div>`;
   document.getElementById("setMaxHr").addEventListener("change",e=>{pxiSet.maxHr=+e.target.value||185;savePxiSet();});
   document.getElementById("setRestHr").addEventListener("change",e=>{pxiSet.restingHr=+e.target.value||46;savePxiSet();});
@@ -3722,7 +3850,7 @@ function manualScore(){
   const pxi=Math.round(scoreZones(mins,model));
   const lift=LIFT_DAYS.includes(curDay()), zone2Day=curDay()==="tue"||curDay()==="thu";
   let md=null, tag="reference only";
-  if(PLAN_DAYS.includes(curDay())) tag="RKD only · medal is plan completion";
+  if(PLAN_CHIP_DAYS.includes(curDay())) tag="RKD only · medal is plan completion";
   else if(curDay()==="meso03Tue"){ md=tueMedalFor(mins,meso03Deload()); tag=md.t+" · "+tueMins(mins).total+" min logged"; }
   else if(lift){ md=medalFor(pxi,pxiSet.target); tag=md?md.t+" · target "+pxiSet.target:tag; }
   else if(zone2Day){ const pz=pctZ2(mins); md=medalFor(pz,100); tag=md?md.t+" · "+pz+"% in Z2":tag; }
@@ -3774,7 +3902,7 @@ const EXERCISE_GROUP={};
  ["Core",["Hanging Knee Tuck","SB Hip Rolls","DB Side Bend","DB Psoas March","Plank alt Shoulder Taps",
     "KB Around The World","SB Back Extension","KB Halo"]]
 ].forEach(([g,ks])=>ks.forEach(k=>EXERCISE_GROUP[k]=g));
-const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun",strengthFree:"Freeform",fullBodyA:"FB-A",fullBodyB:"FB-B",fullBodyC:"FB-C",meso02Mon:"Mon",meso02Wed:"Wed",meso02Fri:"Fri",meso03Mon:"Mon",meso03Tue:"Tue",meso03Wed:"Wed",meso03Fri:"Fri",meso03Sat:"Sat"};
+const DAY_LABEL={upper:"Mon",tue:"Tue",lower:"Wed",thu:"Thu",mixed:"Fri",sat:"Sat",sun:"Sun",strengthFree:"Freeform",fullBodyA:"FB-A",fullBodyB:"FB-B",fullBodyC:"FB-C",meso02Mon:"Mon",meso02Wed:"Wed",meso02Fri:"Fri",meso03Mon:"Mon",meso03Tue:"Tue",meso03Thu:"Thu",meso03Wed:"Wed",meso03Fri:"Fri",meso03Sat:"Sat"};
 const escAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 /* Keyed by block + week-within-block, so two unrelated blocks never share a bucket.
    Was keyed on l.week (weekSel), which pinned everything after Aug 24 into a single "8".
@@ -4256,13 +4384,15 @@ const BLOCK_OG={legacy:"ogLegacy",meso01:"ogMeso01",meso02:"ogMeso02",meso03:"og
 /* A block with its own Tuesday (Meso 03's stations) — it takes the Tue slot, like a 4th
    BLOCK_LIFTS entry takes Sat. */
 const BLOCK_TUE={meso03:"meso03Tue"};
+/* ...and its own Thursday (Meso 03's Zone 2 + mobility) the Thu slot, the same way. */
+const BLOCK_THU={meso03:"meso03Thu"};
 /* Fold Tue/Thu/Sat/Sun into the current block's group in weekday order and float it to the
    top, so the list opens on a complete Mon–Sun week. appendChild moves an existing node, so
    this both reorders the block's own options and pulls the shared ones across; the emptied
    "Every week" group is then removed. Replaces the old " (inactive)" suffixes — the dated
    group labels and top placement carry that now, without widening any option text.
    A block with its own Saturday (a 4th BLOCK_LIFTS entry, Meso 03) takes the Sat slot, and one
-   with its own Tuesday (BLOCK_TUE) the Tue slot; the shared "tue"/"sat" move to the end of the
+   with its own Tuesday (BLOCK_TUE) or Thursday (BLOCK_THU) that slot; the shared "tue"/"thu"/"sat" move to the end of the
    group so they stay selectable for history.
    Off-block (after 12/13, before 7/6) there is no current block, so the static layout stands
    and Tue/Thu/Sat/Sun stay in their own "Every week" group. */
@@ -4270,8 +4400,8 @@ function orderDaySel(){
   const id=blockFor().id, lifts=BLOCK_LIFTS[id], og=document.getElementById(BLOCK_OG[id]||"");
   const shared=document.getElementById("ogShared");
   if(!og||!lifts||!shared) return;
-  const tue=BLOCK_TUE[id];
-  [lifts[0],tue||"tue",lifts[1],"thu",lifts[2],lifts[3]||"sat","sun"].concat(tue?["tue"]:[],lifts[3]?["sat"]:[]).forEach(v=>{
+  const tue=BLOCK_TUE[id], thu=BLOCK_THU[id];
+  [lifts[0],tue||"tue",lifts[1],thu||"thu",lifts[2],lifts[3]||"sat","sun"].concat(tue?["tue"]:[],thu?["thu"]:[],lifts[3]?["sat"]:[]).forEach(v=>{
     const o=daySel.querySelector('option[value="'+v+'"]'); if(o) og.appendChild(o);});
   shared.remove();
   daySel.insertBefore(og,daySel.firstChild);
@@ -4282,7 +4412,7 @@ document.getElementById("optSun").textContent=inMeso01Window()?"Sun · Gentle Yo
 daySel.value=["sun","upper","tue","lower","thu","mixed","sat"][now.getDay()];
 const mesoDefaultDay=inMeso01Window()?{1:"fullBodyA",3:"fullBodyB",5:"fullBodyC"}[now.getDay()]
                     :inMeso02Window()?{1:"meso02Mon",3:"meso02Wed",5:"meso02Fri"}[now.getDay()]
-                    :inMeso03Window()?{1:"meso03Mon",2:"meso03Tue",3:"meso03Wed",5:"meso03Fri",6:"meso03Sat"}[now.getDay()]:null;
+                    :inMeso03Window()?{1:"meso03Mon",2:"meso03Tue",3:"meso03Wed",4:"meso03Thu",5:"meso03Fri",6:"meso03Sat"}[now.getDay()]:null;
 if(mesoDefaultDay) daySel.value=mesoDefaultDay;
 /* Same-day draft (tab was killed mid-session, reopened the same day): adopt it silently — that's
    continuity, not a decision worth prompting over. Whichever day it was on, the page opens there.

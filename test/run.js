@@ -681,9 +681,123 @@ onDate(2026,9,22,function(){ eq(defaultDayFor(new Date()),undefined,"Meso 2 Tues
 onDate(2026,12,15,function(){ eq(defaultDayFor(new Date()),null,"after Meso 3, Tuesday opens on the shared tue"); });
 onDate(2026,11,10,function(){ eq(defaultDayFor(new Date()),"meso03Tue","Meso 3 Tuesday opens on the stations"); });
 onDate(2026,11,12,function(){
-  eq(defaultDayFor(new Date()),undefined,"Meso 3 Thursday still opens on the shared thu");
-  ok(thuRuleText().indexOf(MESO03_THU_RECOVERY)===0,"...still WHOOP-recovery gated");
+  /* Meso 3's Thursday has its own template since 2026-11-25 (next section); the shared thu kept
+     its rule text for history and outside the window. */
+  ok(thuRuleText().indexOf(MESO03_THU_RECOVERY)===0,"shared thu in the Meso 3 window: still WHOOP-recovery gated");
 });
+
+section("Meso 3 Thursday — Zone 2 + mobility");
+var THU_ROUTINES={
+  A:["90/90 Hip Switches","Half-Kneeling Hip Flexor Stretch","Lunge with T-Spine Rotation","Standing Cat-Cow","Open Books","Child's Pose Side Reach","Supported Deep Squat Hold"],
+  B:["Knee-to-Wall Ankle Rocks","Wall Calf Stretch","Supine Hamstring Floss","Half-Kneeling Adductor Rock-Back","Cossack Squat","Supported Deep Squat Pry"],
+  C:["Foam Roller T-Spine Extension","Quadruped T-Spine Rotation","Wall Scap Push-Up","Straight-Arm Low Doorway Pec Stretch","Bench Lat Prayer Stretch","Foam Roller Snow Angels"]};
+var THU_SETS={A:"2,2,2,1,2,1,2",B:"2,1,2,2,2,2",C:"1,2,2,2,2,1"};
+var THU_SEC={A:"Half-Kneeling Hip Flexor Stretch,Child's Pose Side Reach,Supported Deep Squat Hold",B:"Wall Calf Stretch,Supported Deep Squat Pry",C:"Straight-Arm Low Doorway Pec Stretch,Bench Lat Prayer Stretch"};
+var THU_DATES={1:[2026,10,22,"A"],2:[2026,10,29,"B"],3:[2026,11,5,"C"],4:[2026,11,12,"A"],5:[2026,11,19,"B"],6:[2026,11,26,"C"],7:[2026,12,3,"A"],8:[2026,12,10,"B"]};
+var mobOf=function(s){ return s.blocks.slice(1).map(function(b){return b.ex[0];}); };
+thuPick={cardio:"green",routine:null};
+Object.keys(THU_DATES).forEach(function(wk){
+  var d=THU_DATES[wk], r=d[3];
+  onDate(d[0],d[1],d[2],function(){
+    eq(meso03Week(),+wk,"Thu "+d[1]+"/"+d[2]+" is Meso 3 week "+wk);
+    var s=realSession(8,"meso03Thu"), mob=mobOf(s);
+    eq(s.routine+" | "+s.type+" | "+s.name,r+" | mobility | ZONE 2 + MOBILITY — "+r+": "+MESO03_THU_ROUTINES[r].t,"week "+wk+": routine "+r);
+    eq(mob.map(function(e){return e.n;}).join(" | "),THU_ROUTINES[r].join(" | "),"...its movements, in order");
+    eq(defaultDayFor(new Date()),"meso03Thu","...and Thursday opens on it");
+    var txt=[s.name].concat(exList("meso03Thu").map(function(e){return e.n+" "+(e.rx||"")+" "+(e.note||"");})).join(" | ");
+    ok(!EXCLUDED.test(txt.replace("no rower/SkiErg","")),"week "+wk+": no back squat, goblet, overhead pressing or rower/SkiErg");
+  });
+});
+onDate(2026,11,26,function(){
+  ["A","B","C"].forEach(function(r){
+    thuPick={cardio:"green",routine:r};
+    var s=realSession(8,"meso03Thu"), mob=mobOf(s);
+    eq(s.routine,r,"swap to "+r+" on the day");
+    eq(mob.map(function(e){return e.sets;}).join(),THU_SETS[r],r+": set counts as written");
+    eq(mob.filter(function(e){return e.rUnit==="sec";}).map(function(e){return e.n;}).join(),THU_SEC[r],r+": holds log seconds, the rest reps");
+    ok(mob.every(function(e){return e.key===e.n&&!(e.key in PR_KEYS)&&/^\d × /.test(e.rx)&&e.note;}),r+": one key per movement, not PR-tracked, each with its rx and cue");
+    ok(s.blocks.slice(1).every(function(b){return b.bells===0&&b.ex.length===1;}),r+": one block per movement, no bells (set mode walks them in order)");
+  });
+  thuPick={cardio:"green",routine:null};
+  var g=realSession(8,"meso03Thu").blocks[0];
+  eq(g.ex[0].key+" | "+g.mins+" | "+g.ex[0].sets+" | "+g.ex[0].rUnit,"Thursday Zone 2 | 20 | 1 | min","green: one Zone 2 row, 20:00 countdown, logged in minutes");
+  ok(/^18–20 min/.test(g.ex[0].rx),"...18–20 min");
+  thuPick={cardio:"walk",routine:null};
+  var wk=realSession(8,"meso03Thu").blocks[0];
+  eq(wk.ex[0].key+" | "+wk.mins+" | "+wk.ex[0].sets+" | "+wk.ex[0].rUnit,"Thursday Walk | 15 | 1 | min","yellow/red: one walk row, 15:00, logged in minutes");
+  ok(/no zone target/.test(wk.ex[0].rx),"...no zone target");
+  /* A preview of another week shows that week's rotation, not today's swap. */
+  thuPick={cardio:"green",routine:"A"}; viewWeeks=1;
+  eq(realSession(8,"meso03Thu").routine,"A","previewing week 7 shows its own A");
+  viewWeeks=-1;
+  eq(realSession(8,"meso03Thu").routine,"B","...week 5 its own B, whatever was swapped today");
+  viewWeeks=0; thuPick={cardio:"green",routine:null};
+});
+ok(SRC.indexOf("<b>Every routine:</b> ${MESO03_THU_ELBOW}")>=0,"the elbow cue shows on every routine");
+eq(MESO03_THU_ELBOW,"Keep weight off the elbows; if pinky/ring finger tingles, shorten the range.","...as written");
+ok(/green → Zone 2, 18–20 min · yellow\/red → easy 15-min walk/.test(MESO03_THU_RULE),"Thursday rule: the WHOOP pick");
+ok(SRC.indexOf('<button class="restbtn" onclick="logRest()">Log full rest day instead</button>`;\n    m.innerHTML=h; curRPE=0; restoreSessionDraft();\n    /* A draft adopted')>=0,"Log full rest day is still there");
+/* Medal: plan completion across both halves. Routine A + cardio = 13 sets. */
+var thuEntries=function(cardioMin,mobDone,opts){
+  opts=opts||{}; var out=[{key:"Thursday Zone 2",sets:[{w:"",r:cardioMin?String(cardioMin):""}]}];
+  [2,2,2,1,2,1,2].forEach(function(n,i){
+    var sets=[]; for(var j=0;j<n;j++){ sets.push({w:"",r:mobDone>0?"8":""}); mobDone--; }
+    var e={key:THU_ROUTINES.A[i],sets:sets}; if(opts.sym&&i===opts.sym.at) e.symptoms=opts.sym.events; out.push(e);
+  });
+  return out;
+};
+onDate(2026,11,12,function(){
+  var fm=finishMedal("meso03Thu","mobility",thuEntries(19,12),40,[0,1,18,0,0,0]);
+  eq(fm.medal,"GOLD","13/13 -> Gold, no progression needed");
+  eq(planText(fm.plan),"Sets 13/13","...stamped as a plan count, no progressions line");
+  eq(fm.plan.prog,null,"...prog is null, not 0");
+  eq(finishMedal("meso03Thu","mobility",thuEntries(19,11),40,null).medal,"BRONZE","12/13 -> Bronze (no Silver, as on Saturday)");
+  eq(finishMedal("meso03Thu","mobility",thuEntries(0,11),null,null).medal,"BRONZE","no cardio logged, 11/13 (85%) -> Bronze");
+  eq(finishMedal("meso03Thu","mobility",thuEntries(15,9),null,null).medal,"Partial","10/13 -> Partial, not OFF TARGET");
+  eq(finishMedal("meso03Thu","mobility",thuEntries(0,0),60,[0,5,20,0,0,0]).medal,null,"nothing logged -> no medal, whatever the strap says");
+  eq(finishMedal("meso03Thu","mobility",thuEntries(15,0),null,null).medal,"Partial","walk only, no strap -> still medalled (Partial)");
+  eq(finishMedal("meso03Thu","mobility",thuEntries(19,10,{sym:{at:6,events:[{set:1,kind:"tingling",resolved:false}]}}),null,null).medal,"GOLD","tingling on the last movement, stopped -> that movement counts done -> Gold");
+  eq(finishMedal("meso03Thu","mobility",thuEntries(19,10,{sym:{at:6,events:[{set:1,kind:"ache",resolved:true}]}}),null,null).medal,"BRONZE","...but not if it went away and the sets weren't done");
+  eq(finishMedal("meso03Thu","mobility",thuEntries(30,12),60,[0,0,0,0,30,0]).medal,"GOLD","the zone card never sets the medal");
+});
+ok(PLAN_CHIP_DAYS.indexOf("meso03Thu")>=0&&PLAN_DAYS.indexOf("meso03Thu")<0,"live plan chip, but no lift-day weight hints, loading rule or time estimate");
+ok(SRC.indexOf('if(s.type==="mobility"){ entry.cardio=s.cardio; entry.routine=s.routine; }')>=0,"Finish stamps the cardio pick and routine");
+/* The green-day zone card: 15–20 min Z2, ≤5 Z3, zero Z4/Z5. */
+var thuCls=function(){ return complianceRows("thuZ2").map(function(r){return r.cls;}).slice(2).join(); };
+live.zoneSecs=[60,120,18*60,4*60,0,0]; eq(thuCls(),"ok,ok,ok","18 min Z2, 4 Z3 -> all green");
+live.zoneSecs=[0,0,14*60,0,0,0]; eq(thuCls(),"warn,ok,ok","14 min Z2 -> amber");
+live.zoneSecs=[0,0,21*60,6*60,60,0]; eq(thuCls(),"bad,bad,bad","21 min Z2, 6 Z3, 1 Z4 -> red");
+eq(complianceRows("thuZ2")[2].r,"goal 15–20 min","...and says 15–20");
+live.zoneSecs=[0,0,0,0,0,0];
+/* Picks survive a killed tab: the rows are positional, so the routine has to come back with them. */
+resetState(); DAY="meso03Thu"; TODAY="2026-11-26";
+thuPick={cardio:"walk",routine:"A"};
+sessionDraft={key:draftKey(),day:"meso03Thu",fields:{"r_0_0_0":"15","r_1_0_0":"6"},rpe:0,strain:"",note:"",activity:null};
+persistDraft();
+var thuRec=JSON.parse(LS["dtp-draft_2026-11-26_meso03Thu"]);
+eq(JSON.stringify(thuRec.thu),'{"cardio":"walk","routine":"A"}',"the draft carries the picks");
+thuPick={cardio:"green",routine:null};
+applyDraft(thuRec,"dtp-draft_2026-11-26_meso03Thu",false);
+eq(thuPick.cardio+thuPick.routine,"walkA","...and adopting it restores them");
+applyDraft({day:"meso03Mon",fields:{}},"dtp-draft_2026-11-26_meso03Mon",false);
+eq(thuPick.cardio+thuPick.routine,"walkA","another day's draft leaves them alone");
+DAY="meso03Mon"; sessionDraft={key:draftKey(),day:"meso03Mon",fields:{"w_1_0_0":"135"},rpe:0,strain:"",note:"",activity:null};
+persistDraft();
+eq(JSON.parse(LS["dtp-draft_2026-11-26_meso03Mon"]).thu,undefined,"...and other days' drafts don't carry them");
+/* Swap guard: anything in a mobility row (block 1+) blocks the swap; cardio minutes don't. */
+loadRegions(region("function thuMobilityLogged(){","/* Thursday's cardio (green/walk)"));
+DAY="meso03Thu";
+sessionDraft={day:"meso03Thu",fields:{"r_0_0_0":"15"}}; eq(thuMobilityLogged(),false,"cardio minutes alone don't lock the routine");
+sessionDraft={day:"meso03Thu",fields:{"r_2_0_1":"5"}}; eq(thuMobilityLogged(),true,"a mobility set does");
+sessionDraft={day:"meso03Thu",fields:{}}; exNotes={"meso03Thu|3_0":"tight"}; eq(thuMobilityLogged(),true,"...so does a mobility exercise note");
+exNotes={}; extraSets={"meso03Mon|1_0":1}; eq(thuMobilityLogged(),false,"...but not another day's added set");
+resetState(); thuPick={cardio:"green",routine:null}; DAY="meso02Wed"; TODAY="2026-09-20";
+/* Past Thursdays keep what they were saved with: the shared thu is unchanged (above) and medals
+   are stamped, never re-graded; the Zone 2 medal still grades a shared-thu Finish. */
+eq(finishMedal("thu","zone2",[],50,[0,0,30,0,0,0]).medal,"GOLD","a shared-thu Finish still medals on % time in Z2");
+eq(planText({done:12,total:18,prog:0}),"Sets 12/18 · 0 progressions","lift days' plan text unchanged");
+ok(SRC.indexOf('meso03Tue:"Tue",meso03Thu:"Thu",')>=0,"history labels it Thu");
+ok(/Zone 2 \+ mobility/.test(hrText("meso03Thu",8)),"HR target box covers it");
 
 section("Meso 3 lift days — medal on plan completion");
 /* A Finish-shaped entry: rx prescribed sets, the first `done` of them with reps, then any extras.
