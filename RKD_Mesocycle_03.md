@@ -178,14 +178,14 @@ Each station carries a hotel swap for travel (e.g. stair climber → incline wal
 
 - **Rule:** "Check WHOOP recovery first: green → Zone 2, 18–20 min · yellow/red → easy 15-min walk instead. Mobility either way. If you did Tuesday, strongly consider full rest today — one optional session per week is plenty during heavy weeks (6–8)."
 - **Cardio half (picked on the day):** green = 18–20 min Zone 2 (bike, treadmill, incline walk or easy jog; no rower/SkiErg) with the live zone card: 15–20 min Z2, ≤5 min Z3, zero Z4/Z5. Yellow/red = 15-min easy walk, no zone target. Either is one row, minutes logged in the second box.
-- **Mobility half:** set rows like a lift day — reps or seconds in the second box, weight blank. Rotates by block week: **A** weeks 1, 4, 7 · **B** weeks 2, 5, 8 · **C** weeks 3, 6. Swappable on the day until something is logged in the routine. **Every routine:** "Keep weight off the elbows; if pinky/ring finger tingles, shorten the range."
+- **Mobility half:** set rows like a lift day — reps or seconds in the second box, weight blank. Rotates by block week: **A** weeks 1, 4, 7 · **B** weeks 2, 5, 8 · **C** weeks 3, 6. Swappable on the day until something is logged in the routine. **Every routine:** "Keep weight off the elbows; if pinky/ring finger tingles, shorten the range." No hand-loaded positions.
 - **Medal:** plan completion across both halves — sets done ÷ sets prescribed, a pain entry not marked "went away" counts that movement complete. Gold = 100% · Bronze = 80%+ · below that, Partial (no Silver, no progression counted, as on Saturday). RKD still accrues on the strength curve and counts in weekly totals. "Log full rest day" stays.
 
 | Routine | Movement | Rx | Cue |
 |---|---|---|---|
 | **A · Hips + Upper Back** | 90/90 Hip Switches | 2 × 6/side | Sit tall, hands-free if you can |
 | | Half-Kneeling Hip Flexor Stretch | 2 × 30–45 s/side | Squeeze the back glute, reach the same-side arm up |
-| | Lunge with T-Spine Rotation | 2 × 5/side | Hand down, rotate and reach to the ceiling, 1 breath at the top |
+| | Lunge with T-Spine Reach | 2 × 5/side | Long lunge, hands off the floor, rotate and reach the front-side arm to the ceiling, 1 breath at the top |
 | | Standing Cat-Cow | 1 × 8 | Hands on thighs, knees soft, slow |
 | | Open Books | 2 × 8/side | Knees stacked, eyes follow the hand |
 | | Child's Pose Side Reach | 1 × 30 s each (center / left / right) | Arms long |
@@ -197,7 +197,7 @@ Each station carries a hotel swap for travel (e.g. stair climber → incline wal
 | | Cossack Squat | 2 × 5/side | Bodyweight, hold a post if needed |
 | | Supported Deep Squat Pry | 2 × 30 s | Arms straight on a post, shift side to side |
 | **C · Shoulders + Scap (elbow-friendly)** | Foam Roller T-Spine Extension | 1 × 8 | Arms crossed on the chest, not behind the head |
-| | Quadruped T-Spine Rotation | 2 × 6/side | Hand on the lower back |
+| | Half-Kneeling T-Spine Rotation | 2 × 6/side | Arms crossed on the chest, rotate toward the front knee, hips stay square |
 | | Wall Scap Push-Up | 2 × 10 | Arms straight, push the wall away |
 | | Straight-Arm Low Doorway Pec Stretch | 2 × 30 s/side | Arm low on the frame for the lower chest; soften the elbow if it tingles |
 | | Bench Lat Prayer Stretch | 2 × 30 s | Elbows on the bench, sit the hips back |
